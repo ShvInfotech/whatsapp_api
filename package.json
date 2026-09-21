@@ -1,0 +1,30 @@
+{
+  "name": "safevault-whatsapp-api",
+  "version": "1.0.0",
+  "description": "Production-ready WhatsApp Automation REST API microservice for Safe Vault Software",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [
+    "whatsapp",
+    "whatsapp-web.js",
+    "safe-vault",
+    "automation",
+    "microservice",
+    "rest-api"
+  ],
+  "author": "Safe Vault Engineering",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "qrcode": "^1.5.3",
+    "whatsapp-web.js": "^1.26.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

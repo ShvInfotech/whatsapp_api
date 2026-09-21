@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Safe Vault - WhatsApp Automation Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-required">
+  <section id="loginScreen" class="login-screen" aria-label="Administrator login">
+    <form id="loginForm" class="login-card">
+      <div class="login-icon">🔐</div>
+      <h1>Safe Vault Admin</h1>
+      <p>Login required to access WhatsApp automation.</p>
+      <label for="loginUsername">Username</label>
+      <input id="loginUsername" autocomplete="username" required />
+      <label for="loginPassword">Password</label>
+      <input id="loginPassword" type="password" autocomplete="current-password" required />
+      <p id="loginError" class="login-error hidden"></p>
+      <button id="loginButton" class="btn btn-primary w-full" type="submit">Login as Admin</button>
+      <button id="showForgotPassword" class="login-link" type="button">Forgot password?</button>
+    </form>
+    <form id="forgotPasswordForm" class="login-card hidden">
+      <div class="login-icon">🔑</div>
+      <h1>Reset Admin Password</h1>
+      <p>Verify your recovery details to set a new password.</p>
+      <label for="recoveryUsername">Username</label>
+      <input id="recoveryUsername" autocomplete="username" required />
+      <label for="recoveryEmail">Admin Email</label>
+      <input id="recoveryEmail" type="email" autocomplete="email" required />
+      <label for="recoveryCode">Recovery Code</label>
+      <input id="recoveryCode" type="password" required />
+      <label for="newPassword">New Password</label>
+      <input id="newPassword" type="password" minlength="8" autocomplete="new-password" required />
+      <p id="recoveryError" class="login-error hidden"></p>
+      <button id="resetPasswordButton" class="btn btn-primary w-full" type="submit">Update Password</button>
+      <button id="showLogin" class="login-link" type="button">Back to login</button>
+    </form>
+  </section>
+
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <circle cx="12" cy="11" r="3"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Safe Vault <span>WhatsApp Console</span></h1>
+          <span class="brand-subtitle">Automated Messaging Microservice</span>
+        </div>
+      </div>
+
+      <!-- Live Connection Status Pill -->
+      <div class="nav-status">
+        <div id="statusPill" class="status-pill status-loading">
+          <span class="status-dot"></span>
+          <span id="statusText" class="status-label">Checking Status...</span>
+        </div>
+        <div id="deviceBadge" class="device-badge hidden">
+          <span id="deviceName">Yash V Gajera</span>
+          <span id="devicePhone">(919427758870)</span>
+        </div>
+        <button id="btnAdminLogout" class="btn btn-secondary btn-logout" type="button">Admin Logout</button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <div class="tabs-container">
+        <button class="tab-btn active" data-tab="instancesTab">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          WhatsApp Instances
+        </button>
+        <button class="tab-btn" data-tab="bulkTab">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Bulk Messenger
+        </button>
+        <button class="tab-btn" data-tab="singleTab">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Single Message
+        </button>
+        <button class="tab-btn" data-tab="deviceTab">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          Default Device
+        </button>
+        <button class="tab-btn" data-tab="docsTab">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          API Documentation
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-content">
+
+    <!-- ============================================== -->
+    <!-- DIRECT QR CODE PAIRING PANEL (On index.html)   -->
+    <!-- ============================================== -->
+    <section id="qrHeroBanner" class="qr-hero-card">
+      <div class="qr-hero-content">
+        <div class="qr-hero-text">
+          <div class="hero-badge" id="heroBadge">
+            <span class="pulse-dot"></span>
+            <span id="heroBadgeText">Scan QR Code to Login</span>
+          </div>
+          <h2 id="heroTitle">WhatsApp Pairing & Login</h2>
+          <p class="hero-desc">
+            Scan this QR code directly with your mobile WhatsApp. Once scanned, your session will connect and authenticate automatically.
+          </p>
+
+          <div class="hero-steps">
+            <div class="step-item">
+              <span class="step-num">1</span>
+              <span>Open <strong>WhatsApp</strong> on your phone</span>
+            </div>
+            <div class="step-item">
+              <span class="step-num">2</span>
+              <span>Tap <strong>Menu (⋮)</strong> on Android or <strong>Settings</strong> on iOS</span>
+            </div>
+            <div class="step-item">
+              <span class="step-num">3</span>
+              <span>Select <strong>Linked Devices</strong> &gt; <strong>Link a Device</strong></span>
+            </div>
+            <div class="step-item">
+              <span class="step-num">4</span>
+              <span>Point your phone at this screen to <strong>scan the QR code</strong></span>
+            </div>
+          </div>
+
+          <div id="heroStatusNotice" class="hero-status-notice">
+            <span class="notice-icon">⚡</span>
+            <span id="heroNoticeText">Waiting for scan... (Authentication will sync automatically once scanned)</span>
+          </div>
+        </div>
+
+        <div class="qr-hero-visual">
+          <div class="qr-frame">
+            <div id="heroQrLoader" class="qr-loading-overlay">
+              <div class="custom-spinner"></div>
+              <p id="heroLoaderText">Loading QR Code...</p>
+            </div>
+            <img id="heroQrImage" class="hero-qr-img hidden" alt="WhatsApp QR Code" />
+          </div>
+          <div class="qr-auto-refresh">
+            <span class="pulse-green"></span>
+            <span>Live Auto-Sync (Auto Refresh)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Connected Success Bar (Shown when successfully connected) -->
+    <div id="connectedBanner" class="connected-banner hidden">
+      <div class="conn-left">
+        <div class="conn-icon">✓</div>
+        <div>
+          <h4>WhatsApp is Connected &amp; Ready!</h4>
+          <p id="connDeviceInfo">Connected Device</p>
+        </div>
+      </div>
+      <div class="conn-right">
+        <button id="btnBannerReset" class="btn-text danger" title="Disconnect session">Logout / Change Number</button>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- TAB: WHATSAPP INSTANCES (MULTI-USER)          -->
+    <!-- ============================================== -->
+    <section id="instancesTab" class="tab-panel active">
+      <div class="panel-header">
+        <div>
+          <h2>Multi-User WhatsApp Instances</h2>
+          <p>Manage isolated WhatsApp client accounts with SendBuddy-compatible credentials.</p>
+        </div>
+        <button id="btnOpenCreateInstance" class="btn btn-primary" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Create New Instance
+        </button>
+      </div>
+
+      <!-- Instances Grid -->
+      <div id="instancesList" class="instances-grid">
+        <div class="card text-center" style="grid-column: 1 / -1; padding: 2rem;">
+          <p class="text-secondary">Loading WhatsApp instances...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 1: BULK MESSENGER                          -->
+    <!-- ============================================== -->
+    <section id="bulkTab" class="tab-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Bulk WhatsApp Dispatcher</h2>
+          <p>Send bulk WhatsApp messages to multiple contacts with intelligent 4-5s anti-ban delays.</p>
+        </div>
+        <div class="antiban-badge">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+          <span>Anti-Ban Protection Enabled (4-5s Delay)</span>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <!-- Left Column: Input Form -->
+        <div class="card">
+          <div class="card-header">
+            <h3>1. Add Contact Numbers</h3>
+            <span id="numberCountBadge" class="count-badge">0 Numbers</span>
+          </div>
+
+          <div class="form-group">
+            <label for="bulkInstanceSelect">Sender WhatsApp Instance</label>
+            <select id="bulkInstanceSelect" class="form-control"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="bulkNumbers">
+              Enter / Paste Phone Numbers
+              <span class="label-hint">(One per line or separated by comma/space. Include country code like 918140349408)</span>
+            </label>
+            <textarea
+              id="bulkNumbers"
+              rows="6"
+              placeholder="918140349408&#10;919727899812&#10;919876543210"
+              spellcheck="false"
+            ></textarea>
+            <div class="textarea-actions">
+              <button id="btnSampleNumbers" type="button" class="btn-text">
+                + Load Your 2 Numbers
+              </button>
+              <button id="btnClearNumbers" type="button" class="btn-text danger">
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div class="card-header mt-4">
+            <h3>2. Compose Message</h3>
+            <span id="charCountBadge" class="count-badge">0 Chars</span>
+          </div>
+
+          <div class="form-group">
+            <label for="bulkMessage">Message Content</label>
+            <div class="formatting-bar">
+              <button type="button" class="fmt-btn" data-fmt="bold" title="Bold"><b>B</b></button>
+              <button type="button" class="fmt-btn" data-fmt="italic" title="Italic"><i>I</i></button>
+              <button type="button" class="fmt-btn" data-fmt="strike" title="Strikethrough"><s>S</s></button>
+              <button type="button" class="fmt-btn" data-fmt="mono" title="Monospace"><code>{ }</code></button>
+              <span class="fmt-divider"></span>
+              <button type="button" class="fmt-btn emoji" data-emoji="🔔">🔔</button>
+              <button type="button" class="fmt-btn emoji" data-emoji="✅">✅</button>
+              <button type="button" class="fmt-btn emoji" data-emoji="⚠️">⚠️</button>
+              <button type="button" class="fmt-btn emoji" data-emoji="🔐">🔐</button>
+            </div>
+            <textarea
+              id="bulkMessage"
+              rows="5"
+              placeholder="Type your message here... Example:&#10;Hello! Aa Safe Vault Software tarfthi aavelo alert message che."
+            ></textarea>
+          </div>
+
+          <!-- Delay & Safety Settings -->
+          <div class="card-header mt-4">
+            <h3>3. Sending Speed & Delay</h3>
+            <span id="delayDisplay" class="count-badge highlight">4 - 5 Seconds</span>
+          </div>
+
+          <div class="delay-box">
+            <div class="slider-row">
+              <label for="delayRange">Safe Delay Between Messages:</label>
+              <span id="sliderVal" class="slider-value">4.5s</span>
+            </div>
+            <input type="range" id="delayRange" min="2" max="10" step="0.5" value="4.5">
+            <p class="delay-note">
+              WhatsApp bot filters flag accounts that send instant bursts. A <strong>4 to 5 second randomized delay</strong> keeps your account natural and ban-free.
+            </p>
+          </div>
+
+          <!-- Actions -->
+          <div class="action-buttons">
+            <button id="btnStartBulk" class="btn btn-primary btn-large">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              Start Sending Messages
+            </button>
+            <button id="btnStopBulk" class="btn btn-danger hidden">
+              Stop Sending
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Column: Live Progress & Results -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Live Execution & Delivery Report</h3>
+            <span id="execStateBadge" class="badge badge-idle">Ready</span>
+          </div>
+
+          <!-- Progress Widget -->
+          <div class="progress-section">
+            <div class="progress-info">
+              <span id="progressSummary">0 of 0 Completed</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-track">
+              <div id="progressBar" class="progress-fill" style="width: 0%"></div>
+            </div>
+            <div id="countdownBanner" class="countdown-banner hidden">
+              <span class="pulse-icon">⏳</span>
+              <span id="countdownText">Waiting 4.2s for anti-ban safety before next message...</span>
+            </div>
+          </div>
+
+          <!-- Stats Counters -->
+          <div class="stats-row">
+            <div class="stat-card">
+              <span class="stat-num" id="statTotal">0</span>
+              <span class="stat-lbl">Total</span>
+            </div>
+            <div class="stat-card stat-success">
+              <span class="stat-num" id="statSent">0</span>
+              <span class="stat-lbl">Sent</span>
+            </div>
+            <div class="stat-card stat-failed">
+              <span class="stat-num" id="statFailed">0</span>
+              <span class="stat-lbl">Failed</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-num" id="statRemaining">0</span>
+              <span class="stat-lbl">Remaining</span>
+            </div>
+          </div>
+
+          <!-- Live Delivery Log Table -->
+          <div class="table-header-row">
+            <h4>Delivery Log</h4>
+            <button id="btnClearLog" class="btn-text">Clear Log</button>
+          </div>
+
+          <div class="table-container">
+            <table class="log-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Number</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="logTableBody">
+                <tr class="empty-row">
+                  <td colspan="5">No messages sent yet. Add numbers and click "Start Sending".</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 2: SINGLE MESSAGE                          -->
+    <!-- ============================================== -->
+    <section id="singleTab" class="tab-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Single Message Messenger</h2>
+          <p>Instantly dispatch a test message to a specific phone number.</p>
+        </div>
+      </div>
+
+      <div class="card max-w-xl mx-auto">
+        <form id="singleForm">
+          <div class="form-group">
+            <label for="singleInstanceSelect">Sender WhatsApp Instance</label>
+            <select id="singleInstanceSelect" class="form-control"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="singlePhone">Recipient Phone Number</label>
+            <input
+              type="text"
+              id="singlePhone"
+              placeholder="e.g. 918140349408 or +91 81403 49408"
+              required
+            />
+            <span class="input-hint">Country code required (e.g., 91 for India).</span>
+          </div>
+
+          <div class="form-group">
+            <label for="singleMessage">Message</label>
+            <textarea
+              id="singleMessage"
+              rows="4"
+              placeholder="Type your message..."
+              required
+            >Hello! This is a test message from Safe Vault WhatsApp Automation.</textarea>
+          </div>
+
+          <button type="submit" id="btnSendSingle" class="btn btn-primary w-full">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Send WhatsApp Message
+          </button>
+        </form>
+
+        <div id="singleResultBox" class="result-box hidden"></div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 3: DEVICE & QR                             -->
+    <!-- ============================================== -->
+    <section id="deviceTab" class="tab-panel">
+      <div class="panel-header">
+        <div>
+          <h2>WhatsApp Device & Pairing</h2>
+          <p>Manage active WhatsApp Web session, view linked device information, or generate a fresh QR code.</p>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <!-- Status Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Connected Device Details</h3>
+            <button id="btnRefreshStatus" class="btn-icon" title="Refresh Status">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            </button>
+          </div>
+
+          <div id="deviceDetailsContainer" class="device-details">
+            <div class="detail-row">
+              <span class="detail-lbl">Instance ID:</span>
+              <span class="detail-val" style="display:flex;align-items:center;gap:6px;">
+                <code id="defaultInstanceId">safevault-session</code>
+                <button class="btn-copy-mini" type="button" id="btnCopyDefaultId" title="Copy Default Instance ID">📋</button>
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-lbl">Access Token:</span>
+              <span class="detail-val" style="display:flex;align-items:center;gap:6px;">
+                <code id="defaultAccessToken">safevault_default_token</code>
+                <button class="btn-copy-mini" type="button" id="btnCopyDefaultToken" title="Copy Default Access Token">📋</button>
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-lbl">Client Status:</span>
+              <span id="detailStatus" class="detail-val badge badge-idle">Checking...</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-lbl">WhatsApp Name:</span>
+              <span id="detailName" class="detail-val">-</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-lbl">WhatsApp Phone:</span>
+              <span id="detailPhone" class="detail-val">-</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-lbl">Connected Platform:</span>
+              <span id="detailPlatform" class="detail-val">-</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-lbl">Last Connected At:</span>
+              <span id="detailTime" class="detail-val">-</span>
+            </div>
+          </div>
+
+          <div class="device-actions mt-4" style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+            <button id="btnCopyDefaultApiUrl" class="btn btn-secondary" type="button">
+              📋 Copy SendBuddy API URL
+            </button>
+            <button id="btnResetSession" class="btn btn-danger">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              Reset Session (Clear & Scan New QR)
+            </button>
+          </div>
+        </div>
+
+        <!-- QR Display Card -->
+        <div class="card text-center">
+          <div class="card-header">
+            <h3>Pairing QR Code</h3>
+          </div>
+
+          <div id="qrBox" class="qr-container">
+            <div id="qrPlaceholder" class="qr-placeholder">
+              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#64748b" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              <p id="qrNotice">Connected or loading...</p>
+            </div>
+            <img id="qrImage" class="qr-img hidden" alt="WhatsApp QR Code" />
+          </div>
+
+          <p class="qr-help">
+            To link your account: Open WhatsApp on your phone &gt; Linked Devices &gt; Link a Device &gt; Scan this QR.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- TAB 4: API DOCS                                -->
+    <!-- ============================================== -->
+    <section id="docsTab" class="tab-panel">
+      <div class="panel-header">
+        <div>
+          <h2>REST API Documentation</h2>
+          <p>Complete endpoint specifications for integrating WhatsApp automation into your custom software.</p>
+        </div>
+        <a href="/API_DOCS.md" target="_blank" class="btn btn-secondary">
+          Open Markdown Docs
+        </a>
+      </div>
+
+      <div class="docs-accordion">
+        <!-- SendBuddy Compatible API -->
+        <div class="doc-item" style="border: 1px solid rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.03);">
+          <div class="doc-header">
+            <span class="method get">GET</span>
+            <span class="method post">POST</span>
+            <code class="endpoint">/api/send</code>
+            <span class="doc-desc" style="color: #4ade80; font-weight: 600;">⭐ SendBuddy Compatible Dispatch API</span>
+          </div>
+          <div class="doc-body">
+            <p>Send WhatsApp messages directly from VB.NET, C#, Python, or PHP without changing your software's URL structure.</p>
+            <h5>Standard HTTP URL / Request:</h5>
+            <pre><code>GET /api/send?number=919876543210&amp;type=text&amp;message=Hello+World&amp;instance_id=679B485A1510B&amp;access_token=679b262160af7</code></pre>
+            <h5>Parameters:</h5>
+            <ul style="margin: 8px 0 16px 20px; font-size: 13px; color: #cbd5e1; line-height: 1.8;">
+              <li><code>number</code>: Recipient mobile number with country code (e.g. <code>919876543210</code>)</li>
+              <li><code>type</code>: Message type (<code>text</code>)</li>
+              <li><code>message</code>: Text message content (URL-encoded)</li>
+              <li><code>instance_id</code>: Your WhatsApp client instance ID</li>
+              <li><code>access_token</code>: Your client security token</li>
+            </ul>
+            <h5>Desktop Software (VB.NET / C#) Example:</h5>
+            <pre><code>Dim url As String = "http://93.127.198.184/whatsapp_api/api/send?number=" &amp; strMobileNo &amp; "&amp;type=text&amp;message=" &amp; strMessage &amp; "&amp;instance_id=" &amp; strInstance &amp; "&amp;access_token=" &amp; strToken</code></pre>
+            <h5>Success Response (200 OK):</h5>
+            <pre><code>{
+  "status": "success",
+  "message": "Message sent successfully",
+  "data": {
+    "id": "false_919876543210@c.us_3EB0...",
+    "to": "919876543210",
+    "timestamp": 1758450000
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="doc-item">
+          <div class="doc-header">
+            <span class="method post">POST</span>
+            <code class="endpoint">/api/auth/login</code>
+            <span class="doc-desc">Admin login; creates the protected dashboard session</span>
+          </div>
+          <div class="doc-body">
+            <p>This public endpoint sets the HTTP-only admin session required by every WhatsApp API.</p>
+            <h5>Request Body:</h5>
+            <pre><code>{
+  "username": "admin",
+  "password": "your-password"
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="doc-item">
+          <div class="doc-header">
+            <span class="method post">POST</span>
+            <code class="endpoint">/api/auth/forgot-password</code>
+            <span class="doc-desc">Verify recovery details and update the admin password in JSON</span>
+          </div>
+          <div class="doc-body">
+            <p>Verifies username, email and recovery code. The new password hash is dynamically saved in <code>data/admin.json</code>.</p>
+            <h5>Request Body:</h5>
+            <pre><code>{
+  "username": "admin",
+  "email": "admin@safevault.local",
+  "recoveryCode": "your-recovery-code",
+  "newPassword": "minimum-8-characters"
+}</code></pre>
+            <p><strong>Security:</strong> recovery code and password are never returned by the API.</p>
+          </div>
+        </div>
+
+        <!-- Endpoint 1 -->
+        <div class="doc-item">
+          <div class="doc-header">
+            <span class="method get">GET</span>
+            <code class="endpoint">/api/status</code>
+            <span class="doc-desc">Check connection status & device details</span>
+          </div>
+          <div class="doc-body">
+            <p>Returns the current status of the WhatsApp client (`CONNECTED`, `AUTHENTICATING`, `QR_READY`, `DISCONNECTED`).</p>
+            <h5>Sample Response (200 OK):</h5>
+            <pre><code>{
+  "success": true,
+  "data": {
+    "status": "CONNECTED",
+    "isConnected": true,
+    "clientInfo": {
+      "pushname": "Yash V Gajera",
+      "phone": "919427758870",
+      "platform": "android"
+    }
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- Endpoint 2 -->
+        <div class="doc-item">
+          <div class="doc-header">
+            <span class="method post">POST</span>
+            <code class="endpoint">/api/send-message</code>
+            <span class="doc-desc">Send a single WhatsApp message</span>
+          </div>
+          <div class="doc-body">
+            <h5>Request Headers:</h5>
+            <pre><code>Content-Type: application/json</code></pre>
+            <h5>Request Body:</h5>
+            <pre><code>{
+  "phoneNumber": "918140349408",
+  "message": "Hello from Safe Vault Software!"
+}</code></pre>
+            <h5>Sample Response (200 OK):</h5>
+            <pre><code>{
+  "success": true,
+  "message": "Message sent successfully",
+  "data": {
+    "messageId": "true_918140349408@c.us_3EB0...",
+    "recipient": "918140349408",
+    "timestamp": 1726658000
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- Endpoint 3 -->
+        <div class="doc-item">
+          <div class="doc-header">
+            <span class="method post">POST</span>
+            <code class="endpoint">/api/send-bulk</code>
+            <span class="doc-desc">Send bulk messages with anti-ban delay (4-5s)</span>
+          </div>
+          <div class="doc-body">
+            <h5>Request Body (Option A - Same message to all):</h5>
+            <pre><code>{
+  "phoneNumbers": [
+    "918140349408",
+    "919727899812"
+  ],
+  "message": "Safe Vault scheduled notification.",
+  "options": {
+    "minDelayMs": 3500,
+    "maxDelayMs": 5000
+  }
+}</code></pre>
+            <h5>Sample Response (200 OK):</h5>
+            <pre><code>{
+  "success": true,
+  "message": "Bulk messaging completed: 2/2 delivered successfully",
+  "data": {
+    "total": 2,
+    "successful": 2,
+    "failed": 0,
+    "results": [
+      { "phoneNumber": "918140349408", "status": "sent", "messageId": "3EB0..." },
+      { "phoneNumber": "919727899812", "status": "sent", "messageId": "3EB1..." }
+    ]
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- Endpoint 4 -->
+        <div class="doc-item">
+          <div class="doc-header">
+            <span class="method get">GET</span>
+            <code class="endpoint">/api/qr</code>
+            <span class="doc-desc">Get pairing QR code (JSON or Browser View)</span>
+          </div>
+          <div class="doc-body">
+            <p>If opened in a web browser, it renders a visual QR code card. If called via JSON API, it returns the base64 data URL.</p>
+          </div>
+        </div>
+
+        <!-- Endpoint 5 -->
+        <div class="doc-item">
+          <div class="doc-header">
+            <span class="method get">GET</span>
+            <code class="endpoint">/api/reset-session</code>
+            <span class="doc-desc">Wipe local session cache & generate brand new QR</span>
+          </div>
+          <div class="doc-body">
+            <p>Cleans `.wwebjs_auth` cache, closes browser, and generates a fresh pairing QR code.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Create Instance Modal -->
+  <div id="createInstanceModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Create New WhatsApp Instance</h3>
+        <button id="btnCloseCreateModal" class="btn-close" type="button">&times;</button>
+      </div>
+      <form id="createInstanceForm">
+        <div class="form-group">
+          <label for="instanceNameInput">Client / Business Name</label>
+          <input type="text" id="instanceNameInput" placeholder="e.g. Ramesh Bhai Store" required />
+          <span class="input-hint">Used to identify this WhatsApp client.</span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="btnCancelCreateModal" class="btn btn-secondary">Cancel</button>
+          <button type="submit" id="btnSubmitCreateInstance" class="btn btn-primary">Create &amp; Generate Token</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Instance QR Modal -->
+  <div id="instanceQrModal" class="modal-backdrop hidden">
+    <div class="modal-card text-center" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 id="modalQrTitle">Pair WhatsApp Device</h3>
+        <button id="btnCloseQrModal" class="btn-close" type="button">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="modalQrSubtitle" class="text-secondary mb-3" style="font-size: 13.5px;">Scan this QR code with mobile WhatsApp</p>
+        <div class="qr-wrapper-modal">
+          <div id="modalQrLoader" class="qr-loading-modal">
+            <div class="custom-spinner"></div>
+            <p id="modalLoaderText" style="font-size: 13px;">Generating QR Code...</p>
+          </div>
+          <img id="modalQrImg" class="qr-img-modal hidden" alt="Instance QR Code" />
+        </div>
+        <div id="modalConnectedBadge" class="connected-tag hidden">
+          ✓ WhatsApp Connected! (<span id="modalConnectedPhone"></span>)
+        </div>
+        <div class="modal-links" style="margin-top: 1.25rem;">
+          <button id="btnCopyPublicScanLink" class="btn btn-secondary w-full" style="font-size: 13px;" type="button">
+            📋 Copy Public Scan Link (Send to Client)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
