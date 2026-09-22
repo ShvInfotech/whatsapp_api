@@ -23,17 +23,17 @@ function createApp() {
   // Static Assets (Dashboard Web UI)
   app.use(express.static(path.join(__dirname, '../public')));
 
-  // Dashboard & Documentation Routes
-  app.get(['/', '/dashboard', '/index.php', '/index.html'], (req, res) => {
+  // Dashboard & Landing Routes
+  app.get(['/', '/home', '/landing', '/landing.html', '/index.html'], (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
+  });
+
+  app.get(['/admin', '/admin.html', '/dashboard', '/console'], (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/admin.html'));
   });
 
   app.get(['/scan', '/scan.html'], (req, res) => {
     res.sendFile(path.join(__dirname, '../public/scan.html'));
-  });
-
-  app.get(['/landing', '/landing.html', '/home'], (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/landing.html'));
   });
 
   app.get(['/user', '/user.html'], (req, res) => {

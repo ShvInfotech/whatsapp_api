@@ -7,28 +7,90 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.0.0" />
+  <link rel="stylesheet" href="style.css?v=2.1.0" />
 </head>
 <body class="user-portal">
   <section id="userAuth" class="login-screen" aria-label="User login">
+    <!-- User Login Form -->
     <form id="userLoginForm" class="login-card">
-      <div class="login-icon">🔐</div><h1>Safe Vault User</h1><p>Login to access your private WhatsApp workspace.</p>
-      <label for="userLoginUsername">Username</label><input id="userLoginUsername" autocomplete="username" required />
-      <label for="userLoginPassword">Password</label><input id="userLoginPassword" type="password" autocomplete="current-password" required />
-      <p id="userAuthError" class="login-error hidden"></p><button class="btn btn-primary w-full" type="submit">Login to Workspace</button>
-      <button id="showRegister" class="login-link" type="button">New user? Register here</button>
-      <a class="login-link" href="./">Admin login</a>
-      <a class="login-link" href="landing.html">🌐 View Product Website / SaaS Home</a>
+      <div class="auth-header">
+        <div class="auth-logo-badge">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.03-1.25-.75-.67-1.26-1.5-1.41-1.75-.15-.25-.02-.39.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.17-.48-.29z"/>
+          </svg>
+        </div>
+        <h1>User Workspace</h1>
+        <p>Login to your private WhatsApp messaging workspace</p>
+      </div>
+
+      <div class="auth-field">
+        <label for="userLoginUsername">Username</label>
+        <input id="userLoginUsername" placeholder="Enter your username" autocomplete="username" required />
+      </div>
+
+      <div class="auth-field">
+        <label for="userLoginPassword">Password</label>
+        <input id="userLoginPassword" type="password" placeholder="Enter your password" autocomplete="current-password" required />
+      </div>
+
+      <p id="userAuthError" class="login-error hidden"></p>
+
+      <button class="btn btn-primary w-full" type="submit">Sign In to Workspace</button>
+
+      <div class="auth-divider"><span>or</span></div>
+
+      <div class="auth-footer-links">
+        <button id="showRegister" class="auth-link-btn" type="button">New user? Create an account &rarr;</button>
+        <a class="auth-sub-link" href="admin.html">Go to Admin Console</a>
+        <a class="auth-sub-link" href="./">← Back to Product Website</a>
+      </div>
     </form>
+
+    <!-- User Registration Form -->
     <form id="userRegisterForm" class="login-card hidden">
-      <div class="login-icon">👤</div><h1>Create User Account</h1><p>Your account includes a private WhatsApp instance.</p>
-      <label for="registerFullName">Full Name</label><input id="registerFullName" required />
-      <label for="registerUsername">Username</label><input id="registerUsername" autocomplete="username" required />
-      <label for="registerEmail">Email</label><input id="registerEmail" type="email" autocomplete="email" required />
-      <label for="registerPassword">Password</label><input id="registerPassword" type="password" minlength="8" autocomplete="new-password" required />
-      <p id="registerError" class="login-error hidden"></p><button class="btn btn-primary w-full" type="submit">Create Account</button>
-      <button id="showUserLogin" class="login-link" type="button">Already registered? Login</button>
-      <a class="login-link" href="landing.html">🌐 View Product Website / SaaS Home</a>
+      <div class="auth-header">
+        <div class="auth-logo-badge" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <line x1="19" y1="8" x2="19" y2="14"/>
+            <line x1="22" y1="11" x2="16" y2="11"/>
+          </svg>
+        </div>
+        <h1>Create Account</h1>
+        <p>Register for a dedicated private WhatsApp instance</p>
+      </div>
+
+      <div class="auth-field">
+        <label for="registerFullName">Full Name</label>
+        <input id="registerFullName" placeholder="e.g. John Doe" required />
+      </div>
+
+      <div class="auth-field">
+        <label for="registerUsername">Username</label>
+        <input id="registerUsername" placeholder="Choose a username" autocomplete="username" required />
+      </div>
+
+      <div class="auth-field">
+        <label for="registerEmail">Email Address</label>
+        <input id="registerEmail" type="email" placeholder="john@example.com" autocomplete="email" required />
+      </div>
+
+      <div class="auth-field">
+        <label for="registerPassword">Password</label>
+        <input id="registerPassword" type="password" minlength="8" placeholder="Minimum 8 characters" autocomplete="new-password" required />
+      </div>
+
+      <p id="registerError" class="login-error hidden"></p>
+
+      <button class="btn btn-primary w-full" type="submit">Create User Account</button>
+
+      <div class="auth-divider"><span>or</span></div>
+
+      <div class="auth-footer-links">
+        <button id="showUserLogin" class="auth-link-btn" type="button">Already have an account? Sign In &rarr;</button>
+        <a class="auth-sub-link" href="./">← Back to Product Website</a>
+      </div>
     </form>
   </section>
 
@@ -61,6 +123,6 @@
       <section id="bulkMessageTab" class="user-tab-panel"><div class="panel-header"><div><h2>Bulk WhatsApp Dispatcher</h2><p>Send bulk messages from your private WhatsApp account with safe randomized delays.</p></div><div class="antiban-badge">Anti-Ban Protection Enabled</div></div><div class="grid-2col"><div class="card"><form id="userBulkForm"><div class="card-header"><h3>1. Add Contact Numbers</h3><span id="userNumberCountBadge" class="count-badge">0 Numbers</span></div><div class="form-group"><label for="userBulkNumbers">Enter / Paste Phone Numbers <span class="label-hint">(One per line, comma, or space separated)</span></label><textarea id="userBulkNumbers" rows="6" placeholder="919876543210&#10;919876543211" required></textarea><div class="textarea-actions"><button id="userClearNumbers" type="button" class="btn-text danger">Clear</button></div></div><div class="card-header mt-4"><h3>2. Compose Message</h3><span id="userCharCountBadge" class="count-badge">0 Chars</span></div><div class="form-group"><label for="userBulkMessage">Message Content</label><div class="formatting-bar"><button type="button" class="fmt-btn" data-user-fmt="bold" title="Bold"><b>B</b></button><button type="button" class="fmt-btn" data-user-fmt="italic" title="Italic"><i>I</i></button><button type="button" class="fmt-btn" data-user-fmt="strike" title="Strikethrough"><s>S</s></button><button type="button" class="fmt-btn" data-user-fmt="mono" title="Monospace"><code>{ }</code></button></div><textarea id="userBulkMessage" rows="5" placeholder="Type one message for all contacts..." required></textarea><div class="wa-preview-box"><span class="preview-label">📱 WhatsApp Bubble Preview</span><div class="wa-bubble wa-bubble-out" style="max-width: 100%; margin-top: 6px;"><p id="userBulkPreview">Type message to preview...</p><span class="wa-bubble-time"><span id="userBulkPreviewTime">Just now</span> <span class="wa-ticks">✓✓</span></span></div></div></div><div class="card-header mt-4"><h3>3. Sending Speed &amp; Delay</h3><span id="userDelayDisplay" class="count-badge highlight">4 - 5 Seconds</span></div><div class="delay-box"><div class="slider-row"><label for="userDelayRange">Safe Delay Between Messages:</label><span id="userSliderVal" class="slider-value">4.5s</span></div><input type="range" id="userDelayRange" min="2" max="10" step="0.5" value="4.5"><p class="delay-note">A randomized delay helps keep your WhatsApp activity natural.</p></div><div class="action-buttons"><button id="userSendBulk" class="btn btn-primary btn-large" type="submit">Start Sending Messages</button></div></form></div><div class="card"><div class="card-header"><h3>Live Execution &amp; Delivery Report</h3><span id="userExecStateBadge" class="badge badge-idle">Ready</span></div><div class="progress-section"><div class="progress-info"><span id="userProgressSummary">0 of 0 Completed</span><span id="userProgressPercent">0%</span></div><div class="progress-track"><div id="userProgressBar" class="progress-fill" style="width: 0%"></div></div></div><div class="stats-row"><div class="stat-card"><span class="stat-num" id="userStatTotal">0</span><span class="stat-lbl">Total</span></div><div class="stat-card stat-success"><span class="stat-num" id="userStatSent">0</span><span class="stat-lbl">Sent</span></div><div class="stat-card stat-failed"><span class="stat-num" id="userStatFailed">0</span><span class="stat-lbl">Failed</span></div><div class="stat-card"><span class="stat-num" id="userStatRemaining">0</span><span class="stat-lbl">Remaining</span></div></div><div class="table-header-row"><h4>Delivery Log</h4><button id="userClearLog" class="btn-text" type="button">Clear Log</button></div><div class="table-container"><table class="log-table"><thead><tr><th>#</th><th>Number</th><th>Status</th><th>Details</th></tr></thead><tbody id="userLogTableBody"><tr class="empty-row"><td colspan="4">No messages sent yet. Add numbers and click Start Sending.</td></tr></tbody></table></div><div id="userBulkResult" class="result-box hidden"></div></div></div></section>
     </main>
   </section>
-  <script src="user.js?v=2.0.0"></script>
+  <script src="user.js?v=2.1.0"></script>
 </body>
 </html>

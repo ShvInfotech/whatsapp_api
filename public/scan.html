@@ -9,14 +9,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #090d16;
-      --card-bg: rgba(18, 26, 44, 0.85);
-      --border: rgba(255, 255, 255, 0.08);
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --primary: #22c55e;
-      --primary-glow: rgba(34, 197, 94, 0.3);
-      --accent: #38bdf8;
+      --bg: #f0f2f5;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #111b21;
+      --text-muted: #54656f;
+      --primary: #00a884;
+      --primary-glow: rgba(0, 168, 132, 0.25);
+      --accent: #0284c7;
     }
 
     * {
@@ -29,8 +29,8 @@
     body {
       background-color: var(--bg);
       background-image: 
-        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.12), transparent 45%),
-        radial-gradient(circle at 100% 100%, rgba(34, 197, 94, 0.08), transparent 50%);
+        radial-gradient(circle at 50% 0%, rgba(0, 168, 132, 0.08), transparent 45%),
+        radial-gradient(circle at 100% 100%, rgba(2, 132, 199, 0.05), transparent 50%);
       color: var(--text);
       min-height: 100vh;
       display: flex;
@@ -88,8 +88,7 @@
       border: 1px solid var(--border);
       border-radius: 20px;
       padding: 32px 24px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
-      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.07), 0 0 1px rgba(0, 0, 0, 0.1);
       text-align: center;
     }
 
@@ -97,9 +96,9 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(56, 189, 248, 0.12);
+      background: #e0f2fe;
       color: var(--accent);
-      border: 1px solid rgba(56, 189, 248, 0.25);
+      border: 1px solid #bae6fd;
       padding: 6px 14px;
       border-radius: 20px;
       font-size: 13px;
@@ -125,6 +124,7 @@
       font-size: 22px;
       font-weight: 700;
       margin-bottom: 8px;
+      color: #111b21;
     }
 
     .card-subtitle {
@@ -142,7 +142,8 @@
       background: #ffffff;
       padding: 12px;
       border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.06);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -172,7 +173,7 @@
       width: 36px;
       height: 36px;
       border: 3px solid rgba(15, 23, 42, 0.15);
-      border-top-color: #059669;
+      border-top-color: #00a884;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
@@ -183,7 +184,7 @@
 
     .steps-box {
       text-align: left;
-      background: rgba(255, 255, 255, 0.03);
+      background: #f8fafc;
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 16px;
@@ -198,14 +199,14 @@
       align-items: center;
       gap: 12px;
       font-size: 13.5px;
-      color: #cbd5e1;
+      color: #334155;
     }
 
     .step-num {
       width: 22px;
       height: 22px;
       min-width: 22px;
-      background: rgba(255, 255, 255, 0.1);
+      background: #e2e8f0;
       border-radius: 50%;
       display: flex;
       align-items: center;
