@@ -14,7 +14,17 @@ userTabs.forEach((tab) => tab.addEventListener('click', () => {
   document.getElementById(tab.dataset.userTab)?.classList.add('active');
 }));
 
-async function api(endpoint, options) { return fetch(endpoint, { credentials: 'include', ...options }); }
+const getApiBaseUrl = () => {
+  if (window.API_BASE_URL !== undefined) return window.API_BASE_URL;
+  const path = window.location.pathname.replace(/\/(user\.(php|html)|index\.(php|html)|dashboard)?\/?$/, '');
+  return path || '';
+};
+const API_BASE_URL = getApiBaseUrl();
+
+async function api(endpoint, options) {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  return fetch(url, { credentials: 'include', ...options });
+}
 function showError(element, message) { element.textContent = message; element.classList.remove('hidden'); }
 function showLogin() { loginForm.classList.remove('hidden'); registerForm.classList.add('hidden'); }
 function showRegister() { registerForm.classList.remove('hidden'); loginForm.classList.add('hidden'); }
@@ -59,7 +69,7 @@ async function refreshQr() {
     const info = data.data; document.getElementById('instanceStatus').textContent = `Status: ${info.status}`;
     document.getElementById('userNavStatus').textContent = info.isConnected ? 'WhatsApp Connected' : (info.qrReady ? 'Scan QR to Connect' : 'Preparing WhatsApp');
     const image = document.getElementById('userQrImage'); const loader = document.getElementById('userQrLoader'); const connected = document.getElementById('connectedInfo');
-    const appLink = `${window.location.origin}/api/send?number=91XXXXXXXXXX&type=text&message=Hello&instance_id=${encodeURIComponent(myInstance.id)}&access_token=${encodeURIComponent(myInstance.accessToken)}`;
+    const appLink = `${window.location.origin}${API_BASE_URL}/api/send?number=91XXXXXXXXXX&type=text&message=Hello&instance_id=${encodeURIComponent(myInstance.id)}&access_token=${encodeURIComponent(myInstance.accessToken)}`;
     document.getElementById('userAppLinkText').textContent = appLink;
     document.getElementById('copyUserAppLink').classList.toggle('hidden', !info.isConnected);
     document.getElementById('userAppLinkBox').classList.toggle('hidden', !info.isConnected);
@@ -81,7 +91,7 @@ document.getElementById('resetMySession').addEventListener('click', async () => 
 document.getElementById('userLogout').addEventListener('click', async () => { clearTimeout(pollTimer); await api('/api/user-auth/logout', { method: 'POST' }); location.reload(); });
 document.getElementById('copyUserAppLink').addEventListener('click', async () => {
   if (!myInstance?.id || !myInstance?.accessToken) return;
-  const link = `${window.location.origin}/api/send?number=91XXXXXXXXXX&type=text&message=Hello&instance_id=${encodeURIComponent(myInstance.id)}&access_token=${encodeURIComponent(myInstance.accessToken)}`;
+  const link = `${window.location.origin}${API_BASE_URL}/api/send?number=91XXXXXXXXXX&type=text&message=Hello&instance_id=${encodeURIComponent(myInstance.id)}&access_token=${encodeURIComponent(myInstance.accessToken)}`;
   try { await navigator.clipboard.writeText(link); document.getElementById('copyUserAppLink').textContent = 'App API Link Copied!'; }
   catch (_) { alert('Could not copy the app API link.'); }
   setTimeout(() => { document.getElementById('copyUserAppLink').textContent = 'Copy App API Link'; }, 2000);
