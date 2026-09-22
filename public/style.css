@@ -102,6 +102,14 @@ body {
 .user-tab-panel { display: none; }
 .user-tab-panel.active { display: block; }
 .user-device-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+.user-app-link { margin-top: 1rem; padding: .75rem; border: 1px solid rgba(56, 189, 248, .25); border-radius: var(--radius-sm); background: rgba(15, 23, 42, .6); display: grid; gap: .35rem; }
+.user-app-link span { color: var(--text-muted); font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.user-app-link code { color: #7dd3fc; font-family: var(--font-mono); font-size: .74rem; overflow-wrap: anywhere; }
+.user-portal .qr-frame.user-connected-frame { background: rgba(15, 23, 42, .8); border-color: var(--primary); }
+.user-connected-visual { width: 240px; height: 240px; padding: 1.5rem; color: var(--text-primary); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .65rem; }
+.user-connected-visual h3 { color: #34d399; font-size: 1.1rem; }
+.user-connected-visual p { color: var(--text-secondary); font-size: .84rem; line-height: 1.5; }
+.user-connected-check { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; background: var(--primary); color: white; font-size: 2rem; font-weight: 800; box-shadow: 0 0 24px var(--primary-glow); }
 .user-portal .status-sent { color: #34d399; font-weight: 600; }
 .user-portal .status-failed { color: #f87171; font-weight: 600; }
 .btn-logout { margin-left: .5rem; font-size: .75rem; }

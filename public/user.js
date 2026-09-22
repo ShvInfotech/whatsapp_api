@@ -59,11 +59,21 @@ async function refreshQr() {
     const info = data.data; document.getElementById('instanceStatus').textContent = `Status: ${info.status}`;
     document.getElementById('userNavStatus').textContent = info.isConnected ? 'WhatsApp Connected' : (info.qrReady ? 'Scan QR to Connect' : 'Preparing WhatsApp');
     const image = document.getElementById('userQrImage'); const loader = document.getElementById('userQrLoader'); const connected = document.getElementById('connectedInfo');
+    const appLink = `${window.location.origin}/api/send?number=91XXXXXXXXXX&type=text&message=Hello&instance_id=${encodeURIComponent(myInstance.id)}&access_token=${encodeURIComponent(myInstance.accessToken)}`;
+    document.getElementById('userAppLinkText').textContent = appLink;
     document.getElementById('copyUserAppLink').classList.toggle('hidden', !info.isConnected);
+    document.getElementById('userAppLinkBox').classList.toggle('hidden', !info.isConnected);
+    document.getElementById('userQrSteps').classList.toggle('hidden', info.isConnected);
+    document.getElementById('userConnectedVisual').classList.toggle('hidden', !info.isConnected);
+    document.getElementById('userQrAutoRefresh').classList.toggle('hidden', info.isConnected);
+    document.getElementById('userQrFrame').classList.toggle('user-connected-frame', info.isConnected);
+    document.getElementById('userHeroDescription').textContent = info.isConnected
+      ? 'Your WhatsApp account is securely connected. You can now send single or bulk messages from this workspace.'
+      : 'Connect your personal WhatsApp account securely. This workspace never displays or uses another user\'s WhatsApp session.';
     if (info.isConnected) { image.classList.add('hidden'); loader.classList.add('hidden'); connected.textContent = `✓ Connected as ${info.pushname || 'WhatsApp user'} ${info.phone ? `(+${info.phone})` : ''}`; connected.classList.remove('hidden'); }
     else if (info.qrDataUrl) { image.src = info.qrDataUrl; image.classList.remove('hidden'); loader.classList.add('hidden'); connected.classList.add('hidden'); }
     else { image.classList.add('hidden'); loader.classList.remove('hidden'); connected.classList.add('hidden'); }
-  } catch (error) { document.getElementById('instanceStatus').textContent = error.message || 'Unable to load your QR code.'; document.getElementById('copyUserAppLink').classList.add('hidden'); }
+  } catch (error) { document.getElementById('instanceStatus').textContent = error.message || 'Unable to load your QR code.'; document.getElementById('copyUserAppLink').classList.add('hidden'); document.getElementById('userAppLinkBox').classList.add('hidden'); document.getElementById('userConnectedVisual').classList.add('hidden'); document.getElementById('userQrSteps').classList.remove('hidden'); document.getElementById('userQrAutoRefresh').classList.remove('hidden'); document.getElementById('userQrFrame').classList.remove('user-connected-frame'); }
   pollTimer = setTimeout(refreshQr, 2500);
 }
 
