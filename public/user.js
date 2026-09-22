@@ -16,7 +16,7 @@ userTabs.forEach((tab) => tab.addEventListener('click', () => {
 
 const getApiBaseUrl = () => {
   if (window.API_BASE_URL !== undefined) return window.API_BASE_URL;
-  const path = window.location.pathname.replace(/\/(user|scan|index|dashboard)?(\.(php|html))?\/?$/, '');
+  const path = window.location.pathname.replace(/\/(user|scan|index|admin|dashboard)?(\.(php|html))?\/?$/, '');
   return path || '';
 };
 const API_BASE_URL = getApiBaseUrl();

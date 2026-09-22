@@ -10,10 +10,10 @@ let parsedNumbers = [];
 let previousConnected = null;
 let statusPollingTimer = null;
 
-// Detect base URL dynamically for subpaths (e.g. /whatsapp_api/) or root deployments
+// Detect base URL dynamically for subpaths (e.g. /iot/ or /whatsapp_api/) or root deployments
 const getApiBaseUrl = () => {
   if (window.API_BASE_URL !== undefined) return window.API_BASE_URL;
-  const path = window.location.pathname.replace(/\/(index\.(php|html)|dashboard)?\/?$/, '');
+  const path = window.location.pathname.replace(/\/(index|admin|dashboard)?(\.(php|html))?\/?$/, '');
   return path || '';
 };
 const API_BASE_URL = getApiBaseUrl();

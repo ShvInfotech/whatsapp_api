@@ -340,9 +340,9 @@
   </div>
 
   <script>
-    // Detect base URL dynamically for subpaths (e.g. /whatsapp_api/) or root deployments
+    // Detect base URL dynamically for subpaths (e.g. /iot/ or /whatsapp_api/) or root deployments
     const getBaseUrl = () => {
-      const path = window.location.pathname.replace(/\/(scan(\.html)?)?$/, '');
+      const path = window.location.pathname.replace(/\/(scan|admin|user|index|dashboard)?(\.(php|html))?\/?$/, '');
       return path || '';
     };
     const BASE_URL = getBaseUrl();
