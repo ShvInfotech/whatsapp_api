@@ -70,9 +70,15 @@ SESSION_ID=safevault-session
 RATE_LIMIT_MIN_DELAY_MS=2500
 RATE_LIMIT_MAX_DELAY_MS=4500
 HEADLESS=true
+MONGODB_URI=mongodb://127.0.0.1:27017
+MONGODB_DB_NAME=safevault_whatsapp
 ```
 
 *(Note: Leave `API_KEY` empty during local testing. For production, assign a secure token like `API_KEY=sv_secret_998877`).*
+
+### User registration and private WhatsApp login
+
+Open `/user` for the separate user registration/login page. User accounts are saved in MongoDB; registration creates one private WhatsApp instance per user. A signed-in user can only load and reset their own instance, while the administrator can see every account in the dashboard's **Registered Users** tab.
 
 ### 4. Start the Service
 

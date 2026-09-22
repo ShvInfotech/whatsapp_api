@@ -4,6 +4,8 @@ const sendBuddyController = require('../controllers/sendBuddyController');
 const instanceController = require('../controllers/instanceController');
 const whatsappController = require('../controllers/whatsappController');
 const requireAdmin = require('../middlewares/adminAuthMiddleware');
+const requireUser = require('../middlewares/userAuthMiddleware');
+const userController = require('../controllers/userController');
 
 /**
  * ====================================================================
@@ -19,6 +21,15 @@ router.post('/send', (req, res) => sendBuddyController.handleSend(req, res));
 // Public client QR scan endpoint (used by /scan.html)
 router.get('/public/instance-qr', (req, res) => instanceController.publicQr(req, res));
 
+// Registered user endpoints. They are intentionally separate from admin routes.
+router.get('/user/instances', requireUser, (req, res) => userController.instances(req, res));
+router.get('/user/instances/:id/qr', requireUser, (req, res) => userController.qr(req, res));
+router.post('/user/instances/:id/reset', requireUser, (req, res) => userController.reset(req, res));
+router.post('/user/instances/:id/send-message', requireUser, (req, res) => userController.sendMessage(req, res));
+router.post('/user/instances/:id/send-bulk', requireUser, (req, res) => userController.sendBulk(req, res));
+router.post('/user/instances/:id/send-message', requireUser, (req, res) => userController.sendMessage(req, res));
+router.post('/user/instances/:id/send-bulk', requireUser, (req, res) => userController.sendBulk(req, res));
+
 
 /**
  * ====================================================================
@@ -26,6 +37,8 @@ router.get('/public/instance-qr', (req, res) => instanceController.publicQr(req,
  * ====================================================================
  */
 router.use(requireAdmin);
+
+router.get('/admin/users', (req, res) => userController.adminList(req, res));
 
 // Multi-Instance Management Routes
 router.get('/instances', (req, res) => instanceController.list(req, res));

@@ -8,6 +8,9 @@ const whatsappService = require('./services/whatsappService');
 const instanceService = require('./services/instanceService');
 const requireAdmin = require('./middlewares/adminAuthMiddleware');
 const { authenticate, createSession, verifySession, publicAdmin, resetPassword } = require('./services/adminAuthService');
+const userController = require('./controllers/userController');
+const requireUser = require('./middlewares/userAuthMiddleware');
+const { closeDatabase } = require('./services/databaseService');
 
 function createApp() {
   const app = express();
@@ -27,6 +30,10 @@ function createApp() {
 
   app.get(['/scan', '/scan.html'], (req, res) => {
     res.sendFile(path.join(__dirname, '../public/scan.html'));
+  });
+
+  app.get(['/user', '/user.html'], (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/user.html'));
   });
 
   app.get('/API_DOCS.md', requireAdmin, (req, res) => {
@@ -51,6 +58,11 @@ function createApp() {
     res.clearCookie('safevault_admin_session', { httpOnly: true, sameSite: 'lax', secure: req.secure });
     res.json({ success: true });
   });
+
+  app.post('/api/user-auth/register', (req, res) => userController.register(req, res));
+  app.post('/api/user-auth/login', (req, res) => userController.login(req, res));
+  app.post('/api/user-auth/logout', (req, res) => userController.logout(req, res));
+  app.get('/api/user-auth/me', requireUser, (req, res) => userController.me(req, res));
 
   app.post('/api/auth/forgot-password', async (req, res) => {
     try {
@@ -126,7 +138,8 @@ async function startServer() {
       console.log('[Server] HTTP Server closed.');
       await Promise.allSettled([
         whatsappService.destroy(),
-        instanceService.destroyAll()
+        instanceService.destroyAll(),
+        closeDatabase()
       ]);
       console.log('[Server] Cleanup complete. Exiting.');
       process.exit(0);

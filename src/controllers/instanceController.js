@@ -78,18 +78,22 @@ class InstanceController {
 
   /**
    * Public QR endpoint for client standalone pairing page
-   * GET /api/public/instance-qr?instance_id=679B485A1510B
+   * GET /api/public/instance-qr?instance_id=679B485A1510B&access_token=...
    */
   async publicQr(req, res) {
     try {
       const instanceId = req.query.instance_id || req.query.id;
-      if (!instanceId) {
-        return res.status(400).json({ success: false, error: "Missing 'instance_id' parameter." });
+      const accessToken = req.query.access_token;
+      if (!instanceId || !accessToken) {
+        return res.status(400).json({ success: false, error: "instance_id and access_token are required." });
       }
 
       const record = instanceService.getInstanceRecord(instanceId);
       if (!record) {
         return res.status(404).json({ success: false, error: 'Instance not found.' });
+      }
+      if (record.accessToken !== accessToken) {
+        return res.status(403).json({ success: false, error: 'Invalid instance access token.' });
       }
 
       const qrInfo = await instanceService.getInstanceQr(instanceId);

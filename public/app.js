@@ -133,6 +133,7 @@ function startDashboard() {
   // Initial status check & adaptive polling
   fetchStatus();
   fetchInstances();
+  fetchUsers();
 }
 
 async function restoreAdminSession() {
@@ -240,8 +241,27 @@ function setupTabs() {
       if (targetTabId === 'deviceTab') {
         fetchQrCode();
       }
+      if (targetTabId === 'usersTab') fetchUsers();
     });
   });
+}
+
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+}
+
+async function fetchUsers() {
+  const usersList = document.getElementById('usersList');
+  if (!usersList) return;
+  try {
+    const response = await apiFetch('/api/admin/users');
+    const json = await response.json();
+    if (!response.ok || !json.success) throw new Error(json.error || 'Unable to load users.');
+    const users = json.data || [];
+    usersList.innerHTML = users.length ? users.map((user) => `<tr><td>${escapeHtml(user.fullName)}</td><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.email)}</td><td>${user.createdAt ? new Date(user.createdAt).toLocaleString() : '-'}</td></tr>`).join('') : '<tr><td colspan="4" class="text-secondary">No registered users yet.</td></tr>';
+  } catch (error) {
+    usersList.innerHTML = `<tr><td colspan="4" class="login-error">${escapeHtml(error.message)}</td></tr>`;
+  }
 }
 
 // ==========================================================================
@@ -985,7 +1005,8 @@ function setupInstanceManagement() {
   if (btnCopyPublicScanLink) {
     btnCopyPublicScanLink.addEventListener('click', () => {
       if (!activeQrPollingId) return;
-      const url = `${window.location.origin}${API_BASE_URL}/scan.html?instance_id=${activeQrPollingId}`;
+      const instance = instancesCache.find((item) => item.id === activeQrPollingId);
+      const url = `${window.location.origin}${API_BASE_URL}/scan.html?instance_id=${encodeURIComponent(activeQrPollingId)}&access_token=${encodeURIComponent(instance?.accessToken || '')}`;
       navigator.clipboard.writeText(url).then(() => {
         showToast('Public scan link copied to clipboard!', 'success');
       });
@@ -1012,7 +1033,7 @@ function setupInstanceManagement() {
           showToast('SendBuddy API URL copied to clipboard!', 'success');
         });
       } else if (action === 'copy-scan') {
-        const url = `${window.location.origin}${API_BASE_URL}/scan.html?instance_id=${id}`;
+        const url = `${window.location.origin}${API_BASE_URL}/scan.html?instance_id=${encodeURIComponent(id)}&access_token=${encodeURIComponent(token)}`;
         navigator.clipboard.writeText(url).then(() => {
           showToast('Public scan URL copied to clipboard!', 'success');
         });

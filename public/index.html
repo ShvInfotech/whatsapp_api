@@ -22,6 +22,7 @@
       <p id="loginError" class="login-error hidden"></p>
       <button id="loginButton" class="btn btn-primary w-full" type="submit">Login as Admin</button>
       <button id="showForgotPassword" class="login-link" type="button">Forgot password?</button>
+      <a class="login-link" href="/user">User login / registration</a>
     </form>
     <form id="forgotPasswordForm" class="login-card hidden">
       <div class="login-icon">🔑</div>
@@ -77,6 +78,10 @@
         <button class="tab-btn active" data-tab="instancesTab">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           WhatsApp Instances
+        </button>
+        <button class="tab-btn" data-tab="usersTab">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Registered Users
         </button>
         <button class="tab-btn" data-tab="bulkTab">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -191,6 +196,17 @@
         <div class="card text-center" style="grid-column: 1 / -1; padding: 2rem;">
           <p class="text-secondary">Loading WhatsApp instances...</p>
         </div>
+      </div>
+    </section>
+
+    <section id="usersTab" class="tab-panel">
+      <div class="panel-header">
+        <div><h2>Registered Users</h2><p>All accounts saved in MongoDB. Each user has a private WhatsApp instance.</p></div>
+      </div>
+      <div class="card" style="overflow:auto;">
+        <table class="data-table"><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Registered</th></tr></thead>
+          <tbody id="usersList"><tr><td colspan="4" class="text-secondary">Loading users...</td></tr></tbody>
+        </table>
       </div>
     </section>
 

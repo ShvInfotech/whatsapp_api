@@ -348,6 +348,7 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const instanceId = urlParams.get('instance_id') || urlParams.get('id');
+    const accessToken = urlParams.get('access_token');
 
     const instanceName = document.getElementById('instanceName');
     const qrLoader = document.getElementById('qrLoader');
@@ -358,10 +359,10 @@
     const phoneDisplay = document.getElementById('phoneDisplay');
     const errorMsg = document.getElementById('errorMsg');
 
-    if (!instanceId) {
+    if (!instanceId || !accessToken) {
       instanceName.textContent = 'Error: No instance specified';
-      loaderMsg.textContent = 'Please provide instance_id in URL';
-      errorMsg.textContent = 'URL must include ?instance_id=XXXXX';
+      loaderMsg.textContent = 'Please provide instance credentials in URL';
+      errorMsg.textContent = 'URL must include instance_id and access_token';
       errorMsg.classList.remove('hidden');
     } else {
       pollQrStatus();
@@ -371,7 +372,7 @@
     async function pollQrStatus() {
       if (!instanceId) return;
       try {
-        const res = await fetch(`${BASE_URL}/api/public/instance-qr?instance_id=${encodeURIComponent(instanceId)}`);
+        const res = await fetch(`${BASE_URL}/api/public/instance-qr?instance_id=${encodeURIComponent(instanceId)}&access_token=${encodeURIComponent(accessToken)}`);
         const json = await res.json();
 
         if (!json.success) {

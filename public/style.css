@@ -86,6 +86,24 @@ body {
 .login-error { color: #fca5a5 !important; margin: 0 !important; }
 .login-link { justify-self: start; padding: 0; color: #6ee7b7; background: none; border: 0; cursor: pointer; font: inherit; font-size: .86rem; }
 .login-link:hover { color: #a7f3d0; text-decoration: underline; }
+.user-portal {
+  min-height: 100vh;
+  background-color: var(--bg-main);
+  background-image:
+    radial-gradient(circle at 15% 15%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(2, 132, 199, 0.08) 0%, transparent 40%);
+  color: var(--text-primary);
+}
+.user-portal-main { max-width: 760px; margin: 0 auto; padding: 2rem 1rem; }
+.user-portal .login-screen { position: static; min-height: calc(100vh - 4rem); }
+.user-dashboard-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+.user-instance-card { text-align: center; display: grid; gap: 1rem; justify-items: center; }
+.user-tabs { display: flex; gap: .5rem; overflow-x: auto; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem; }
+.user-tab-panel { display: none; }
+.user-tab-panel.active { display: block; }
+.user-device-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+.user-portal .status-sent { color: #34d399; font-weight: 600; }
+.user-portal .status-failed { color: #f87171; font-weight: 600; }
 .btn-logout { margin-left: .5rem; font-size: .75rem; }
 
 /* Header & Navbar */

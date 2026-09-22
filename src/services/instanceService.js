@@ -243,7 +243,7 @@ class InstanceService {
   /**
    * Create a new instance
    */
-  async createInstance(name) {
+  async createInstance(name, ownerUserId = null) {
     const instanceId = this.generateInstanceId();
     const accessToken = this.generateAccessToken();
     const createdAt = new Date().toISOString();
@@ -251,6 +251,7 @@ class InstanceService {
     const newRecord = {
       id: instanceId,
       name: name ? name.trim() : `Instance ${instanceId.slice(0, 6)}`,
+      ownerUserId: ownerUserId ? ownerUserId.toString() : null,
       accessToken,
       createdAt,
       status: 'INITIALIZING',
@@ -300,6 +301,7 @@ class InstanceService {
       results.push({
         id: record.id,
         name: record.name,
+        ownerUserId: record.ownerUserId || null,
         accessToken: record.accessToken,
         createdAt: record.createdAt,
         status: active ? active.status : (record.status || 'DISCONNECTED'),
@@ -312,6 +314,29 @@ class InstanceService {
     }
 
     return results;
+  }
+
+  /** Get only the WhatsApp instances owned by one registered user. */
+  getInstancesForUser(userId) {
+    const ownerId = userId.toString();
+    return this.getAllInstances().filter((instance) => instance.ownerUserId === ownerId);
+  }
+
+  /**
+   * Backfill an instance for users created before instance ownership was added.
+   * This also makes user login resilient if a previous instance record was lost.
+   */
+  async ensureUserInstance(user) {
+    const ownerId = user._id.toString();
+    const existing = this.getInstancesForUser(ownerId);
+    if (existing.length) return existing[0];
+    return this.createInstance(`${user.fullName || user.username}'s WhatsApp`, ownerId);
+  }
+
+  /** A user can only access their own instance. */
+  userOwnsInstance(userId, instanceId) {
+    const record = this.getInstanceRecord(instanceId);
+    return Boolean(record && record.ownerUserId === userId.toString());
   }
 
   /**

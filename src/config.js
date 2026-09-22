@@ -54,5 +54,7 @@ module.exports = {
   authDataPath: path.resolve(__dirname, '../.wwebjs_auth'),
   adminDataPath: path.resolve(__dirname, '../data/admin.json'),
   instancesDataPath: path.resolve(__dirname, '../data/instances.json'),
+  mongoUri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017',
+  mongoDbName: process.env.MONGODB_DB_NAME || 'safevault_whatsapp',
   chromePath: resolveChromePath()
 };
