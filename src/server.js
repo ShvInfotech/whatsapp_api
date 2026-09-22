@@ -32,6 +32,10 @@ function createApp() {
     res.sendFile(path.join(__dirname, '../public/scan.html'));
   });
 
+  app.get(['/landing', '/landing.html', '/home'], (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/landing.html'));
+  });
+
   app.get(['/user', '/user.html'], (req, res) => {
     res.sendFile(path.join(__dirname, '../public/user.html'));
   });

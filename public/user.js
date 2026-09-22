@@ -133,6 +133,16 @@ const userBulkNumbers = document.getElementById('userBulkNumbers');
 const userBulkMessage = document.getElementById('userBulkMessage');
 const userDelayRange = document.getElementById('userDelayRange');
 
+const userSingleMsgInput = document.getElementById('userSingleMessage');
+const userSinglePreview = document.getElementById('userSinglePreview');
+const userSingleTime = document.getElementById('userSinglePreviewTime');
+if (userSingleMsgInput && userSinglePreview) {
+  userSingleMsgInput.addEventListener('input', () => {
+    userSinglePreview.textContent = userSingleMsgInput.value || 'Type message to preview...';
+    if (userSingleTime) userSingleTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  });
+}
+
 function parseUserNumbers() {
   return userBulkNumbers.value.split(/[\r\n,\s]+/).map((value) => value.replace(/\D/g, '')).filter((value, index, list) => value.length >= 10 && list.indexOf(value) === index).slice(0, 100);
 }
@@ -140,6 +150,12 @@ function updateUserBulkCounts() {
   const numbers = parseUserNumbers();
   document.getElementById('userNumberCountBadge').textContent = `${numbers.length} Number${numbers.length === 1 ? '' : 's'}`;
   document.getElementById('userCharCountBadge').textContent = `${userBulkMessage.value.length} Chars`;
+  const bulkPreview = document.getElementById('userBulkPreview');
+  const bulkTime = document.getElementById('userBulkPreviewTime');
+  if (bulkPreview) {
+    bulkPreview.textContent = userBulkMessage.value || 'Type message to preview...';
+    if (bulkTime) bulkTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
 }
 function updateUserDelay() {
   const delay = Number(userDelayRange.value);

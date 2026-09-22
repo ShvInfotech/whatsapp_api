@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeVault WhatsApp Cloud API - Multi-Instance Automation Engine</title>
+  <meta name="description" content="Next-Generation WhatsApp REST API & Automation Gateway. Multi-instance isolation, anti-ban protection, SendBuddy compatibility, and multi-user portal." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=2.0.0" />
+</head>
+<body class="landing-body">
+
+  <!-- ============================================== -->
+  <!-- NAVIGATION BAR                                  -->
+  <!-- ============================================== -->
+  <header class="landing-navbar">
+    <div class="landing-nav-container">
+      <a href="./" class="landing-brand">
+        <div class="landing-brand-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.03-1.25-.75-.67-1.26-1.5-1.41-1.75-.15-.25-.02-.39.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.17-.48-.29z"/>
+          </svg>
+        </div>
+        <div class="landing-brand-text">
+          <h1>SafeVault <span>WhatsApp API</span></h1>
+          <span class="landing-brand-badge">SaaS v2.0</span>
+        </div>
+      </a>
+
+      <nav class="landing-nav-links">
+        <a href="#features">Features</a>
+        <a href="#demo">Live Demo</a>
+        <a href="#code">API &amp; SDKs</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+        <a href="API_DOCS.md" target="_blank" class="nav-doc-link">Docs ↗</a>
+      </nav>
+
+      <div class="landing-nav-actions">
+        <a href="user.html" class="btn btn-secondary btn-sm">User Portal</a>
+        <a href="./" class="btn btn-primary btn-sm">Admin Console</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================== -->
+  <!-- HERO SECTION                                   -->
+  <!-- ============================================== -->
+  <section class="landing-hero">
+    <div class="landing-hero-container">
+      <div class="landing-hero-text">
+        <div class="hero-chip">
+          <span class="pulse-green"></span>
+          <span>Next-Gen WhatsApp REST API • 100% SendBuddy Compatible</span>
+        </div>
+        <h1 class="hero-title">
+          Automate WhatsApp at Scale with <span class="text-gradient-wa">Zero Number Bans</span>
+        </h1>
+        <p class="hero-desc">
+          The all-in-one Multi-Instance WhatsApp Gateway built for businesses, agencies, and software developers. Integrate instant WhatsApp messaging into your <strong>VB.NET, C#, PHP, or Python</strong> desktop software in minutes.
+        </p>
+
+        <div class="hero-actions">
+          <a href="user.html" class="btn btn-primary btn-large">
+            <span>🚀 Open User Workspace</span>
+          </a>
+          <a href="./" class="btn btn-secondary btn-large">
+            <span>⚙️ Launch Admin Console</span>
+          </a>
+          <a href="#demo" class="btn btn-text">
+            <span>Watch Live Simulator ↓</span>
+          </a>
+        </div>
+
+        <div class="hero-trust-row">
+          <div class="trust-item">
+            <span class="trust-icon">🛡️</span>
+            <span>Smart Anti-Ban Jitter (4.5s)</span>
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">⚡</span>
+            <span>Instant SendBuddy URL Drop-in</span>
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">📱</span>
+            <span>Multi-Tenant Isolated Instances</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- HERO VISUAL: INTERACTIVE WHATSAPP WEB SIMULATOR -->
+      <div class="landing-hero-visual" id="demo">
+        <div class="wa-simulator-card">
+          <!-- WhatsApp Phone/Web Header -->
+          <div class="wa-sim-header">
+            <div class="wa-sim-avatar">
+              <img src="https://api.dicebear.com/7.x/bottts/svg?seed=SafeVaultBot" alt="Bot Avatar" />
+              <span class="online-indicator"></span>
+            </div>
+            <div class="wa-sim-user">
+              <h4>SafeVault WhatsApp Gateway</h4>
+              <span class="wa-sim-status" id="simStatus">online • API Ready</span>
+            </div>
+            <div class="wa-sim-actions">
+              <span title="Search">🔍</span>
+              <span title="Menu">⋮</span>
+            </div>
+          </div>
+
+          <!-- WhatsApp Chat Feed -->
+          <div class="wa-sim-chat" id="simChatFeed">
+            <div class="wa-sim-date"><span>TODAY</span></div>
+
+            <div class="wa-bubble wa-bubble-in">
+              <p>Hello! Can I send automated WhatsApp receipts and reminders from my desktop software?</p>
+              <span class="wa-bubble-time">10:42 AM</span>
+            </div>
+
+            <div class="wa-bubble wa-bubble-out">
+              <p>Yes! With SafeVault WhatsApp API, simply call our SendBuddy-compatible endpoint from VB.NET or C#:</p>
+              <code class="wa-bubble-code">GET /api/send?number=91XXXXXXXXXX&amp;type=text&amp;message=Your+Message&amp;instance_id=CA81914C&amp;access_token=...</code>
+              <span class="wa-bubble-time">10:42 AM <span class="wa-ticks">✓✓</span></span>
+            </div>
+
+            <div class="wa-bubble wa-bubble-in">
+              <p>Does it have anti-ban protection for bulk marketing broadcasts?</p>
+              <span class="wa-bubble-time">10:43 AM</span>
+            </div>
+
+            <div class="wa-bubble wa-bubble-out" id="animatedBubble">
+              <p>⚡ Absolutely! The built-in <strong>Anti-Ban Jitter Engine</strong> randomizes intervals (2.5s - 4.5s) to mimic human typing and protect your WhatsApp number.</p>
+              <span class="wa-bubble-time">10:43 AM <span class="wa-ticks">✓✓</span></span>
+            </div>
+
+            <div id="simTypingIndicator" class="wa-typing-bubble hidden">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+
+          <!-- Interactive Simulator Input -->
+          <form id="simInputForm" class="wa-sim-footer">
+            <button type="button" class="sim-btn-icon" title="Emoji">😊</button>
+            <button type="button" class="sim-btn-icon" title="Attach">📎</button>
+            <input type="text" id="simTextInput" placeholder="Type a message to test live simulator..." autocomplete="off" />
+            <button type="submit" class="sim-send-btn" title="Send Message">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- METRICS / STATS COUNTER                        -->
+  <!-- ============================================== -->
+  <section class="landing-stats">
+    <div class="stats-container">
+      <div class="stat-box">
+        <h3 class="stat-number">99.9%</h3>
+        <p class="stat-label">Session Uptime SLA</p>
+      </div>
+      <div class="stat-box">
+        <h3 class="stat-number">4.5s</h3>
+        <p class="stat-label">Anti-Ban Safe Jitter</p>
+      </div>
+      <div class="stat-box">
+        <h3 class="stat-number">100%</h3>
+        <p class="stat-label">SendBuddy Compatible</p>
+      </div>
+      <div class="stat-box">
+        <h3 class="stat-number">Multi-Tenant</h3>
+        <p class="stat-label">Isolated Client Accounts</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- FEATURES GRID                                  -->
+  <!-- ============================================== -->
+  <section id="features" class="landing-section">
+    <div class="section-container">
+      <div class="section-header text-center">
+        <div class="section-tag">Enterprise Capabilities</div>
+        <h2>Engineered for High-Reliability Automation</h2>
+        <p>Everything your software needs to automate customer messaging on WhatsApp without third-party vendor limits.</p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          </div>
+          <h3>Multi-Instance Architecture</h3>
+          <p>Run dozens of distinct WhatsApp accounts concurrently on a single VPS server. Each client gets their own 13-character Instance ID and secure 24-character Access Token.</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card highlight-card">
+          <div class="feature-icon-box">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3>Anti-Ban Smart Jitter Protection</h3>
+          <p>Never trigger spam filters. The built-in rate-limiter introduces randomized human delays (2.5s - 4.5s) between consecutive bulk messages with automated typing simulation.</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <h3>100% SendBuddy Drop-In API</h3>
+          <p>Existing desktop software already coded for SendBuddy? Change only the base URL! Supports standard <code>/api/send?number=...&amp;message=...&amp;instance_id=...&amp;access_token=...</code>.</p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <h3>Client Standalone QR Pairing</h3>
+          <p>Send your clients a white-label pairing link (<code>/scan.html?instance_id=...</code>) so they can link their phone securely from anywhere without accessing your server or admin portal.</p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3>Multi-User Private Workspaces</h3>
+          <p>Allow clients to register and log in to their own private WhatsApp dashboard. Users manage their personal instance, view their status, and send broadcasts with complete isolation.</p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3>Real-Time Live Delivery Tracker</h3>
+          <p>Monitor live delivery logs, Sent vs Failed counts, and diagnostic error codes. If an unregistered number is submitted, the system flags it without halting the bulk queue.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- CODE PLAYGROUND / INTEGRATION                   -->
+  <!-- ============================================== -->
+  <section id="code" class="landing-section bg-surface">
+    <div class="section-container">
+      <div class="section-header text-center">
+        <div class="section-tag">Developer Integration</div>
+        <h2>One API Call. Any Programming Language.</h2>
+        <p>Integrate WhatsApp messaging into your existing desktop or web applications with a single HTTP GET or POST request.</p>
+      </div>
+
+      <div class="code-playground-box">
+        <div class="code-tabs-header">
+          <div class="code-tabs">
+            <button class="code-tab-btn active" data-lang="vb">VB.NET</button>
+            <button class="code-tab-btn" data-lang="csharp">C# (.NET)</button>
+            <button class="code-tab-btn" data-lang="php">PHP</button>
+            <button class="code-tab-btn" data-lang="node">Node.js</button>
+            <button class="code-tab-btn" data-lang="python">Python</button>
+            <button class="code-tab-btn" data-lang="curl">cURL</button>
+          </div>
+          <button id="btnCopyCode" class="btn-copy-code" type="button">📋 Copy Snippet</button>
+        </div>
+
+        <div class="code-editor-body">
+          <!-- VB.NET -->
+          <pre id="codeSnippet-vb" class="code-content active"><code>' VB.NET Desktop Software Example (WinForms / WPF)
+Dim strMobileNo As String = "918140349408"
+Dim strMessage As String = Uri.EscapeDataString("Hello! Your SafeVault invoice is ready.")
+Dim instanceId As String = "CA81914C6960A"
+Dim accessToken As String = "c08e9e5711ae6249ac9a966e"
+
+Dim apiUrl As String = String.Format( _
+    "http://93.127.198.184/whatsapp_api/api/send?number={0}&amp;type=text&amp;message={1}&amp;instance_id={2}&amp;access_token={3}", _
+    strMobileNo, strMessage, instanceId, accessToken)
+
+Using client As New System.Net.WebClient()
+    Dim response As String = client.DownloadString(apiUrl)
+    MessageBox.Show("WhatsApp Dispatch: " &amp; response)
+End Using</code></pre>
+
+          <!-- C# -->
+          <pre id="codeSnippet-csharp" class="code-content"><code>// C# .NET Integration
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+class Program {
+    static async Task Main() {
+        var client = new HttpClient();
+        string phone = "918140349408";
+        string msg = Uri.EscapeDataString("Hello from SafeVault C# Integration!");
+        string instanceId = "CA81914C6960A";
+        string token = "c08e9e5711ae6249ac9a966e";
+
+        string url = $"http://93.127.198.184/whatsapp_api/api/send?number={phone}&amp;type=text&amp;message={msg}&amp;instance_id={instanceId}&amp;access_token={token}";
+        var response = await client.GetStringAsync(url);
+        Console.WriteLine(response);
+    }
+}</code></pre>
+
+          <!-- PHP -->
+          <pre id="codeSnippet-php" class="code-content"><code>&lt;?php
+// PHP cURL Example
+$number      = '918140349408';
+$message     = urlencode('Your order has been shipped via SafeVault Logistics.');
+$instance_id = 'CA81914C6960A';
+$access_token= 'c08e9e5711ae6249ac9a966e';
+
+$url = "http://93.127.198.184/whatsapp_api/api/send?number={$number}&amp;type=text&amp;message={$message}&amp;instance_id={$instance_id}&amp;access_token={$access_token}";
+
+$response = file_get_contents($url);
+$result = json_decode($response, true);
+
+if ($result['status'] === 'success') {
+    echo "Message delivered! Message ID: " . $result['data']['id'];
+}
+?&gt;</code></pre>
+
+          <!-- Node.js -->
+          <pre id="codeSnippet-node" class="code-content"><code>// Node.js (fetch)
+const number = '918140349408';
+const message = encodeURIComponent('Hello from SafeVault Node.js client!');
+const instanceId = 'CA81914C6960A';
+const accessToken = 'c08e9e5711ae6249ac9a966e';
+
+const url = `http://93.127.198.184/whatsapp_api/api/send?number=${number}&amp;type=text&amp;message=${message}&amp;instance_id=${instanceId}&amp;access_token=${accessToken}`;
+
+fetch(url)
+  .then(res =&gt; res.json())
+  .then(data =&gt; console.log('WhatsApp Delivery:', data))
+  .catch(err =&gt; console.error('Error:', err));</code></pre>
+
+          <!-- Python -->
+          <pre id="codeSnippet-python" class="code-content"><code># Python Requests
+import requests
+
+params = {
+    'number': '918140349408',
+    'type': 'text',
+    'message': 'Hello from SafeVault Python Bot!',
+    'instance_id': 'CA81914C6960A',
+    'access_token': 'c08e9e5711ae6249ac9a966e'
+}
+
+response = requests.get('http://93.127.198.184/whatsapp_api/api/send', params=params)
+data = response.json()
+print("Delivery Status:", data.get('status'))</code></pre>
+
+          <!-- cURL -->
+          <pre id="codeSnippet-curl" class="code-content"><code># cURL Command Line
+curl -G "http://93.127.198.184/whatsapp_api/api/send" \
+  --data-urlencode "number=918140349408" \
+  --data-urlencode "type=text" \
+  --data-urlencode "message=Hello from SafeVault cURL!" \
+  --data-urlencode "instance_id=CA81914C6960A" \
+  --data-urlencode "access_token=c08e9e5711ae6249ac9a966e"</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- HOW IT WORKS (3 STEPS)                         -->
+  <!-- ============================================== -->
+  <section class="landing-section">
+    <div class="section-container">
+      <div class="section-header text-center">
+        <div class="section-tag">Quick Setup</div>
+        <h2>Up and Running in 3 Minutes</h2>
+        <p>No Meta Facebook Business Verification required. Connect your real WhatsApp number directly.</p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-badge">01</div>
+          <h3>Create Instance</h3>
+          <p>Login to the console and click <strong>Create Instance</strong> to get a unique Instance ID and Access Token for each customer.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-badge">02</div>
+          <h3>Scan QR Code</h3>
+          <p>Open WhatsApp on your phone, go to <strong>Linked Devices</strong>, and scan the pairing QR code from the console or shareable link.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-badge">03</div>
+          <h3>Send Anywhere</h3>
+          <p>Call the SendBuddy-compatible REST API from your desktop software, billing system, or script to dispatch instant messages.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- PRICING / TIERS                                -->
+  <!-- ============================================== -->
+  <section id="pricing" class="landing-section bg-surface">
+    <div class="section-container">
+      <div class="section-header text-center">
+        <div class="section-tag">Transparent Value</div>
+        <h2>Flexible SaaS Plans for Any Scale</h2>
+        <p>Host on your own VPS with zero monthly per-message WhatsApp API surcharges.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <!-- Tier 1 -->
+        <div class="pricing-card">
+          <div class="pricing-header">
+            <h3>Starter</h3>
+            <p class="pricing-desc">Perfect for single businesses and shops.</p>
+            <div class="price-val">Free <span>/ Self-Hosted</span></div>
+          </div>
+          <ul class="pricing-features">
+            <li>✓ 1 WhatsApp Instance</li>
+            <li>✓ Unlimited Single Messages</li>
+            <li>✓ SendBuddy API Endpoint</li>
+            <li>✓ Local Session Persistence</li>
+            <li>✓ Community Support</li>
+          </ul>
+          <a href="user.html" class="btn btn-secondary w-full">Start Free</a>
+        </div>
+
+        <!-- Tier 2 (Featured) -->
+        <div class="pricing-card featured-plan">
+          <div class="plan-tag">Most Popular</div>
+          <div class="pricing-header">
+            <h3>Business Pro</h3>
+            <p class="pricing-desc">For growing companies and agencies.</p>
+            <div class="price-val">$29 <span>/ Month</span></div>
+          </div>
+          <ul class="pricing-features">
+            <li>✓ Up to 10 WhatsApp Instances</li>
+            <li>✓ Anti-Ban Smart Jitter (4.5s)</li>
+            <li>✓ Bulk Broadcast Messenger</li>
+            <li>✓ Standalone Client QR Pages</li>
+            <li>✓ Multi-User Private Logins</li>
+            <li>✓ Priority WhatsApp Delivery</li>
+          </ul>
+          <a href="user.html" class="btn btn-primary w-full">Get Business Pro</a>
+        </div>
+
+        <!-- Tier 3 -->
+        <div class="pricing-card">
+          <div class="pricing-header">
+            <h3>Enterprise</h3>
+            <p class="pricing-desc">For SaaS platforms and multi-branch systems.</p>
+            <div class="price-val">$79 <span>/ Month</span></div>
+          </div>
+          <ul class="pricing-features">
+            <li>✓ Unlimited WhatsApp Instances</li>
+            <li>✓ Dedicated High-Performance VPS</li>
+            <li>✓ Custom White-label Domain</li>
+            <li>✓ Webhook Integration for Replies</li>
+            <li>✓ Dedicated 24/7 SLA Support</li>
+          </ul>
+          <a href="./" class="btn btn-secondary w-full">Contact Sales</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- FAQ ACCORDION                                  -->
+  <!-- ============================================== -->
+  <section id="faq" class="landing-section">
+    <div class="section-container max-w-2xl">
+      <div class="section-header text-center">
+        <div class="section-tag">Frequently Asked Questions</div>
+        <h2>Got Questions? We Have Answers.</h2>
+      </div>
+
+      <div class="faq-accordion">
+        <details class="faq-item" open>
+          <summary class="faq-question">Will my WhatsApp number get banned for sending messages?</summary>
+          <div class="faq-answer">
+            <p>Our platform includes a built-in <strong>Anti-Ban Jitter Engine</strong> that enforces a randomized 2.5s to 4.5s delay between consecutive messages, along with typing simulation. As long as you respect user consent and avoid sending unsolicited spam to thousands of strangers, your numbers remain safe.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">Is this compatible with SendBuddy software?</summary>
+          <div class="faq-answer">
+            <p>Yes, 100%! The URL format <code>/api/send?number=...&amp;type=text&amp;message=...&amp;instance_id=...&amp;access_token=...</code> is identical to the SendBuddy API specifications. You only need to replace the base server domain in your software.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">Do my clients need access to my server to link their WhatsApp?</summary>
+          <div class="faq-answer">
+            <p>No. You can provide your clients with their dedicated <strong>Client Scan Link</strong> (e.g. <code>/scan.html?instance_id=...&amp;access_token=...</code>). They scan the QR code on a private, distraction-free pairing page without ever touching your admin dashboard.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">What happens if the server or PM2 restarts?</summary>
+          <div class="faq-answer">
+            <p>Sessions are stored locally using LocalAuth persistence. When PM2 or the VPS reboots, all previously linked instances reconnect automatically in the background without needing to re-scan.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- CTA BANNER                                     -->
+  <!-- ============================================== -->
+  <section class="landing-cta-banner">
+    <div class="cta-banner-container">
+      <h2>Ready to Supercharge Your WhatsApp Messaging?</h2>
+      <p>Start dispatching automated messages, receipts, OTPs, and broadcasts directly from your software today.</p>
+      <div class="cta-banner-buttons">
+        <a href="user.html" class="btn btn-primary btn-large">Open User Workspace</a>
+        <a href="./" class="btn btn-secondary btn-large">Open Admin Console</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- FOOTER                                         -->
+  <!-- ============================================== -->
+  <footer class="landing-footer">
+    <div class="landing-footer-container">
+      <div class="footer-col-brand">
+        <div class="landing-brand-text">
+          <h2>SafeVault <span>WhatsApp API</span></h2>
+          <p>Production-ready WhatsApp Automation microservice for modern businesses and desktop software.</p>
+        </div>
+        <p class="copyright-text">© 2026 SafeVault Engineering. All rights reserved.</p>
+      </div>
+
+      <div class="footer-links-group">
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <a href="./">Admin Console</a>
+          <a href="user.html">User Portal</a>
+          <a href="scan.html">Client Pairing</a>
+          <a href="API_DOCS.md" target="_blank">API Documentation</a>
+        </div>
+        <div class="footer-col">
+          <h4>Integration</h4>
+          <a href="#code">VB.NET Desktop SDK</a>
+          <a href="#code">C# .NET Library</a>
+          <a href="#code">PHP Webhooks</a>
+          <a href="#code">Python API</a>
+        </div>
+        <div class="footer-col">
+          <h4>Connect</h4>
+          <a href="https://github.com/ShvInfotech/whatsapp_api" target="_blank">GitHub Repository ↗</a>
+          <a href="https://wa.me/" target="_blank">WhatsApp Support</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification -->
+  <div id="landingToast" class="toast hidden"></div>
+
+  <!-- Landing Script -->
+  <script>
+    // Code snippet tab switching
+    document.querySelectorAll('.code-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.code-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const target = document.getElementById(`codeSnippet-${btn.dataset.lang}`);
+        if (target) target.classList.add('active');
+      });
+    });
+
+    // Copy code snippet
+    const btnCopyCode = document.getElementById('btnCopyCode');
+    if (btnCopyCode) {
+      btnCopyCode.addEventListener('click', () => {
+        const activeCode = document.querySelector('.code-content.active code');
+        if (activeCode) {
+          navigator.clipboard.writeText(activeCode.textContent).then(() => {
+            btnCopyCode.textContent = '✓ Copied!';
+            setTimeout(() => { btnCopyCode.textContent = '📋 Copy Snippet'; }, 2000);
+          });
+        }
+      });
+    }
+
+    // Interactive WhatsApp Chat Simulator
+    const simForm = document.getElementById('simInputForm');
+    const simInput = document.getElementById('simTextInput');
+    const chatFeed = document.getElementById('simChatFeed');
+    const typingIndicator = document.getElementById('simTypingIndicator');
+
+    if (simForm && simInput && chatFeed) {
+      simForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = simInput.value.trim();
+        if (!text) return;
+
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // User outgoing bubble
+        const userBubble = document.createElement('div');
+        userBubble.className = 'wa-bubble wa-bubble-out';
+        userBubble.innerHTML = `<p>${escapeHtml(text)}</p><span class="wa-bubble-time">${timeStr} <span class="wa-ticks">✓✓</span></span>`;
+        chatFeed.insertBefore(userBubble, typingIndicator);
+        simInput.value = '';
+        chatFeed.scrollTop = chatFeed.scrollHeight;
+
+        // Show typing indicator
+        if (typingIndicator) {
+          typingIndicator.classList.remove('hidden');
+          chatFeed.scrollTop = chatFeed.scrollHeight;
+        }
+
+        // Simulate Bot Automated Response
+        setTimeout(() => {
+          if (typingIndicator) typingIndicator.classList.add('hidden');
+
+          const botResponses = [
+            `✓ Message received via API! Delivered with Anti-Ban delay.`,
+            `⚡ Instant WhatsApp dispatch confirmed. Check your instance logs!`,
+            `🤖 Automated response from SafeVault WhatsApp gateway. Status: 200 OK.`,
+            `📋 SendBuddy API URL generated successfully for this recipient.`
+          ];
+          const replyText = botResponses[Math.floor(Math.random() * botResponses.length)];
+
+          const botBubble = document.createElement('div');
+          botBubble.className = 'wa-bubble wa-bubble-in';
+          botBubble.innerHTML = `<p>${replyText}</p><span class="wa-bubble-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+          chatFeed.insertBefore(botBubble, typingIndicator);
+          chatFeed.scrollTop = chatFeed.scrollHeight;
+        }, 1200);
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
