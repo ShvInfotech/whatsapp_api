@@ -10,10 +10,10 @@ let parsedNumbers = [];
 let previousConnected = null;
 let statusPollingTimer = null;
 
-// Detect base URL dynamically for subpaths (e.g. /whatsapp_api/) or root deployments
+// Detect base URL dynamically for subpaths (e.g. /iot/ or /whatsapp_api/) or root deployments
 const getApiBaseUrl = () => {
   if (window.API_BASE_URL !== undefined) return window.API_BASE_URL;
-  const path = window.location.pathname.replace(/\/(index\.(php|html)|dashboard)?\/?$/, '');
+  const path = window.location.pathname.replace(/\/(index|admin|dashboard)?(\.(php|html))?\/?$/, '');
   return path || '';
 };
 const API_BASE_URL = getApiBaseUrl();
@@ -489,9 +489,29 @@ function setupInputs() {
     numberCountBadge.textContent = `${parsedNumbers.length} Number${parsedNumbers.length === 1 ? '' : 's'}`;
   });
 
+  const bulkPreview = document.getElementById('bulkMessagePreview');
+  const bulkPreviewTime = document.getElementById('bulkPreviewTime');
+  const singlePreview = document.getElementById('singleMessagePreview');
+  const singlePreviewTime = document.getElementById('singlePreviewTime');
+
   bulkMessageInput.addEventListener('input', () => {
     charCountBadge.textContent = `${bulkMessageInput.value.length} Chars`;
+    if (bulkPreview) {
+      bulkPreview.textContent = bulkMessageInput.value || 'Type your message above to see preview...';
+    }
+    if (bulkPreviewTime) {
+      bulkPreviewTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
   });
+
+  if (singleMessage && singlePreview) {
+    singleMessage.addEventListener('input', () => {
+      singlePreview.textContent = singleMessage.value || 'Type your message above to see preview...';
+      if (singlePreviewTime) {
+        singlePreviewTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+    });
+  }
 
   btnSampleNumbers.addEventListener('click', () => {
     bulkNumbersInput.value = '918140349408\n919727899812';
