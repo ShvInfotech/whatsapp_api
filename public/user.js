@@ -16,14 +16,22 @@ userTabs.forEach((tab) => tab.addEventListener('click', () => {
 
 const getApiBaseUrl = () => {
   if (window.API_BASE_URL !== undefined) return window.API_BASE_URL;
-  const path = window.location.pathname.replace(/\/(user\.(php|html)|index\.(php|html)|dashboard)?\/?$/, '');
+  const path = window.location.pathname.replace(/\/(user|scan|index|dashboard)?(\.(php|html))?\/?$/, '');
   return path || '';
 };
 const API_BASE_URL = getApiBaseUrl();
 
 async function api(endpoint, options) {
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-  return fetch(url, { credentials: 'include', ...options });
+  const response = await fetch(url, { credentials: 'include', ...options });
+  response.safeJson = async () => {
+    try {
+      return await response.json();
+    } catch (_) {
+      return { success: false, error: `Server error (${response.status})` };
+    }
+  };
+  return response;
 }
 function showError(element, message) { element.textContent = message; element.classList.remove('hidden'); }
 function showLogin() { loginForm.classList.remove('hidden'); registerForm.classList.add('hidden'); }
@@ -35,7 +43,7 @@ document.getElementById('showUserLogin').addEventListener('click', showLogin);
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault(); userAuthError.classList.add('hidden');
   const response = await api('/api/user-auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: userLoginUsername.value, password: userLoginPassword.value }) });
-  const data = await response.json();
+  const data = await response.safeJson();
   if (!response.ok) return showError(userAuthError, data.error || 'Login failed.');
   openDashboard(data.data);
 });
@@ -43,7 +51,7 @@ loginForm.addEventListener('submit', async (event) => {
 registerForm.addEventListener('submit', async (event) => {
   event.preventDefault(); registerError.classList.add('hidden');
   const response = await api('/api/user-auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: registerFullName.value, username: registerUsername.value, email: registerEmail.value, password: registerPassword.value }) });
-  const data = await response.json();
+  const data = await response.safeJson();
   if (!response.ok) return showError(registerError, data.error || 'Registration failed.');
   showLogin(); userLoginUsername.value = registerUsername.value; userLoginPassword.value = ''; showError(userAuthError, 'Registration complete. Please login.');
 });
@@ -51,8 +59,8 @@ registerForm.addEventListener('submit', async (event) => {
 async function openDashboard(user) {
   auth.classList.add('hidden'); dashboard.classList.remove('hidden');
   document.getElementById('welcomeUser').textContent = `Signed in as ${user.fullName} (@${user.username})`;
-  const response = await api('/api/user/instances'); const data = await response.json();
-  if (!response.ok || !data.data.length) {
+  const response = await api('/api/user/instances'); const data = await response.safeJson();
+  if (!response.ok || !data.data || !data.data.length) {
     document.getElementById('instanceStatus').textContent = data.error || 'Your WhatsApp instance is unavailable.';
     document.getElementById('userNavStatus').textContent = 'Instance unavailable';
     return;
@@ -64,7 +72,7 @@ async function openDashboard(user) {
 async function refreshQr() {
   if (!myInstance) return;
   try {
-    const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/qr`); const data = await response.json();
+    const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/qr`); const data = await response.safeJson();
     if (!response.ok) throw new Error(data.error);
     const info = data.data; document.getElementById('instanceStatus').textContent = `Status: ${info.status}`;
     document.getElementById('userNavStatus').textContent = info.isConnected ? 'WhatsApp Connected' : (info.qrReady ? 'Scan QR to Connect' : 'Preparing WhatsApp');
@@ -113,7 +121,7 @@ document.getElementById('userSingleForm').addEventListener('submit', async (even
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phoneNumber: document.getElementById('userSinglePhone').value.trim(), message: document.getElementById('userSingleMessage').value.trim() })
     });
-    const data = await response.json();
+    const data = await response.safeJson();
     if (!response.ok) throw new Error(data.error || 'Message could not be sent.');
     setResult('userSingleResult', 'Message sent successfully.');
     event.target.reset();
@@ -168,7 +176,7 @@ document.getElementById('userBulkForm').addEventListener('submit', async (event)
   try {
     const delayMs = Number(userDelayRange.value) * 1000;
     const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/send-bulk`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phoneNumbers, message, options: { minDelayMs: Math.max(1000, delayMs - 500), maxDelayMs: delayMs + 500 } }) });
-    const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Bulk messages could not be sent.');
+    const data = await response.safeJson(); if (!response.ok) throw new Error(data.error || 'Bulk messages could not be sent.');
     const results = data.data?.results || []; let sent = 0; let failed = 0;
     document.getElementById('userLogTableBody').innerHTML = results.map((result, index) => { const ok = result.status === 'sent'; if (ok) sent += 1; else failed += 1; return `<tr><td>${index + 1}</td><td>${result.phoneNumber}</td><td class="${ok ? 'status-sent' : 'status-failed'}">${ok ? 'Sent' : 'Failed'}</td><td>${ok ? 'Delivered to WhatsApp' : (result.error || 'Could not send')}</td></tr>`; }).join('');
     updateUserBulkProgress(results.length, phoneNumbers.length, sent, failed); state.className = 'badge badge-completed'; state.textContent = 'Completed'; setResult('userBulkResult', data.message || 'Bulk sending completed.');
@@ -179,4 +187,12 @@ document.getElementById('userBulkForm').addEventListener('submit', async (event)
 updateUserBulkCounts();
 updateUserDelay();
 
-(async () => { const response = await api('/api/user-auth/me'); if (response.ok) openDashboard((await response.json()).data); })();
+(async () => {
+  try {
+    const response = await api('/api/user-auth/me');
+    if (response.ok) {
+      const data = await response.safeJson();
+      if (data && data.data) openDashboard(data.data);
+    }
+  } catch (_) {}
+})();
