@@ -111,6 +111,10 @@
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             Bulk Messenger
           </button>
+          <button class="tab-btn" data-user-tab="apiDocsTab" type="button">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            API Documentation
+          </button>
         </div>
       </nav>
     </header>
@@ -271,6 +275,235 @@
       </section>
 
       <section id="bulkMessageTab" class="user-tab-panel"><div class="panel-header"><div><h2>Bulk WhatsApp Dispatcher</h2><p>Send bulk messages from your private WhatsApp account with safe randomized delays.</p></div><div class="antiban-badge">Anti-Ban Protection Enabled</div></div><div class="grid-2col"><div class="card"><form id="userBulkForm"><div class="card-header"><h3>1. Add Contact Numbers</h3><span id="userNumberCountBadge" class="count-badge">0 Numbers</span></div><div class="form-group"><label for="userBulkNumbers">Enter / Paste Phone Numbers <span class="label-hint">(One per line, comma, or space separated)</span></label><textarea id="userBulkNumbers" rows="6" placeholder="919876543210&#10;919876543211" required></textarea><div class="textarea-actions"><button id="userClearNumbers" type="button" class="btn-text danger">Clear</button></div></div><div class="card-header mt-4"><h3>2. Compose Message</h3><span id="userCharCountBadge" class="count-badge">0 Chars</span></div><div class="form-group"><label for="userBulkMessage">Message Content</label><div class="formatting-bar"><button type="button" class="fmt-btn" data-user-fmt="bold" title="Bold"><b>B</b></button><button type="button" class="fmt-btn" data-user-fmt="italic" title="Italic"><i>I</i></button><button type="button" class="fmt-btn" data-user-fmt="strike" title="Strikethrough"><s>S</s></button><button type="button" class="fmt-btn" data-user-fmt="mono" title="Monospace"><code>{ }</code></button></div><textarea id="userBulkMessage" rows="5" placeholder="Type one message for all contacts..." required></textarea><div class="wa-preview-box"><span class="preview-label">📱 WhatsApp Bubble Preview</span><div class="wa-bubble wa-bubble-out" style="max-width: 100%; margin-top: 6px;"><p id="userBulkPreview">Type message to preview...</p><span class="wa-bubble-time"><span id="userBulkPreviewTime">Just now</span> <span class="wa-ticks">✓✓</span></span></div></div></div><div class="card-header mt-4"><h3>3. Sending Speed &amp; Delay</h3><span id="userDelayDisplay" class="count-badge highlight">4 - 5 Seconds</span></div><div class="delay-box"><div class="slider-row"><label for="userDelayRange">Safe Delay Between Messages:</label><span id="userSliderVal" class="slider-value">4.5s</span></div><input type="range" id="userDelayRange" min="2" max="10" step="0.5" value="4.5"><p class="delay-note">A randomized delay helps keep your WhatsApp activity natural.</p></div><div class="action-buttons"><button id="userSendBulk" class="btn btn-primary btn-large" type="submit">Start Sending Messages</button></div></form></div><div class="card"><div class="card-header"><h3>Live Execution &amp; Delivery Report</h3><span id="userExecStateBadge" class="badge badge-idle">Ready</span></div><div class="progress-section"><div class="progress-info"><span id="userProgressSummary">0 of 0 Completed</span><span id="userProgressPercent">0%</span></div><div class="progress-track"><div id="userProgressBar" class="progress-fill" style="width: 0%"></div></div></div><div class="stats-row"><div class="stat-card"><span class="stat-num" id="userStatTotal">0</span><span class="stat-lbl">Total</span></div><div class="stat-card stat-success"><span class="stat-num" id="userStatSent">0</span><span class="stat-lbl">Sent</span></div><div class="stat-card stat-failed"><span class="stat-num" id="userStatFailed">0</span><span class="stat-lbl">Failed</span></div><div class="stat-card"><span class="stat-num" id="userStatRemaining">0</span><span class="stat-lbl">Remaining</span></div></div><div class="table-header-row"><h4>Delivery Log</h4><button id="userClearLog" class="btn-text" type="button">Clear Log</button></div><div class="table-container"><table class="log-table"><thead><tr><th>#</th><th>Number</th><th>Status</th><th>Details</th></tr></thead><tbody id="userLogTableBody"><tr class="empty-row"><td colspan="4">No messages sent yet. Add numbers and click Start Sending.</td></tr></tbody></table></div><div id="userBulkResult" class="result-box hidden"></div></div></div></section>
+
+      <!-- ============================================== -->
+      <!-- API DOCUMENTATION TAB                          -->
+      <!-- ============================================== -->
+      <section id="apiDocsTab" class="user-tab-panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-badge-row">
+              <span class="tag-pill tag-instant">⚡ Universal REST API</span>
+              <span class="tag-pill tag-secure">🔑 SendBuddy Drop-In Compatible</span>
+            </div>
+            <h2>Developer API &amp; Integration Gateway</h2>
+            <p>Integrate WhatsApp messaging into your VB.NET, C#, PHP, Python, or Web application using your personal instance.</p>
+          </div>
+          <div class="api-docs-header-actions">
+            <a href="API_DOCS.md" target="_blank" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Open Full Markdown Docs ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- 1. Live Credentials Card -->
+        <div class="api-credentials-card">
+          <div class="api-cred-header">
+            <div class="api-cred-title">
+              <span class="api-key-icon">🔑</span>
+              <div>
+                <h3>Your Live Instance Credentials</h3>
+                <p>These credentials authenticate your API calls. Keep your Access Token confidential.</p>
+              </div>
+            </div>
+            <div id="docConnectionStatus" class="status-pill status-loading">
+              <span class="status-dot"></span>
+              <span id="docStatusText">Checking Status...</span>
+            </div>
+          </div>
+
+          <div class="api-cred-grid">
+            <div class="api-cred-item">
+              <div class="api-cred-label">INSTANCE ID</div>
+              <div class="api-cred-val-box">
+                <code id="docInstanceId">Loading...</code>
+                <button type="button" class="btn-copy-sm" id="btnCopyDocInstanceId" title="Copy Instance ID">Copy</button>
+              </div>
+            </div>
+
+            <div class="api-cred-item">
+              <div class="api-cred-label">ACCESS TOKEN</div>
+              <div class="api-cred-val-box">
+                <code id="docAccessToken">••••••••••••••••••••</code>
+                <button type="button" class="btn-copy-sm" id="btnToggleToken" title="Show/Hide Token">Show</button>
+                <button type="button" class="btn-copy-sm" id="btnCopyDocToken" title="Copy Access Token">Copy</button>
+              </div>
+            </div>
+
+            <div class="api-cred-item">
+              <div class="api-cred-label">API BASE URL</div>
+              <div class="api-cred-val-box">
+                <code id="docBaseUrl">Loading...</code>
+                <button type="button" class="btn-copy-sm" id="btnCopyDocBaseUrl" title="Copy Base URL">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. SendBuddy Universal Dispatch Card -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <span class="badge-get-post">GET / POST</span>
+              <code class="endpoint-name">/api/send</code>
+            </div>
+            <span class="tag-pill tag-instant">SendBuddy Drop-In</span>
+          </div>
+          <p class="text-secondary" style="font-size: 0.9rem; margin-top: 0.4rem;">
+            Instant WhatsApp message dispatcher. Compatible with existing SendBuddy desktop integrations (VB.NET, C#, Python, PHP). Call via standard HTTP GET query parameters or POST body.
+          </p>
+
+          <div class="live-url-box">
+            <div class="live-url-top">
+              <span class="live-url-badge">⚡ Ready-to-Use Live URL</span>
+              <button type="button" class="btn btn-primary btn-xs" id="btnCopyLiveUrl">📋 Copy Full URL</button>
+            </div>
+            <pre class="live-url-code"><code id="docLiveUrl">Generating your custom API link...</code></pre>
+          </div>
+
+          <div class="table-header-row mt-4">
+            <h4>Request Parameters</h4>
+          </div>
+          <div class="table-container">
+            <table class="log-table">
+              <thead>
+                <tr>
+                  <th>Parameter</th>
+                  <th>Type</th>
+                  <th>Required</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>number</code> (or <code>phone</code>)</td>
+                  <td><span class="type-badge">string</span></td>
+                  <td><span class="req-badge">Required</span></td>
+                  <td>Recipient mobile number with country code (e.g. <code>919876543210</code>).</td>
+                </tr>
+                <tr>
+                  <td><code>message</code></td>
+                  <td><span class="type-badge">string</span></td>
+                  <td><span class="req-badge">Required</span></td>
+                  <td>Text message content (URL-encoded). Supports WhatsApp formatting like <code>*bold*</code>, <code>_italic_</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>type</code></td>
+                  <td><span class="type-badge">string</span></td>
+                  <td><span class="opt-badge">Optional</span></td>
+                  <td>Message type (<code>text</code> default).</td>
+                </tr>
+                <tr>
+                  <td><code>instance_id</code></td>
+                  <td><span class="type-badge">string</span></td>
+                  <td><span class="req-badge">Required</span></td>
+                  <td>Your unique client instance ID (auto-filled).</td>
+                </tr>
+                <tr>
+                  <td><code>access_token</code></td>
+                  <td><span class="type-badge">string</span></td>
+                  <td><span class="req-badge">Required</span></td>
+                  <td>Your private instance secret authorization token (auto-filled).</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. Code Integration Examples -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <h3>Ready-to-Use Code Snippets</h3>
+            <div class="code-lang-tabs" id="docCodeTabs">
+              <button type="button" class="lang-tab-btn active" data-lang="vb">VB.NET</button>
+              <button type="button" class="lang-tab-btn" data-lang="csharp">C# (.NET)</button>
+              <button type="button" class="lang-tab-btn" data-lang="php">PHP</button>
+              <button type="button" class="lang-tab-btn" data-lang="python">Python</button>
+              <button type="button" class="lang-tab-btn" data-lang="curl">cURL</button>
+              <button type="button" class="lang-tab-btn" data-lang="js">Node.js</button>
+            </div>
+          </div>
+
+          <div class="code-snippet-container">
+            <div class="code-snippet-header">
+              <span id="docSnippetTitle" class="snippet-lang-title">VB.NET (Desktop Software)</span>
+              <button type="button" class="btn btn-secondary btn-xs" id="btnCopySnippet">Copy Code</button>
+            </div>
+            <pre class="code-snippet-pre"><code id="docSnippetCode"></code></pre>
+          </div>
+        </div>
+
+        <!-- 4. Direct REST JSON Endpoints -->
+        <div class="grid-2col mt-4">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <span class="badge badge-post">POST</span>
+                <code class="endpoint-name">/api/user/instances/{id}/send-message</code>
+              </div>
+            </div>
+            <p class="text-secondary" style="font-size: 0.85rem; margin-top: 0.3rem;">
+              Send a single message using application/json payload.
+            </p>
+            <div class="code-mini-box mt-3">
+              <div class="code-mini-lbl">Request Body (JSON):</div>
+              <pre><code>{
+  "phoneNumber": "919876543210",
+  "message": "Hello! Your invoice #1042 is ready."
+}</code></pre>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <span class="badge badge-post">POST</span>
+                <code class="endpoint-name">/api/user/instances/{id}/send-bulk</code>
+              </div>
+            </div>
+            <p class="text-secondary" style="font-size: 0.85rem; margin-top: 0.3rem;">
+              Send bulk broadcast messages with randomized Anti-Ban jitter.
+            </p>
+            <div class="code-mini-box mt-3">
+              <div class="code-mini-lbl">Request Body (JSON):</div>
+              <pre><code>{
+  "phoneNumbers": ["919876543210", "919876543211"],
+  "message": "Festival special 20% discount offer!",
+  "options": { "minDelayMs": 3000, "maxDelayMs": 5000 }
+}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Standard Response Format -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <h3>Standard API Response Format</h3>
+          </div>
+          <div class="grid-2col mt-2">
+            <div>
+              <div class="code-mini-lbl text-success">✓ 200 OK (Success Response):</div>
+              <pre class="code-mini-pre"><code>{
+  "status": "success",
+  "message": "Message sent successfully",
+  "data": {
+    "messageId": "true_919876543210@c.us_3EB0...",
+    "timestamp": 1727091234
+  }
+}</code></pre>
+            </div>
+            <div>
+              <div class="code-mini-lbl text-danger">✕ Error Response:</div>
+              <pre class="code-mini-pre"><code>{
+  "status": "error",
+  "error": "WhatsApp client is not ready. Please scan QR first.",
+  "code": "CLIENT_NOT_CONNECTED"
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   </section>
   <script src="user.js?v=2.1.0"></script>

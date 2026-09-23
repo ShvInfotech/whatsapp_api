@@ -68,6 +68,7 @@ async function openDashboard(user) {
     return;
   }
   myInstance = data.data[0]; document.getElementById('instanceName').textContent = myInstance.name;
+  initApiDocsTab(myInstance);
   refreshQr();
 }
 
@@ -80,6 +81,7 @@ async function refreshQr() {
     const info = data.data;
     const isAuthenticating = info.status === 'AUTHENTICATING';
     const isConnected = !!info.isConnected;
+    updateApiDocsStatus(isConnected, info);
 
     document.getElementById('instanceStatus').textContent = isConnected
       ? 'Status: CONNECTED'
@@ -312,6 +314,207 @@ if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
   updateUserBulkCounts();
   updateUserDelay();
 }
+
+/* ==========================================================================
+   API Documentation Tab Logic
+   ========================================================================== */
+let isTokenRevealed = false;
+let activeSnippetLang = 'vb';
+
+function getSnippets(instance) {
+  const origin = window.location.origin;
+  const id = instance?.id || 'YOUR_INSTANCE_ID';
+  const token = instance?.accessToken || 'YOUR_ACCESS_TOKEN';
+
+  return {
+    vb: {
+      title: 'VB.NET (Desktop Software / WinForms / WPF)',
+      code: `' VB.NET WhatsApp API Integration
+Dim strMobileNo As String = "919876543210"
+Dim strMessage As String = "Hello! Your invoice #1042 has been generated."
+Dim strInstance As String = "${id}"
+Dim strToken As String = "${token}"
+
+Dim requestUrl As String = "${origin}/api/send?number=" & strMobileNo & "&type=text&message=" & Uri.EscapeDataString(strMessage) & "&instance_id=" & strInstance & "&access_token=" & strToken
+
+Dim client As New System.Net.WebClient()
+Dim response As String = client.DownloadString(requestUrl)
+Console.WriteLine(response)`
+    },
+    csharp: {
+      title: 'C# .NET (Console / ASP.NET / Desktop)',
+      code: `// C# .NET WhatsApp API Integration
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+using var client = new HttpClient();
+string mobileNo = "919876543210";
+string message = "Hello! Your invoice #1042 has been generated.";
+string instanceId = "${id}";
+string accessToken = "${token}";
+
+string url = $"${origin}/api/send?number={mobileNo}&type=text&message={Uri.EscapeDataString(message)}&instance_id={instanceId}&access_token={accessToken}";
+
+string response = await client.GetStringAsync(url);
+Console.WriteLine(response);`
+    },
+    php: {
+      title: 'PHP (cURL / file_get_contents)',
+      code: `<?php
+// PHP WhatsApp API Integration
+$baseUrl = "${origin}/api/send";
+$params = [
+    'number'       => '919876543210',
+    'type'         => 'text',
+    'message'      => 'Hello! Your invoice #1042 has been generated.',
+    'instance_id'  => '${id}',
+    'access_token' => '${token}'
+];
+
+$requestUrl = $baseUrl . '?' . http_build_query($params);
+$response = file_get_contents($requestUrl);
+echo $response;
+?>`
+    },
+    python: {
+      title: 'Python (requests library)',
+      code: `# Python WhatsApp API Integration
+import requests
+
+url = "${origin}/api/send"
+params = {
+    "number": "919876543210",
+    "type": "text",
+    "message": "Hello! Your invoice #1042 has been generated.",
+    "instance_id": "${id}",
+    "access_token": "${token}"
+}
+
+response = requests.get(url, params=params)
+print(response.json())`
+    },
+    curl: {
+      title: 'cURL (Terminal / Command Line)',
+      code: `# cURL Terminal Command
+curl -X GET "${origin}/api/send?number=919876543210&type=text&message=Hello+from+API&instance_id=${id}&access_token=${token}"`
+    },
+    js: {
+      title: 'JavaScript / Node.js (fetch API)',
+      code: `// Node.js / Modern JavaScript
+const params = new URLSearchParams({
+  number: '919876543210',
+  type: 'text',
+  message: 'Hello! Your invoice #1042 has been generated.',
+  instance_id: '${id}',
+  access_token: '${token}'
+});
+
+fetch('${origin}/api/send?' + params)
+  .then(res => res.json())
+  .then(data => console.log('API Response:', data))
+  .catch(err => console.error('API Error:', err));`
+    }
+  };
+}
+
+function renderSnippet(lang) {
+  activeSnippetLang = lang;
+  const snippets = getSnippets(myInstance);
+  const snippet = snippets[lang] || snippets.vb;
+  const titleEl = document.getElementById('docSnippetTitle');
+  const codeEl = document.getElementById('docSnippetCode');
+  if (titleEl) titleEl.textContent = snippet.title;
+  if (codeEl) codeEl.textContent = snippet.code;
+}
+
+function initApiDocsTab(instance) {
+  if (!instance) return;
+  const origin = window.location.origin;
+  const docInstanceId = document.getElementById('docInstanceId');
+  const docAccessToken = document.getElementById('docAccessToken');
+  const docBaseUrl = document.getElementById('docBaseUrl');
+  const docLiveUrl = document.getElementById('docLiveUrl');
+
+  if (docInstanceId) docInstanceId.textContent = instance.id;
+  if (docBaseUrl) docBaseUrl.textContent = origin;
+  if (docAccessToken) {
+    docAccessToken.textContent = isTokenRevealed ? instance.accessToken : '••••••••••••••••••••';
+  }
+
+  const liveUrl = `${origin}/api/send?number=91XXXXXXXXXX&type=text&message=Hello+from+Pixano+API&instance_id=${encodeURIComponent(instance.id)}&access_token=${encodeURIComponent(instance.accessToken)}`;
+  if (docLiveUrl) docLiveUrl.textContent = liveUrl;
+
+  renderSnippet(activeSnippetLang);
+}
+
+function updateApiDocsStatus(isConnected, info) {
+  const statusPill = document.getElementById('docConnectionStatus');
+  const statusText = document.getElementById('docStatusText');
+  if (!statusPill || !statusText) return;
+
+  if (isConnected) {
+    statusPill.className = 'status-pill status-connected';
+    statusText.textContent = `Connected (${info?.phone ? `+${info.phone}` : 'Active'})`;
+  } else if (info?.status === 'AUTHENTICATING') {
+    statusPill.className = 'status-pill status-loading';
+    statusText.textContent = 'Syncing...';
+  } else {
+    statusPill.className = 'status-pill status-disconnected';
+    statusText.textContent = 'Scan QR to Pair';
+  }
+}
+
+async function copyText(text, buttonEl, defaultLabel = 'Copy') {
+  try {
+    await navigator.clipboard.writeText(text);
+    buttonEl.textContent = 'Copied!';
+    buttonEl.classList.add('copied');
+    setTimeout(() => {
+      buttonEl.textContent = defaultLabel;
+      buttonEl.classList.remove('copied');
+    }, 2000);
+  } catch (_) {
+    alert('Failed to copy to clipboard.');
+  }
+}
+
+document.getElementById('btnToggleToken')?.addEventListener('click', (e) => {
+  if (!myInstance) return;
+  isTokenRevealed = !isTokenRevealed;
+  document.getElementById('docAccessToken').textContent = isTokenRevealed ? myInstance.accessToken : '••••••••••••••••••••';
+  e.target.textContent = isTokenRevealed ? 'Hide' : 'Show';
+});
+
+document.getElementById('btnCopyDocInstanceId')?.addEventListener('click', (e) => {
+  if (myInstance?.id) copyText(myInstance.id, e.target);
+});
+
+document.getElementById('btnCopyDocToken')?.addEventListener('click', (e) => {
+  if (myInstance?.accessToken) copyText(myInstance.accessToken, e.target);
+});
+
+document.getElementById('btnCopyDocBaseUrl')?.addEventListener('click', (e) => {
+  copyText(window.location.origin, e.target);
+});
+
+document.getElementById('btnCopyLiveUrl')?.addEventListener('click', (e) => {
+  const code = document.getElementById('docLiveUrl')?.textContent;
+  if (code) copyText(code, e.target, '📋 Copy Full URL');
+});
+
+document.getElementById('btnCopySnippet')?.addEventListener('click', (e) => {
+  const code = document.getElementById('docSnippetCode')?.textContent;
+  if (code) copyText(code, e.target, 'Copy Code');
+});
+
+document.getElementById('docCodeTabs')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('.lang-tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.lang-tab-btn').forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSnippet(btn.dataset.lang);
+});
 
 (async () => {
   try {
