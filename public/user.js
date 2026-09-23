@@ -159,6 +159,77 @@ function setResult(id, message, isError = false) {
 }
 
 const userSingleForm = document.getElementById('userSingleForm');
+const userSingleMsgInput = document.getElementById('userSingleMessage');
+const userSinglePhoneInput = document.getElementById('userSinglePhone');
+
+function updateSinglePreview() {
+  const preview = document.getElementById('userSinglePreview');
+  const previewTime = document.getElementById('userSinglePreviewTime');
+  const charBadge = document.getElementById('userSingleCharBadge');
+  const text = userSingleMsgInput ? userSingleMsgInput.value : '';
+
+  if (charBadge) charBadge.textContent = `${text.length} Chars`;
+  if (preview) preview.textContent = text.trim() ? text : 'Type message to preview...';
+  if (previewTime) previewTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+if (userSinglePhoneInput) {
+  userSinglePhoneInput.addEventListener('input', () => {
+    const recipient = document.getElementById('previewRecipientName');
+    const digits = userSinglePhoneInput.value.replace(/\D/g, '');
+    if (recipient) {
+      recipient.textContent = digits.length >= 6 ? `+${digits}` : 'Recipient';
+    }
+  });
+}
+
+if (userSingleMsgInput) {
+  userSingleMsgInput.addEventListener('input', updateSinglePreview);
+}
+
+// Quick Templates for Single Message
+const singleTemplates = {
+  greeting: "Hello! 👋 Thank you for connecting with us. How can we assist you today?",
+  payment: "Dear Customer, this is a friendly reminder that your payment is due. Please review your account for details. Thank you! 💳",
+  order: "Great news! 🛍️ Your order has been processed and is on its way. Track your package anytime. Thank you for choosing us!",
+  meeting: "Hi there! 📅 Confirming our upcoming meeting scheduled for today. Looking forward to our conversation!"
+};
+
+document.querySelectorAll('[data-tpl]').forEach((chip) => {
+  chip.addEventListener('click', () => {
+    const tplKey = chip.dataset.tpl;
+    const msg = singleTemplates[tplKey];
+    if (msg && userSingleMsgInput) {
+      userSingleMsgInput.value = msg;
+      updateSinglePreview();
+      userSingleMsgInput.focus();
+    }
+  });
+});
+
+// Single Message Formatting Toolbar
+document.querySelectorAll('[data-single-fmt]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const marks = { bold: '*', italic: '_', strike: '~', mono: '```' };
+    const mark = marks[button.dataset.singleFmt];
+    if (!userSingleMsgInput || !mark) return;
+    const start = userSingleMsgInput.selectionStart;
+    const end = userSingleMsgInput.selectionEnd;
+    const selected = userSingleMsgInput.value.slice(start, end) || 'text';
+    userSingleMsgInput.setRangeText(`${mark}${selected}${mark}`, start, end, 'end');
+    userSingleMsgInput.focus();
+    updateSinglePreview();
+  });
+});
+
+document.getElementById('clearSingleMsg')?.addEventListener('click', () => {
+  if (userSingleMsgInput) {
+    userSingleMsgInput.value = '';
+    updateSinglePreview();
+    userSingleMsgInput.focus();
+  }
+});
+
 if (userSingleForm) {
   userSingleForm.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -173,21 +244,12 @@ if (userSingleForm) {
       if (!response.ok) throw new Error(data.error || 'Message could not be sent.');
       setResult('userSingleResult', 'Message sent successfully.');
       event.target.reset();
-      const preview = document.getElementById('userSinglePreview');
-      if (preview) preview.textContent = 'Type message to preview...';
+      updateSinglePreview();
+      const recipient = document.getElementById('previewRecipientName');
+      if (recipient) recipient.textContent = 'Recipient';
     } catch (error) { setResult('userSingleResult', error.message, true); }
     finally { button.disabled = false; }
   });
-
-  const userSingleMsgInput = document.getElementById('userSingleMessage');
-  if (userSingleMsgInput) {
-    userSingleMsgInput.addEventListener('input', () => {
-      const preview = document.getElementById('userSinglePreview');
-      const previewTime = document.getElementById('userSinglePreviewTime');
-      if (preview) preview.textContent = userSingleMsgInput.value || 'Type message to preview...';
-      if (previewTime) previewTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    });
-  }
 }
 
 const userBulkForm = document.getElementById('userBulkForm');

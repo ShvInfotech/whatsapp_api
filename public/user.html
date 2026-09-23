@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Safe Vault - My WhatsApp</title>
+  <title>Pixano Connect - WhatsApp Workspace</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.1.0" />
+  <link rel="stylesheet" href="style.css?v=2.2.0" />
 </head>
 <body class="user-portal">
   <section id="userAuth" class="login-screen" aria-label="User login">
@@ -19,7 +19,7 @@
             <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.03-1.25-.75-.67-1.26-1.5-1.41-1.75-.15-.25-.02-.39.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.17-.48-.29z"/>
           </svg>
         </div>
-        <h1>User Workspace</h1>
+        <h1>Pixano Connect</h1>
         <p>Login to your private WhatsApp messaging workspace</p>
       </div>
 
@@ -57,7 +57,7 @@
           </svg>
         </div>
         <h1>Create Account</h1>
-        <p>Register for a dedicated private WhatsApp instance</p>
+        <p>Register for a dedicated Pixano Connect instance</p>
       </div>
 
       <div class="auth-field">
@@ -95,7 +95,7 @@
   <section id="userDashboard" class="hidden">
     <header class="navbar">
       <div class="nav-container">
-        <div class="brand"><div class="brand-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/></svg></div><div class="brand-text"><h1>Safe Vault <span>WhatsApp Workspace</span></h1><span class="brand-subtitle">Connect &amp; Link Your WhatsApp Account</span></div></div>
+        <div class="brand"><div class="brand-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/></svg></div><div class="brand-text"><h1>Pixano Connect <span>WhatsApp Workspace</span></h1><span class="brand-subtitle">Universal WhatsApp API &amp; Messaging Gateway</span></div></div>
         <div class="nav-status"><div class="status-pill status-loading"><span class="status-dot"></span><span id="userNavStatus" class="status-label">Checking Status...</span></div><div class="device-badge"><span id="welcomeUser">Signed in</span></div><button id="userLogout" class="btn btn-secondary btn-logout" type="button">Logout</button></div>
       </div>
       <nav class="nav-tabs">
@@ -125,7 +125,151 @@
         <div class="qr-hero-visual"><div id="userQrFrame" class="qr-frame"><div id="userQrLoader" class="qr-loading-overlay"><div class="custom-spinner"></div><p id="userQrLoaderText">Loading QR Code...</p></div><img id="userQrImage" class="hero-qr-img hidden" alt="Your WhatsApp QR code" /><div id="userConnectedVisual" class="user-connected-visual hidden"><div class="user-connected-check">✓</div><h3>WhatsApp Connected</h3><p>Your private messaging workspace is ready to use.</p></div></div><div id="userQrAutoRefresh" class="qr-auto-refresh"><span class="pulse-green"></span><span>Live Auto-Sync (Auto Refresh)</span></div></div>
       </div></section></section>
 
-      <section id="singleMessageTab" class="user-tab-panel"><div class="panel-header"><div><h2>Single Message Messenger</h2><p>Instantly send a message from your connected WhatsApp account.</p></div></div><div class="card max-w-xl mx-auto"><form id="userSingleForm"><div class="form-group"><label for="userSinglePhone">Recipient Phone Number</label><input id="userSinglePhone" placeholder="e.g. 919876543210" required /><span class="input-hint">Country code is required (e.g. 91 for India).</span></div><div class="form-group"><label for="userSingleMessage">Message</label><textarea id="userSingleMessage" rows="5" placeholder="Type your message..." required></textarea><div class="wa-preview-box"><span class="preview-label">📱 WhatsApp Bubble Preview</span><div class="wa-bubble wa-bubble-out" style="max-width: 100%; margin-top: 6px;"><p id="userSinglePreview">Type message to preview...</p><span class="wa-bubble-time"><span id="userSinglePreviewTime">Just now</span> <span class="wa-ticks">✓✓</span></span></div></div></div><button id="userSendSingle" class="btn btn-primary w-full" type="submit">Send WhatsApp Message</button></form><div id="userSingleResult" class="result-box hidden"></div></div></section>
+      <!-- Redesigned Single Message Messenger -->
+      <section id="singleMessageTab" class="user-tab-panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-badge-row">
+              <span class="tag-pill tag-instant">⚡ Instant Direct Message</span>
+              <span class="tag-pill tag-secure">🔒 End-to-End Encrypted</span>
+            </div>
+            <h2>Single Message Messenger</h2>
+            <p>Compose, format and instantly dispatch personalized WhatsApp messages with real-time phone preview.</p>
+          </div>
+        </div>
+
+        <div class="single-messenger-grid">
+          <!-- LEFT COLUMN: Composer Card -->
+          <div class="card single-composer-card">
+            <div class="card-header">
+              <div class="composer-title-group">
+                <div class="composer-icon">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <div>
+                  <h3>Compose WhatsApp Message</h3>
+                  <span class="subtext">Direct delivery from your connected WhatsApp session</span>
+                </div>
+              </div>
+            </div>
+
+            <form id="userSingleForm" class="single-form-body">
+              <!-- Recipient input -->
+              <div class="form-group">
+                <div class="label-row">
+                  <label for="userSinglePhone">Recipient Phone Number</label>
+                  <span class="label-tag">With Country Code</span>
+                </div>
+                <div class="phone-input-wrapper">
+                  <span class="phone-prefix-icon">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  </span>
+                  <input id="userSinglePhone" type="tel" placeholder="e.g. 919876543210" autocomplete="tel" required />
+                </div>
+                <span class="input-hint">Enter digits only with country code (e.g., <strong>91</strong> for India, <strong>1</strong> for US/Canada).</span>
+              </div>
+
+              <!-- Quick Templates -->
+              <div class="form-group mb-2">
+                <label class="templates-label">⚡ Quick Templates</label>
+                <div class="template-chips">
+                  <button type="button" class="template-chip" data-tpl="greeting">👋 Greeting</button>
+                  <button type="button" class="template-chip" data-tpl="payment">💳 Payment Alert</button>
+                  <button type="button" class="template-chip" data-tpl="order">📦 Order Update</button>
+                  <button type="button" class="template-chip" data-tpl="meeting">📅 Meeting Notice</button>
+                </div>
+              </div>
+
+              <!-- Message Body -->
+              <div class="form-group">
+                <div class="label-row">
+                  <label for="userSingleMessage">Message Content</label>
+                  <span id="userSingleCharBadge" class="count-badge">0 Chars</span>
+                </div>
+
+                <!-- Formatting Toolbar -->
+                <div class="formatting-bar single-fmt-bar">
+                  <button type="button" class="fmt-btn" data-single-fmt="bold" title="Bold (*text*)"><b>B</b></button>
+                  <button type="button" class="fmt-btn" data-single-fmt="italic" title="Italic (_text_)"><i>I</i></button>
+                  <button type="button" class="fmt-btn" data-single-fmt="strike" title="Strikethrough (~text~)"><s>S</s></button>
+                  <button type="button" class="fmt-btn" data-single-fmt="mono" title="Monospace (```text```)"><code>{ }</code></button>
+                  <span class="fmt-separator"></span>
+                  <button type="button" id="clearSingleMsg" class="fmt-btn-clear" title="Clear message">Clear</button>
+                </div>
+
+                <textarea id="userSingleMessage" rows="6" placeholder="Type your WhatsApp message here...&#10;Supports *bold*, _italic_, ~strikethrough~, and ```code```." required></textarea>
+              </div>
+
+              <div class="single-action-row">
+                <button id="userSendSingle" class="btn btn-primary btn-large btn-send-single" type="submit">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  <span>Send WhatsApp Message</span>
+                </button>
+              </div>
+            </form>
+
+            <div id="userSingleResult" class="result-box hidden"></div>
+          </div>
+
+          <!-- RIGHT COLUMN: Realistic WhatsApp Phone Mockup -->
+          <div class="card phone-preview-card">
+            <div class="card-header">
+              <h3>Live Phone Preview</h3>
+              <span class="badge badge-running" style="background: rgba(0, 168, 132, 0.1); color: #008069; border: 1px solid rgba(0, 168, 132, 0.3);"><span class="pulse-dot"></span> Live Sync</span>
+            </div>
+
+            <div class="phone-mockup-wrapper">
+              <div class="phone-frame">
+                <div class="phone-camera-notch">
+                  <span class="camera-dot"></span>
+                  <span class="speaker-pill"></span>
+                </div>
+
+                <!-- WhatsApp Chat Header -->
+                <div class="phone-wa-header">
+                  <div class="phone-wa-back">&larr;</div>
+                  <div class="phone-wa-avatar">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="#ffffff"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                  </div>
+                  <div class="phone-wa-user">
+                    <span id="previewRecipientName" class="phone-wa-name">Recipient</span>
+                    <span class="phone-wa-status">online</span>
+                  </div>
+                  <div class="phone-wa-actions">
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></svg>
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                  </div>
+                </div>
+
+                <!-- WhatsApp Chat Body with subtle wallpaper doodle -->
+                <div class="phone-wa-body">
+                  <div class="phone-wa-date-pill">TODAY</div>
+
+                  <!-- Outgoing Bubble -->
+                  <div class="phone-wa-bubble-out">
+                    <p id="userSinglePreview">Type message to preview...</p>
+                    <div class="phone-wa-meta">
+                      <span id="userSinglePreviewTime">Just now</span>
+                      <span class="phone-wa-ticks">✓✓</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- WhatsApp Bottom Bar -->
+                <div class="phone-wa-footer">
+                  <div class="phone-wa-emoji-icon">😊</div>
+                  <div class="phone-wa-fake-input">Message</div>
+                  <div class="phone-wa-attach-icon">📎</div>
+                  <div class="phone-wa-mic-btn">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="#ffffff"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section id="bulkMessageTab" class="user-tab-panel"><div class="panel-header"><div><h2>Bulk WhatsApp Dispatcher</h2><p>Send bulk messages from your private WhatsApp account with safe randomized delays.</p></div><div class="antiban-badge">Anti-Ban Protection Enabled</div></div><div class="grid-2col"><div class="card"><form id="userBulkForm"><div class="card-header"><h3>1. Add Contact Numbers</h3><span id="userNumberCountBadge" class="count-badge">0 Numbers</span></div><div class="form-group"><label for="userBulkNumbers">Enter / Paste Phone Numbers <span class="label-hint">(One per line, comma, or space separated)</span></label><textarea id="userBulkNumbers" rows="6" placeholder="919876543210&#10;919876543211" required></textarea><div class="textarea-actions"><button id="userClearNumbers" type="button" class="btn-text danger">Clear</button></div></div><div class="card-header mt-4"><h3>2. Compose Message</h3><span id="userCharCountBadge" class="count-badge">0 Chars</span></div><div class="form-group"><label for="userBulkMessage">Message Content</label><div class="formatting-bar"><button type="button" class="fmt-btn" data-user-fmt="bold" title="Bold"><b>B</b></button><button type="button" class="fmt-btn" data-user-fmt="italic" title="Italic"><i>I</i></button><button type="button" class="fmt-btn" data-user-fmt="strike" title="Strikethrough"><s>S</s></button><button type="button" class="fmt-btn" data-user-fmt="mono" title="Monospace"><code>{ }</code></button></div><textarea id="userBulkMessage" rows="5" placeholder="Type one message for all contacts..." required></textarea><div class="wa-preview-box"><span class="preview-label">📱 WhatsApp Bubble Preview</span><div class="wa-bubble wa-bubble-out" style="max-width: 100%; margin-top: 6px;"><p id="userBulkPreview">Type message to preview...</p><span class="wa-bubble-time"><span id="userBulkPreviewTime">Just now</span> <span class="wa-ticks">✓✓</span></span></div></div></div><div class="card-header mt-4"><h3>3. Sending Speed &amp; Delay</h3><span id="userDelayDisplay" class="count-badge highlight">4 - 5 Seconds</span></div><div class="delay-box"><div class="slider-row"><label for="userDelayRange">Safe Delay Between Messages:</label><span id="userSliderVal" class="slider-value">4.5s</span></div><input type="range" id="userDelayRange" min="2" max="10" step="0.5" value="4.5"><p class="delay-note">A randomized delay helps keep your WhatsApp activity natural.</p></div><div class="action-buttons"><button id="userSendBulk" class="btn btn-primary btn-large" type="submit">Start Sending Messages</button></div></form></div><div class="card"><div class="card-header"><h3>Live Execution &amp; Delivery Report</h3><span id="userExecStateBadge" class="badge badge-idle">Ready</span></div><div class="progress-section"><div class="progress-info"><span id="userProgressSummary">0 of 0 Completed</span><span id="userProgressPercent">0%</span></div><div class="progress-track"><div id="userProgressBar" class="progress-fill" style="width: 0%"></div></div></div><div class="stats-row"><div class="stat-card"><span class="stat-num" id="userStatTotal">0</span><span class="stat-lbl">Total</span></div><div class="stat-card stat-success"><span class="stat-num" id="userStatSent">0</span><span class="stat-lbl">Sent</span></div><div class="stat-card stat-failed"><span class="stat-num" id="userStatFailed">0</span><span class="stat-lbl">Failed</span></div><div class="stat-card"><span class="stat-num" id="userStatRemaining">0</span><span class="stat-lbl">Remaining</span></div></div><div class="table-header-row"><h4>Delivery Log</h4><button id="userClearLog" class="btn-text" type="button">Clear Log</button></div><div class="table-container"><table class="log-table"><thead><tr><th>#</th><th>Number</th><th>Status</th><th>Details</th></tr></thead><tbody id="userLogTableBody"><tr class="empty-row"><td colspan="4">No messages sent yet. Add numbers and click Start Sending.</td></tr></tbody></table></div><div id="userBulkResult" class="result-box hidden"></div></div></div></section>
     </main>
