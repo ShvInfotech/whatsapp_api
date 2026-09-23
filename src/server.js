@@ -24,19 +24,19 @@ function createApp() {
   app.use(express.static(path.join(__dirname, '../public')));
 
   // Dashboard & Landing Routes
-  app.get(['/', '/home', '/landing', '/landing.html', '/index.html'], (req, res) => {
+  app.get(['/', '/home', '/landing', '/landing.html', '/index.html', '/index.php'], (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
   });
 
-  app.get(['/admin', '/admin.html', '/dashboard', '/console'], (req, res) => {
+  app.get(['/admin', '/admin/', '/admin.html', '/dashboard', '/console', '/admin.php'], (req, res) => {
     res.sendFile(path.join(__dirname, '../public/admin.html'));
   });
 
-  app.get(['/scan', '/scan.html'], (req, res) => {
+  app.get(['/scan', '/scan/', '/scan.html', '/scan.php'], (req, res) => {
     res.sendFile(path.join(__dirname, '../public/scan.html'));
   });
 
-  app.get(['/user', '/user.html'], (req, res) => {
+  app.get(['/user', '/user/', '/user.html', '/user.php'], (req, res) => {
     res.sendFile(path.join(__dirname, '../public/user.html'));
   });
 
