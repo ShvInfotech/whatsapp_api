@@ -149,10 +149,17 @@ class InstanceService {
     const currentVersion = state.lifecycleVersion;
     const instanceId = state.id;
 
+    client.on('loading_screen', (percent, message) => {
+      if (state.lifecycleVersion !== currentVersion) return;
+      state.loadingPercent = percent;
+      console.log(`[InstanceService] [${instanceId}] Loading screen: ${percent}% - ${message}`);
+    });
+
     client.on('qr', async (qr) => {
       if (state.lifecycleVersion !== currentVersion) return;
       console.log(`[InstanceService] [${instanceId}] QR Code received.`);
       state.status = 'QR_READY';
+      state.loadingPercent = 0;
       state.qrCodeRaw = qr;
       try {
         state.qrCodeDataUrl = await QRCode.toDataURL(qr, {
@@ -173,12 +180,27 @@ class InstanceService {
       state.qrCodeRaw = null;
       state.qrCodeDataUrl = null;
       this.updateStoreRecord(instanceId, { status: state.status });
+
+      // Start active connection poller to detect WhatsApp ready state without hanging
+      let pollCount = 0;
+      const authPollInterval = setInterval(async () => {
+        pollCount += 1;
+        if (state.lifecycleVersion !== currentVersion || state.status === 'CONNECTED' || pollCount > 40) {
+          clearInterval(authPollInterval);
+          return;
+        }
+        const connected = await this.syncConnectionState(instanceId);
+        if (connected) {
+          clearInterval(authPollInterval);
+        }
+      }, 1500);
     });
 
     client.on('ready', async () => {
       if (state.lifecycleVersion !== currentVersion) return;
       console.log(`[InstanceService] [${instanceId}] WhatsApp is READY and connected!`);
       state.status = 'CONNECTED';
+      state.loadingPercent = 100;
       state.qrCodeRaw = null;
       state.qrCodeDataUrl = null;
       state.lastConnectedAt = new Date().toISOString();
@@ -188,7 +210,7 @@ class InstanceService {
         if (info) {
           state.clientInfo = {
             pushname: info.pushname || 'User',
-            phone: info.wid ? info.wid.user : 'Unknown',
+            phone: info.wid ? (info.wid.user || String(info.wid).replace(/\D/g, '')) : 'Unknown',
             platform: info.platform || 'Unknown'
           };
         }
@@ -209,6 +231,7 @@ class InstanceService {
       console.warn(`[InstanceService] [${instanceId}] Disconnected:`, reason);
       state.status = 'DISCONNECTED';
       state.clientInfo = null;
+      state.loadingPercent = 0;
       state.qrCodeRaw = null;
       state.qrCodeDataUrl = null;
       state.lastDisconnectedAt = new Date().toISOString();
@@ -222,10 +245,88 @@ class InstanceService {
       if (state.lifecycleVersion !== currentVersion) return;
       console.error(`[InstanceService] [${instanceId}] Authentication failure:`, msg);
       state.status = 'AUTH_FAILURE';
+      state.loadingPercent = 0;
       state.qrCodeRaw = null;
       state.qrCodeDataUrl = null;
       this.updateStoreRecord(instanceId, { status: state.status });
     });
+  }
+
+  /**
+   * Actively check and sync connected state from client socket/page
+   */
+  async syncConnectionState(instanceId) {
+    const state = this.instances.get(instanceId);
+    if (!state || !state.client) return false;
+
+    if (state.status === 'CONNECTED' && state.clientInfo?.phone && state.clientInfo.phone !== 'Unknown') {
+      return true;
+    }
+
+    try {
+      const client = state.client;
+      let isConnected = false;
+
+      // 1. Check socket state
+      try {
+        const socketState = await client.getState();
+        if (socketState === 'CONNECTED') isConnected = true;
+      } catch (_) {}
+
+      // 2. Check client.info
+      let info = client.info;
+      let phone = info?.wid ? (info.wid.user || String(info.wid).replace(/\D/g, '')) : null;
+      let pushname = info?.pushname || null;
+      let platform = info?.platform || 'WhatsApp Web';
+
+      // 3. If phone is missing or client.info is empty, inspect page directly
+      if ((!phone || phone === 'Unknown') && client.pupPage) {
+        try {
+          const evalData = await client.pupPage.evaluate(() => {
+            try {
+              const me = window.require?.('WAWebUserPrefsMeUser')?.getMaybeMePnUser?.() ||
+                         window.require?.('WAWebUserPrefsMeUser')?.getMaybeMeLidUser?.() ||
+                         window.Store?.Conn?.wid?._serialized ||
+                         window.Store?.User?.getMaybeMeUser?.()?._serialized;
+              const name = window.Store?.Conn?.pushname ||
+                           window.require?.('WAWebConnModel')?.Conn?.pushname || '';
+              return { me: me ? String(me) : null, name };
+            } catch (e) {
+              return null;
+            }
+          }).catch(() => null);
+
+          if (evalData?.me) {
+            phone = evalData.me.replace(/\D/g, '');
+            pushname = evalData.name || pushname;
+            isConnected = true;
+          }
+        } catch (_) {}
+      }
+
+      if (isConnected || (phone && phone.length >= 7) || (state.status === 'AUTHENTICATING' && info?.wid)) {
+        state.status = 'CONNECTED';
+        state.qrCodeRaw = null;
+        state.qrCodeDataUrl = null;
+        state.lastConnectedAt = state.lastConnectedAt || new Date().toISOString();
+        state.clientInfo = {
+          pushname: pushname || state.clientInfo?.pushname || 'User',
+          phone: phone || state.clientInfo?.phone || 'Connected',
+          platform: platform
+        };
+
+        this.updateStoreRecord(instanceId, {
+          status: state.status,
+          lastConnectedAt: state.lastConnectedAt,
+          phone: state.clientInfo.phone,
+          pushname: state.clientInfo.pushname
+        });
+        return true;
+      }
+    } catch (err) {
+      console.warn(`[InstanceService] [${instanceId}] syncConnectionState warning:`, err.message);
+    }
+    return false;
   }
 
   /**
@@ -414,6 +515,11 @@ class InstanceService {
       return null;
     }
 
+    // Actively verify connection if authenticating or client is active
+    if (state.status === 'AUTHENTICATING' || (state.client && state.status !== 'CONNECTED')) {
+      await this.syncConnectionState(instanceId);
+    }
+
     return {
       status: state.status,
       isConnected: state.status === 'CONNECTED',
@@ -421,7 +527,8 @@ class InstanceService {
       qrDataUrl: state.qrCodeDataUrl,
       qrRaw: state.qrCodeRaw,
       phone: state.clientInfo ? state.clientInfo.phone : null,
-      pushname: state.clientInfo ? state.clientInfo.pushname : null
+      pushname: state.clientInfo ? state.clientInfo.pushname : null,
+      loadingPercent: state.loadingPercent || 0
     };
   }
 

@@ -6,13 +6,15 @@ const userAuthError = document.getElementById('userAuthError');
 const registerError = document.getElementById('registerError');
 let myInstance;
 let pollTimer;
-const userTabs = document.querySelectorAll('[data-user-tab]');
-userTabs.forEach((tab) => tab.addEventListener('click', () => {
-  userTabs.forEach((item) => item.classList.remove('active'));
+document.addEventListener('click', (e) => {
+  const tabBtn = e.target.closest('[data-user-tab]');
+  if (!tabBtn) return;
+  const targetId = tabBtn.dataset.userTab;
+  document.querySelectorAll('[data-user-tab]').forEach((btn) => btn.classList.remove('active'));
   document.querySelectorAll('.user-tab-panel').forEach((panel) => panel.classList.remove('active'));
-  tab.classList.add('active');
-  document.getElementById(tab.dataset.userTab)?.classList.add('active');
-}));
+  tabBtn.classList.add('active');
+  document.getElementById(targetId)?.classList.add('active');
+});
 
 const getApiBaseUrl = () => {
   if (window.API_BASE_URL !== undefined) return window.API_BASE_URL;
@@ -72,26 +74,70 @@ async function openDashboard(user) {
 async function refreshQr() {
   if (!myInstance) return;
   try {
-    const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/qr`); const data = await response.safeJson();
+    const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/qr`);
+    const data = await response.safeJson();
     if (!response.ok) throw new Error(data.error);
-    const info = data.data; document.getElementById('instanceStatus').textContent = `Status: ${info.status}`;
-    document.getElementById('userNavStatus').textContent = info.isConnected ? 'WhatsApp Connected' : (info.qrReady ? 'Scan QR to Connect' : 'Preparing WhatsApp');
-    const image = document.getElementById('userQrImage'); const loader = document.getElementById('userQrLoader'); const connected = document.getElementById('connectedInfo');
+    const info = data.data;
+    const isAuthenticating = info.status === 'AUTHENTICATING';
+    const isConnected = !!info.isConnected;
+
+    document.getElementById('instanceStatus').textContent = isConnected
+      ? 'Status: CONNECTED'
+      : (isAuthenticating ? 'Status: AUTHENTICATING (Syncing...)' : `Status: ${info.status}`);
+
+    document.getElementById('userNavStatus').textContent = isConnected
+      ? 'WhatsApp Connected'
+      : (isAuthenticating ? 'Syncing WhatsApp...' : (info.qrReady ? 'Scan QR to Connect' : 'Preparing WhatsApp'));
+
+    const image = document.getElementById('userQrImage');
+    const loader = document.getElementById('userQrLoader');
+    const loaderText = document.getElementById('userQrLoaderText');
+    const connected = document.getElementById('connectedInfo');
     const appLink = `${window.location.origin}${API_BASE_URL}/api/send?number=91XXXXXXXXXX&type=text&message=Hello&instance_id=${encodeURIComponent(myInstance.id)}&access_token=${encodeURIComponent(myInstance.accessToken)}`;
+
     document.getElementById('userAppLinkText').textContent = appLink;
-    document.getElementById('copyUserAppLink').classList.toggle('hidden', !info.isConnected);
-    document.getElementById('userAppLinkBox').classList.toggle('hidden', !info.isConnected);
-    document.getElementById('userQrSteps').classList.toggle('hidden', info.isConnected);
-    document.getElementById('userConnectedVisual').classList.toggle('hidden', !info.isConnected);
-    document.getElementById('userQrAutoRefresh').classList.toggle('hidden', info.isConnected);
-    document.getElementById('userQrFrame').classList.toggle('user-connected-frame', info.isConnected);
-    document.getElementById('userHeroDescription').textContent = info.isConnected
+    document.getElementById('copyUserAppLink').classList.toggle('hidden', !isConnected);
+    document.getElementById('userAppLinkBox').classList.toggle('hidden', !isConnected);
+    document.getElementById('userQrSteps').classList.toggle('hidden', isConnected);
+    document.getElementById('userConnectedVisual').classList.toggle('hidden', !isConnected);
+    document.getElementById('userQrAutoRefresh').classList.toggle('hidden', isConnected);
+    document.getElementById('userQrFrame').classList.toggle('user-connected-frame', isConnected);
+
+    document.getElementById('userHeroDescription').textContent = isConnected
       ? 'Your WhatsApp account is securely connected. You can now send single or bulk messages from this workspace.'
-      : 'Connect your personal WhatsApp account securely. This workspace never displays or uses another user\'s WhatsApp session.';
-    if (info.isConnected) { image.classList.add('hidden'); loader.classList.add('hidden'); connected.textContent = `✓ Connected as ${info.pushname || 'WhatsApp user'} ${info.phone ? `(+${info.phone})` : ''}`; connected.classList.remove('hidden'); }
-    else if (info.qrDataUrl) { image.src = info.qrDataUrl; image.classList.remove('hidden'); loader.classList.add('hidden'); connected.classList.add('hidden'); }
-    else { image.classList.add('hidden'); loader.classList.remove('hidden'); connected.classList.add('hidden'); }
-  } catch (error) { document.getElementById('instanceStatus').textContent = error.message || 'Unable to load your QR code.'; document.getElementById('copyUserAppLink').classList.add('hidden'); document.getElementById('userAppLinkBox').classList.add('hidden'); document.getElementById('userConnectedVisual').classList.add('hidden'); document.getElementById('userQrSteps').classList.remove('hidden'); document.getElementById('userQrAutoRefresh').classList.remove('hidden'); document.getElementById('userQrFrame').classList.remove('user-connected-frame'); }
+      : (isAuthenticating
+          ? 'Mobile scanned! Logging in and synchronizing WhatsApp session, please wait a moment...'
+          : 'Connect your personal WhatsApp account securely. This workspace never displays or uses another user\'s WhatsApp session.');
+
+    if (isConnected) {
+      image.classList.add('hidden');
+      loader.classList.add('hidden');
+      connected.textContent = `✓ Connected as ${info.pushname || 'WhatsApp user'} ${info.phone ? `(+${info.phone})` : ''}`;
+      connected.classList.remove('hidden');
+    } else if (info.qrDataUrl && !isAuthenticating) {
+      image.src = info.qrDataUrl;
+      image.classList.remove('hidden');
+      loader.classList.add('hidden');
+      connected.classList.add('hidden');
+    } else {
+      image.classList.add('hidden');
+      loader.classList.remove('hidden');
+      connected.classList.add('hidden');
+      if (loaderText) {
+        loaderText.textContent = isAuthenticating
+          ? (info.loadingPercent ? `Syncing chats (${info.loadingPercent}%)...` : 'Phone connected! Finalizing login & sync...')
+          : 'Loading QR Code...';
+      }
+    }
+  } catch (error) {
+    document.getElementById('instanceStatus').textContent = error.message || 'Unable to load your QR code.';
+    document.getElementById('copyUserAppLink').classList.add('hidden');
+    document.getElementById('userAppLinkBox').classList.add('hidden');
+    document.getElementById('userConnectedVisual').classList.add('hidden');
+    document.getElementById('userQrSteps').classList.remove('hidden');
+    document.getElementById('userQrAutoRefresh').classList.remove('hidden');
+    document.getElementById('userQrFrame').classList.remove('user-connected-frame');
+  }
   pollTimer = setTimeout(refreshQr, 2500);
 }
 
@@ -127,9 +173,21 @@ if (userSingleForm) {
       if (!response.ok) throw new Error(data.error || 'Message could not be sent.');
       setResult('userSingleResult', 'Message sent successfully.');
       event.target.reset();
+      const preview = document.getElementById('userSinglePreview');
+      if (preview) preview.textContent = 'Type message to preview...';
     } catch (error) { setResult('userSingleResult', error.message, true); }
     finally { button.disabled = false; }
   });
+
+  const userSingleMsgInput = document.getElementById('userSingleMessage');
+  if (userSingleMsgInput) {
+    userSingleMsgInput.addEventListener('input', () => {
+      const preview = document.getElementById('userSinglePreview');
+      const previewTime = document.getElementById('userSinglePreviewTime');
+      if (preview) preview.textContent = userSingleMsgInput.value || 'Type message to preview...';
+      if (previewTime) previewTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    });
+  }
 }
 
 const userBulkForm = document.getElementById('userBulkForm');

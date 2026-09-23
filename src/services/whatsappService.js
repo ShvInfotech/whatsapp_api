@@ -146,6 +146,12 @@ class WhatsAppService {
       }
     });
 
+    client.on('loading_screen', (percent, message) => {
+      if (version !== this.lifecycleVersion || this.client !== client) return;
+      this.loadingPercent = percent;
+      console.log(`[WhatsAppService] Loading screen: ${percent}% - ${message}`);
+    });
+
     // Fired when session is successfully authenticated
     client.on('authenticated', () => {
       if (version !== this.lifecycleVersion || this.client !== client) return;
@@ -153,12 +159,27 @@ class WhatsAppService {
       this.qrCodeRaw = null;
       this.qrCodeDataUrl = null;
       console.log('[WhatsAppService] Client authenticated successfully. Loading session...');
+
+      // Actively poll to detect WhatsApp connected state without hanging
+      let pollCount = 0;
+      const authPollInterval = setInterval(async () => {
+        pollCount += 1;
+        if (version !== this.lifecycleVersion || this.client !== client || this.status === 'CONNECTED' || pollCount > 40) {
+          clearInterval(authPollInterval);
+          return;
+        }
+        const connected = await this.syncConnectionState();
+        if (connected) {
+          clearInterval(authPollInterval);
+        }
+      }, 1500);
     });
 
     // Fired when authentication fails (e.g., invalidated session)
     client.on('auth_failure', (msg) => {
       if (version !== this.lifecycleVersion || this.client !== client) return;
       this.status = 'AUTH_FAILURE';
+      this.loadingPercent = 0;
       console.error('[WhatsAppService] Authentication Failure:', msg);
     });
 
@@ -166,10 +187,11 @@ class WhatsAppService {
     client.on('ready', () => {
       if (version !== this.lifecycleVersion || this.client !== client) return;
       this.status = 'CONNECTED';
+      this.loadingPercent = 100;
       this.lastConnectedAt = new Date().toISOString();
       this.clientInfo = {
         pushname: client.info?.pushname || 'Safe Vault User',
-        phone: client.info?.wid?.user || 'Unknown',
+        phone: client.info?.wid ? (client.info.wid.user || String(client.info.wid).replace(/\D/g, '')) : 'Unknown',
         platform: client.info?.platform || 'Unknown'
       };
       console.log(`[WhatsAppService] WhatsApp Client is READY! Logged in as: ${this.clientInfo.pushname} (${this.clientInfo.phone})`);
@@ -181,8 +203,73 @@ class WhatsAppService {
       this.status = 'DISCONNECTED';
       this.lastDisconnectedAt = new Date().toISOString();
       this.clientInfo = null;
+      this.loadingPercent = 0;
       console.warn('[WhatsAppService] Client was disconnected. Reason:', reason);
     });
+  }
+
+  /**
+   * Actively check and sync connected state from client socket/page
+   */
+  async syncConnectionState() {
+    if (!this.client) return false;
+    if (this.status === 'CONNECTED' && this.clientInfo?.phone && this.clientInfo.phone !== 'Unknown') {
+      return true;
+    }
+
+    try {
+      let isConnected = false;
+      try {
+        const socketState = await this.client.getState();
+        if (socketState === 'CONNECTED') isConnected = true;
+      } catch (_) {}
+
+      let info = this.client.info;
+      let phone = info?.wid ? (info.wid.user || String(info.wid).replace(/\D/g, '')) : null;
+      let pushname = info?.pushname || null;
+      let platform = info?.platform || 'WhatsApp Web';
+
+      if ((!phone || phone === 'Unknown') && this.client.pupPage) {
+        try {
+          const evalData = await this.client.pupPage.evaluate(() => {
+            try {
+              const me = window.require?.('WAWebUserPrefsMeUser')?.getMaybeMePnUser?.() ||
+                         window.require?.('WAWebUserPrefsMeUser')?.getMaybeMeLidUser?.() ||
+                         window.Store?.Conn?.wid?._serialized ||
+                         window.Store?.User?.getMaybeMeUser?.()?._serialized;
+              const name = window.Store?.Conn?.pushname ||
+                           window.require?.('WAWebConnModel')?.Conn?.pushname || '';
+              return { me: me ? String(me) : null, name };
+            } catch (e) {
+              return null;
+            }
+          }).catch(() => null);
+
+          if (evalData?.me) {
+            phone = evalData.me.replace(/\D/g, '');
+            pushname = evalData.name || pushname;
+            isConnected = true;
+          }
+        } catch (_) {}
+      }
+
+      if (isConnected || (phone && phone.length >= 7) || (this.status === 'AUTHENTICATING' && info?.wid)) {
+        this.status = 'CONNECTED';
+        this.qrCodeRaw = null;
+        this.qrCodeDataUrl = null;
+        this.lastConnectedAt = this.lastConnectedAt || new Date().toISOString();
+        this.clientInfo = {
+          pushname: pushname || this.clientInfo?.pushname || 'Safe Vault User',
+          phone: phone || this.clientInfo?.phone || 'Connected',
+          platform: platform
+        };
+        console.log(`[WhatsAppService] Proactively detected connected state! Logged in as: ${this.clientInfo.pushname} (${this.clientInfo.phone})`);
+        return true;
+      }
+    } catch (err) {
+      console.warn('[WhatsAppService] syncConnectionState warning:', err.message);
+    }
+    return false;
   }
 
   /**
@@ -198,7 +285,8 @@ class WhatsAppService {
       lastConnectedAt: this.lastConnectedAt,
       lastDisconnectedAt: this.lastDisconnectedAt,
       instanceId: this.sessionId || config.sessionId || 'safevault-session',
-      accessToken: config.apiKey || 'safevault_default_token'
+      accessToken: config.apiKey || 'safevault_default_token',
+      loadingPercent: this.loadingPercent || 0
     };
   }
 
@@ -208,8 +296,12 @@ class WhatsAppService {
   getQrCode() {
     return {
       status: this.status,
+      isConnected: this.status === 'CONNECTED',
+      qrReady: this.status === 'QR_READY',
       qrRaw: this.qrCodeRaw,
-      qrDataUrl: this.qrCodeDataUrl
+      qrDataUrl: this.qrCodeDataUrl,
+      clientInfo: this.clientInfo,
+      loadingPercent: this.loadingPercent || 0
     };
   }
 
