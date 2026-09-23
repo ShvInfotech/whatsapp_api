@@ -258,9 +258,31 @@ async function fetchUsers() {
     const json = await response.json();
     if (!response.ok || !json.success) throw new Error(json.error || 'Unable to load users.');
     const users = json.data || [];
-    usersList.innerHTML = users.length ? users.map((user) => `<tr><td>${escapeHtml(user.fullName)}</td><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.email)}</td><td>${user.createdAt ? new Date(user.createdAt).toLocaleString() : '-'}</td></tr>`).join('') : '<tr><td colspan="4" class="text-secondary">No registered users yet.</td></tr>';
+    usersList.innerHTML = users.length ? users.map((user) => {
+      const status = user.status || 'active';
+      const nextStatus = status === 'active' ? 'inactive' : 'active';
+      const actionLabel = status === 'active' ? 'Deactivate' : 'Activate';
+      return `<tr><td>${escapeHtml(user.fullName)}</td><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.email)}</td><td><span class="user-status user-status-${escapeHtml(status)}">${escapeHtml(status)}</span></td><td>${user.createdAt ? new Date(user.createdAt).toLocaleString() : '-'}</td><td><button class="btn btn-sm ${status === 'active' ? 'btn-danger' : 'btn-primary'} user-status-action" data-user-id="${escapeHtml(user.id)}" data-next-status="${nextStatus}" type="button">${actionLabel}</button></td></tr>`;
+    }).join('') : '<tr><td colspan="6" class="text-secondary">No registered users yet.</td></tr>';
+    usersList.querySelectorAll('.user-status-action').forEach((button) => button.addEventListener('click', () => updateUserStatus(button)));
   } catch (error) {
-    usersList.innerHTML = `<tr><td colspan="4" class="login-error">${escapeHtml(error.message)}</td></tr>`;
+    usersList.innerHTML = `<tr><td colspan="6" class="login-error">${escapeHtml(error.message)}</td></tr>`;
+  }
+}
+
+async function updateUserStatus(button) {
+  button.disabled = true;
+  try {
+    const response = await apiFetch(`/api/admin/users/${encodeURIComponent(button.dataset.userId)}/status`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: button.dataset.nextStatus })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'Unable to update user status.');
+    await fetchUsers();
+  } catch (error) {
+    showToast(error.message, 'error');
+    button.disabled = false;
   }
 }
 

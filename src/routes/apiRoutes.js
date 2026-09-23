@@ -39,6 +39,7 @@ router.post('/user/instances/:id/send-bulk', requireUser, (req, res) => userCont
 router.use(requireAdmin);
 
 router.get('/admin/users', (req, res) => userController.adminList(req, res));
+router.patch('/admin/users/:id/status', (req, res) => userController.adminUpdateStatus(req, res));
 
 // Multi-Instance Management Routes
 router.get('/instances', (req, res) => instanceController.list(req, res));

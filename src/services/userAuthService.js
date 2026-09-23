@@ -22,7 +22,7 @@ function sign(value) {
 function publicUser(user) {
   return {
     id: user._id.toString(), username: user.username, fullName: user.fullName,
-    email: user.email, role: user.role || 'user', createdAt: user.createdAt
+    email: user.email, role: user.role || 'user', status: user.status || 'active', createdAt: user.createdAt
   };
 }
 
@@ -39,7 +39,7 @@ async function register({ fullName, username, email, password }) {
   const user = {
     fullName: cleanName, username: cleanUsername, email: cleanEmail,
     passwordSalt, passwordHash: await hashPassword(password, passwordSalt),
-    role: 'user', createdAt: new Date().toISOString()
+    role: 'user', status: 'pending', createdAt: new Date().toISOString()
   };
   try {
     const result = await (await getDatabase()).collection('users').insertOne(user);
@@ -81,4 +81,15 @@ async function listUsers() {
     .map(publicUser);
 }
 
-module.exports = { register, authenticate, createSession, verifySession, publicUser, listUsers };
+async function updateUserStatus(userId, status) {
+  if (!ObjectId.isValid(userId) || !['active', 'inactive'].includes(status)) return null;
+  const database = await getDatabase();
+  const result = await database.collection('users').findOneAndUpdate(
+    { _id: new ObjectId(userId) },
+    { $set: { status, statusUpdatedAt: new Date().toISOString() } },
+    { returnDocument: 'after', projection: { passwordHash: 0, passwordSalt: 0 } }
+  );
+  return result ? publicUser(result) : null;
+}
+
+module.exports = { register, authenticate, createSession, verifySession, publicUser, listUsers, updateUserStatus };

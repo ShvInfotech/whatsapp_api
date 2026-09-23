@@ -32,7 +32,6 @@
       <nav class="landing-nav-links">
         <a href="#features">Features</a>
         <a href="#demo">Live Demo</a>
-        <a href="#code">API &amp; SDKs</a>
         <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
         <a href="API_DOCS.md" target="_blank" class="nav-doc-link">Docs ↗</a>
@@ -246,127 +245,6 @@
     </div>
   </section>
 
-  <!-- ============================================== -->
-  <!-- CODE PLAYGROUND / INTEGRATION                   -->
-  <!-- ============================================== -->
-  <section id="code" class="landing-section bg-surface">
-    <div class="section-container">
-      <div class="section-header text-center">
-        <div class="section-tag">Developer Integration</div>
-        <h2>One API Call. Any Programming Language.</h2>
-        <p>Integrate WhatsApp messaging into your existing desktop or web applications with a single HTTP GET or POST request.</p>
-      </div>
-
-      <div class="code-playground-box">
-        <div class="code-tabs-header">
-          <div class="code-tabs">
-            <button class="code-tab-btn active" data-lang="vb">VB.NET</button>
-            <button class="code-tab-btn" data-lang="csharp">C# (.NET)</button>
-            <button class="code-tab-btn" data-lang="php">PHP</button>
-            <button class="code-tab-btn" data-lang="node">Node.js</button>
-            <button class="code-tab-btn" data-lang="python">Python</button>
-            <button class="code-tab-btn" data-lang="curl">cURL</button>
-          </div>
-          <button id="btnCopyCode" class="btn-copy-code" type="button">📋 Copy Snippet</button>
-        </div>
-
-        <div class="code-editor-body">
-          <!-- VB.NET -->
-          <pre id="codeSnippet-vb" class="code-content active"><code>' VB.NET Desktop Software Example (WinForms / WPF)
-Dim strMobileNo As String = "918140349408"
-Dim strMessage As String = Uri.EscapeDataString("Hello! Your SafeVault invoice is ready.")
-Dim instanceId As String = "CA81914C6960A"
-Dim accessToken As String = "c08e9e5711ae6249ac9a966e"
-
-Dim apiUrl As String = String.Format( _
-    "http://93.127.198.184/whatsapp_api/api/send?number={0}&amp;type=text&amp;message={1}&amp;instance_id={2}&amp;access_token={3}", _
-    strMobileNo, strMessage, instanceId, accessToken)
-
-Using client As New System.Net.WebClient()
-    Dim response As String = client.DownloadString(apiUrl)
-    MessageBox.Show("WhatsApp Dispatch: " &amp; response)
-End Using</code></pre>
-
-          <!-- C# -->
-          <pre id="codeSnippet-csharp" class="code-content"><code>// C# .NET Integration
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
-
-class Program {
-    static async Task Main() {
-        var client = new HttpClient();
-        string phone = "918140349408";
-        string msg = Uri.EscapeDataString("Hello from SafeVault C# Integration!");
-        string instanceId = "CA81914C6960A";
-        string token = "c08e9e5711ae6249ac9a966e";
-
-        string url = $"http://93.127.198.184/whatsapp_api/api/send?number={phone}&amp;type=text&amp;message={msg}&amp;instance_id={instanceId}&amp;access_token={token}";
-        var response = await client.GetStringAsync(url);
-        Console.WriteLine(response);
-    }
-}</code></pre>
-
-          <!-- PHP -->
-          <pre id="codeSnippet-php" class="code-content"><code>&lt;?php
-// PHP cURL Example
-$number      = '918140349408';
-$message     = urlencode('Your order has been shipped via SafeVault Logistics.');
-$instance_id = 'CA81914C6960A';
-$access_token= 'c08e9e5711ae6249ac9a966e';
-
-$url = "http://93.127.198.184/whatsapp_api/api/send?number={$number}&amp;type=text&amp;message={$message}&amp;instance_id={$instance_id}&amp;access_token={$access_token}";
-
-$response = file_get_contents($url);
-$result = json_decode($response, true);
-
-if ($result['status'] === 'success') {
-    echo "Message delivered! Message ID: " . $result['data']['id'];
-}
-?&gt;</code></pre>
-
-          <!-- Node.js -->
-          <pre id="codeSnippet-node" class="code-content"><code>// Node.js (fetch)
-const number = '918140349408';
-const message = encodeURIComponent('Hello from SafeVault Node.js client!');
-const instanceId = 'CA81914C6960A';
-const accessToken = 'c08e9e5711ae6249ac9a966e';
-
-const url = `http://93.127.198.184/whatsapp_api/api/send?number=${number}&amp;type=text&amp;message=${message}&amp;instance_id=${instanceId}&amp;access_token=${accessToken}`;
-
-fetch(url)
-  .then(res =&gt; res.json())
-  .then(data =&gt; console.log('WhatsApp Delivery:', data))
-  .catch(err =&gt; console.error('Error:', err));</code></pre>
-
-          <!-- Python -->
-          <pre id="codeSnippet-python" class="code-content"><code># Python Requests
-import requests
-
-params = {
-    'number': '918140349408',
-    'type': 'text',
-    'message': 'Hello from SafeVault Python Bot!',
-    'instance_id': 'CA81914C6960A',
-    'access_token': 'c08e9e5711ae6249ac9a966e'
-}
-
-response = requests.get('http://93.127.198.184/whatsapp_api/api/send', params=params)
-data = response.json()
-print("Delivery Status:", data.get('status'))</code></pre>
-
-          <!-- cURL -->
-          <pre id="codeSnippet-curl" class="code-content"><code># cURL Command Line
-curl -G "http://93.127.198.184/whatsapp_api/api/send" \
-  --data-urlencode "number=918140349408" \
-  --data-urlencode "type=text" \
-  --data-urlencode "message=Hello from SafeVault cURL!" \
-  --data-urlencode "instance_id=CA81914C6960A" \
-  --data-urlencode "access_token=c08e9e5711ae6249ac9a966e"</code></pre>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- ============================================== -->
   <!-- HOW IT WORKS (3 STEPS)                         -->
@@ -565,31 +443,6 @@ curl -G "http://93.127.198.184/whatsapp_api/api/send" \
 
   <!-- Landing Script -->
   <script>
-    // Code snippet tab switching
-    document.querySelectorAll('.code-tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.code-tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.code-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        const target = document.getElementById(`codeSnippet-${btn.dataset.lang}`);
-        if (target) target.classList.add('active');
-      });
-    });
-
-    // Copy code snippet
-    const btnCopyCode = document.getElementById('btnCopyCode');
-    if (btnCopyCode) {
-      btnCopyCode.addEventListener('click', () => {
-        const activeCode = document.querySelector('.code-content.active code');
-        if (activeCode) {
-          navigator.clipboard.writeText(activeCode.textContent).then(() => {
-            btnCopyCode.textContent = '✓ Copied!';
-            setTimeout(() => { btnCopyCode.textContent = '📋 Copy Snippet'; }, 2000);
-          });
-        }
-      });
-    }
-
     // Interactive WhatsApp Chat Simulator
     const simForm = document.getElementById('simInputForm');
     const simInput = document.getElementById('simTextInput');

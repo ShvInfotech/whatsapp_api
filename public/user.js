@@ -53,7 +53,7 @@ registerForm.addEventListener('submit', async (event) => {
   const response = await api('/api/user-auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: registerFullName.value, username: registerUsername.value, email: registerEmail.value, password: registerPassword.value }) });
   const data = await response.safeJson();
   if (!response.ok) return showError(registerError, data.error || 'Registration failed.');
-  showLogin(); userLoginUsername.value = registerUsername.value; userLoginPassword.value = ''; showError(userAuthError, 'Registration complete. Please login.');
+  showLogin(); userLoginUsername.value = registerUsername.value; userLoginPassword.value = ''; showError(userAuthError, 'Registration complete. Waiting For Admin Approval. You can login after an administrator activates your account.');
 });
 
 async function openDashboard(user) {
@@ -66,7 +66,6 @@ async function openDashboard(user) {
     return;
   }
   myInstance = data.data[0]; document.getElementById('instanceName').textContent = myInstance.name;
-  refreshQr();
 }
 
 async function refreshQr() {

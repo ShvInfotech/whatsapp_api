@@ -1,5 +1,5 @@
 const instanceService = require('../services/instanceService');
-const { register, authenticate, createSession, publicUser, listUsers } = require('../services/userAuthService');
+const { register, authenticate, createSession, publicUser, listUsers, updateUserStatus } = require('../services/userAuthService');
 const config = require('../config');
 
 class UserController {
@@ -19,6 +19,8 @@ class UserController {
     try {
       const user = await authenticate(req.body.username, req.body.password);
       if (!user) return res.status(401).json({ success: false, error: 'Invalid username or password.' });
+      if (user.status === 'pending') return res.status(403).json({ success: false, error: 'Waiting For Admin Approval. Your account is not active yet.' });
+      if (user.status === 'inactive') return res.status(403).json({ success: false, error: 'Your account has been deactivated by an administrator.' });
       // Supports existing MongoDB users who were registered before their
       // WhatsApp instance record was created.
       await instanceService.ensureUserInstance(user);
@@ -138,6 +140,16 @@ class UserController {
   async adminList(req, res) {
     try { return res.json({ success: true, data: await listUsers() }); }
     catch (_) { return res.status(503).json({ success: false, error: 'User database is unavailable. Check MongoDB connection.' }); }
+  }
+
+  async adminUpdateStatus(req, res) {
+    try {
+      const user = await updateUserStatus(req.params.id, req.body.status);
+      if (!user) return res.status(400).json({ success: false, error: 'User or status is invalid.' });
+      return res.json({ success: true, data: user });
+    } catch (_) {
+      return res.status(503).json({ success: false, error: 'User database is unavailable. Check MongoDB connection.' });
+    }
   }
 }
 

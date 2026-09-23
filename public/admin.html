@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=2.1.0" />
 </head>
-<body class="auth-required">
+<body class="auth-required admin-console">
   <section id="loginScreen" class="login-screen" aria-label="Administrator login">
     <form id="loginForm" class="login-card">
       <div class="auth-header">
@@ -249,11 +249,11 @@
 
     <section id="usersTab" class="tab-panel">
       <div class="panel-header">
-        <div><h2>Registered Users</h2><p>All accounts saved in MongoDB. Each user has a private WhatsApp instance.</p></div>
+        <div><h2>Registered Users</h2><p>Approve new accounts and control which users can access their private WhatsApp workspace.</p></div>
       </div>
       <div class="card" style="overflow:auto;">
-        <table class="data-table"><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Registered</th></tr></thead>
-          <tbody id="usersList"><tr><td colspan="4" class="text-secondary">Loading users...</td></tr></tbody>
+        <table class="data-table"><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Status</th><th>Registered</th><th>Action</th></tr></thead>
+          <tbody id="usersList"><tr><td colspan="6" class="text-secondary">Loading users...</td></tr></tbody>
         </table>
       </div>
     </section>
