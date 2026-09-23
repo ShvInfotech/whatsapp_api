@@ -112,96 +112,86 @@ function setResult(id, message, isError = false) {
   element.style.color = isError ? '#fca5a5' : '#a7f3d0';
 }
 
-document.getElementById('userSingleForm').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const button = document.getElementById('userSendSingle');
-  button.disabled = true;
-  try {
-    const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/send-message`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phoneNumber: document.getElementById('userSinglePhone').value.trim(), message: document.getElementById('userSingleMessage').value.trim() })
-    });
-    const data = await response.safeJson();
-    if (!response.ok) throw new Error(data.error || 'Message could not be sent.');
-    setResult('userSingleResult', 'Message sent successfully.');
-    event.target.reset();
-  } catch (error) { setResult('userSingleResult', error.message, true); }
-  finally { button.disabled = false; }
-});
+const userSingleForm = document.getElementById('userSingleForm');
+if (userSingleForm) {
+  userSingleForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = document.getElementById('userSendSingle');
+    button.disabled = true;
+    try {
+      const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/send-message`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: document.getElementById('userSinglePhone').value.trim(), message: document.getElementById('userSingleMessage').value.trim() })
+      });
+      const data = await response.safeJson();
+      if (!response.ok) throw new Error(data.error || 'Message could not be sent.');
+      setResult('userSingleResult', 'Message sent successfully.');
+      event.target.reset();
+    } catch (error) { setResult('userSingleResult', error.message, true); }
+    finally { button.disabled = false; }
+  });
+}
 
+const userBulkForm = document.getElementById('userBulkForm');
 const userBulkNumbers = document.getElementById('userBulkNumbers');
 const userBulkMessage = document.getElementById('userBulkMessage');
 const userDelayRange = document.getElementById('userDelayRange');
 
-const userSingleMsgInput = document.getElementById('userSingleMessage');
-const userSinglePreview = document.getElementById('userSinglePreview');
-const userSingleTime = document.getElementById('userSinglePreviewTime');
-if (userSingleMsgInput && userSinglePreview) {
-  userSingleMsgInput.addEventListener('input', () => {
-    userSinglePreview.textContent = userSingleMsgInput.value || 'Type message to preview...';
-    if (userSingleTime) userSingleTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  });
-}
-
-function parseUserNumbers() {
-  return userBulkNumbers.value.split(/[\r\n,\s]+/).map((value) => value.replace(/\D/g, '')).filter((value, index, list) => value.length >= 10 && list.indexOf(value) === index).slice(0, 100);
-}
-function updateUserBulkCounts() {
-  const numbers = parseUserNumbers();
-  document.getElementById('userNumberCountBadge').textContent = `${numbers.length} Number${numbers.length === 1 ? '' : 's'}`;
-  document.getElementById('userCharCountBadge').textContent = `${userBulkMessage.value.length} Chars`;
-  const bulkPreview = document.getElementById('userBulkPreview');
-  const bulkTime = document.getElementById('userBulkPreviewTime');
-  if (bulkPreview) {
-    bulkPreview.textContent = userBulkMessage.value || 'Type message to preview...';
-    if (bulkTime) bulkTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
+  function parseUserNumbers() {
+    return userBulkNumbers.value.split(/[\r\n,\s]+/).map((value) => value.replace(/\D/g, '')).filter((value, index, list) => value.length >= 10 && list.indexOf(value) === index).slice(0, 100);
   }
-}
-function updateUserDelay() {
-  const delay = Number(userDelayRange.value);
-  document.getElementById('userSliderVal').textContent = `${delay}s`;
-  document.getElementById('userDelayDisplay').textContent = `${Math.max(1, Math.floor(delay - .5))} - ${Math.ceil(delay + .5)} Seconds`;
-}
-function updateUserBulkProgress(completed, total, sent, failed) {
-  const percent = total ? Math.round((completed / total) * 100) : 0;
-  document.getElementById('userProgressSummary').textContent = `${completed} of ${total} Completed`;
-  document.getElementById('userProgressPercent').textContent = `${percent}%`;
-  document.getElementById('userProgressBar').style.width = `${percent}%`;
-  document.getElementById('userStatTotal').textContent = total;
-  document.getElementById('userStatSent').textContent = sent;
-  document.getElementById('userStatFailed').textContent = failed;
-  document.getElementById('userStatRemaining').textContent = Math.max(0, total - completed);
-}
-userBulkNumbers.addEventListener('input', updateUserBulkCounts);
-userBulkMessage.addEventListener('input', updateUserBulkCounts);
-userDelayRange.addEventListener('input', updateUserDelay);
-document.getElementById('userClearNumbers').addEventListener('click', () => { userBulkNumbers.value = ''; updateUserBulkCounts(); });
-document.getElementById('userClearLog').addEventListener('click', () => { document.getElementById('userLogTableBody').innerHTML = '<tr class="empty-row"><td colspan="4">Log cleared. Ready for next dispatch.</td></tr>'; });
-document.querySelectorAll('[data-user-fmt]').forEach((button) => button.addEventListener('click', () => {
-  const marks = { bold: '*', italic: '_', strike: '~', mono: '```' }; const mark = marks[button.dataset.userFmt];
-  const start = userBulkMessage.selectionStart; const end = userBulkMessage.selectionEnd; const selected = userBulkMessage.value.slice(start, end) || 'text';
-  userBulkMessage.setRangeText(`${mark}${selected}${mark}`, start, end, 'end'); userBulkMessage.focus(); updateUserBulkCounts();
-}));
+  function updateUserBulkCounts() {
+    const numbers = parseUserNumbers();
+    document.getElementById('userNumberCountBadge').textContent = `${numbers.length} Number${numbers.length === 1 ? '' : 's'}`;
+    document.getElementById('userCharCountBadge').textContent = `${userBulkMessage.value.length} Chars`;
+  }
+  function updateUserDelay() {
+    const delay = Number(userDelayRange.value);
+    document.getElementById('userSliderVal').textContent = `${delay}s`;
+    document.getElementById('userDelayDisplay').textContent = `${Math.max(1, Math.floor(delay - .5))} - ${Math.ceil(delay + .5)} Seconds`;
+  }
+  function updateUserBulkProgress(completed, total, sent, failed) {
+    const percent = total ? Math.round((completed / total) * 100) : 0;
+    document.getElementById('userProgressSummary').textContent = `${completed} of ${total} Completed`;
+    document.getElementById('userProgressPercent').textContent = `${percent}%`;
+    document.getElementById('userProgressBar').style.width = `${percent}%`;
+    document.getElementById('userStatTotal').textContent = total;
+    document.getElementById('userStatSent').textContent = sent;
+    document.getElementById('userStatFailed').textContent = failed;
+    document.getElementById('userStatRemaining').textContent = Math.max(0, total - completed);
+  }
+  userBulkNumbers.addEventListener('input', updateUserBulkCounts);
+  userBulkMessage.addEventListener('input', updateUserBulkCounts);
+  userDelayRange.addEventListener('input', updateUserDelay);
+  document.getElementById('userClearNumbers')?.addEventListener('click', () => { userBulkNumbers.value = ''; updateUserBulkCounts(); });
+  document.getElementById('userClearLog')?.addEventListener('click', () => { document.getElementById('userLogTableBody').innerHTML = '<tr class="empty-row"><td colspan="4">Log cleared. Ready for next dispatch.</td></tr>'; });
+  document.querySelectorAll('[data-user-fmt]').forEach((button) => button.addEventListener('click', () => {
+    const marks = { bold: '*', italic: '_', strike: '~', mono: '```' }; const mark = marks[button.dataset.userFmt];
+    const start = userBulkMessage.selectionStart; const end = userBulkMessage.selectionEnd; const selected = userBulkMessage.value.slice(start, end) || 'text';
+    userBulkMessage.setRangeText(`${mark}${selected}${mark}`, start, end, 'end'); userBulkMessage.focus(); updateUserBulkCounts();
+  }));
 
-document.getElementById('userBulkForm').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const button = document.getElementById('userSendBulk'); const phoneNumbers = parseUserNumbers(); const message = userBulkMessage.value.trim();
-  if (!phoneNumbers.length || !message) return setResult('userBulkResult', 'Add at least one valid number and a message.', true);
-  button.disabled = true; const state = document.getElementById('userExecStateBadge'); state.className = 'badge badge-running'; state.textContent = 'Sending...';
-  updateUserBulkProgress(0, phoneNumbers.length, 0, 0); document.getElementById('userLogTableBody').innerHTML = phoneNumbers.map((number, index) => `<tr><td>${index + 1}</td><td>${number}</td><td class="text-muted">Queued</td><td>-</td></tr>`).join('');
-  try {
-    const delayMs = Number(userDelayRange.value) * 1000;
-    const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/send-bulk`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phoneNumbers, message, options: { minDelayMs: Math.max(1000, delayMs - 500), maxDelayMs: delayMs + 500 } }) });
-    const data = await response.safeJson(); if (!response.ok) throw new Error(data.error || 'Bulk messages could not be sent.');
-    const results = data.data?.results || []; let sent = 0; let failed = 0;
-    document.getElementById('userLogTableBody').innerHTML = results.map((result, index) => { const ok = result.status === 'sent'; if (ok) sent += 1; else failed += 1; return `<tr><td>${index + 1}</td><td>${result.phoneNumber}</td><td class="${ok ? 'status-sent' : 'status-failed'}">${ok ? 'Sent' : 'Failed'}</td><td>${ok ? 'Delivered to WhatsApp' : (result.error || 'Could not send')}</td></tr>`; }).join('');
-    updateUserBulkProgress(results.length, phoneNumbers.length, sent, failed); state.className = 'badge badge-completed'; state.textContent = 'Completed'; setResult('userBulkResult', data.message || 'Bulk sending completed.');
-  } catch (error) { state.className = 'badge badge-stopped'; state.textContent = 'Failed'; setResult('userBulkResult', error.message, true); }
-  finally { button.disabled = false; }
-});
+  userBulkForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = document.getElementById('userSendBulk'); const phoneNumbers = parseUserNumbers(); const message = userBulkMessage.value.trim();
+    if (!phoneNumbers.length || !message) return setResult('userBulkResult', 'Add at least one valid number and a message.', true);
+    button.disabled = true; const state = document.getElementById('userExecStateBadge'); state.className = 'badge badge-running'; state.textContent = 'Sending...';
+    updateUserBulkProgress(0, phoneNumbers.length, 0, 0); document.getElementById('userLogTableBody').innerHTML = phoneNumbers.map((number, index) => `<tr><td>${index + 1}</td><td>${number}</td><td class="text-muted">Queued</td><td>-</td></tr>`).join('');
+    try {
+      const delayMs = Number(userDelayRange.value) * 1000;
+      const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/send-bulk`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phoneNumbers, message, options: { minDelayMs: Math.max(1000, delayMs - 500), maxDelayMs: delayMs + 500 } }) });
+      const data = await response.safeJson(); if (!response.ok) throw new Error(data.error || 'Bulk messages could not be sent.');
+      const results = data.data?.results || []; let sent = 0; let failed = 0;
+      document.getElementById('userLogTableBody').innerHTML = results.map((result, index) => { const ok = result.status === 'sent'; if (ok) sent += 1; else failed += 1; return `<tr><td>${index + 1}</td><td>${result.phoneNumber}</td><td class="${ok ? 'status-sent' : 'status-failed'}">${ok ? 'Sent' : 'Failed'}</td><td>${ok ? 'Delivered to WhatsApp' : (result.error || 'Could not send')}</td></tr>`; }).join('');
+      updateUserBulkProgress(results.length, phoneNumbers.length, sent, failed); state.className = 'badge badge-completed'; state.textContent = 'Completed'; setResult('userBulkResult', data.message || 'Bulk sending completed.');
+    } catch (error) { state.className = 'badge badge-stopped'; state.textContent = 'Failed'; setResult('userBulkResult', error.message, true); }
+    finally { button.disabled = false; }
+  });
 
-updateUserBulkCounts();
-updateUserDelay();
+  updateUserBulkCounts();
+  updateUserDelay();
+}
 
 (async () => {
   try {
