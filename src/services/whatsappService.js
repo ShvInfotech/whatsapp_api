@@ -2,6 +2,7 @@ const path = require('path');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode');
 const config = require('../config');
+const { buildMessageMedia } = require('./mediaService');
 
 class WhatsAppService {
   constructor() {
@@ -336,13 +337,16 @@ class WhatsAppService {
   /**
    * Sends a single WhatsApp message
    */
-  async sendMessage(phoneNumber, message) {
+  async sendMessage(phoneNumber, message, mediaOptions = null) {
     if (this.status !== 'CONNECTED' || !this.client) {
       throw new Error(`WhatsApp client is not ready. Current status: ${this.status}. Please scan QR code first.`);
     }
 
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
-      throw new Error('Message text cannot be empty');
+    const hasMedia = !!mediaOptions;
+    const msgText = (typeof message === 'string') ? message.trim() : (message !== undefined && message !== null ? message.toString().trim() : '');
+
+    if (!msgText && !hasMedia) {
+      throw new Error('Message text or image attachment cannot be empty');
     }
 
     const { cleaned, jid } = this.formatPhoneNumber(phoneNumber);
@@ -366,10 +370,18 @@ class WhatsAppService {
       console.warn('[WhatsAppService] getNumberId fallback to jid:', checkErr.message);
     }
 
-    console.log(`[WhatsAppService] Sending message to ${targetJid}...`);
+    console.log(`[WhatsAppService] Sending ${hasMedia ? 'media ' : ''}message to ${targetJid}...`);
 
-    // Send the message
-    const response = await this.client.sendMessage(targetJid, message.trim());
+    let response;
+    if (hasMedia) {
+      const media = await buildMessageMedia(mediaOptions);
+      if (!media) throw new Error('Could not parse image attachment.');
+      const sendOptions = msgText ? { caption: msgText } : {};
+      response = await this.client.sendMessage(targetJid, media, sendOptions);
+    } else {
+      response = await this.client.sendMessage(targetJid, msgText);
+    }
+
     console.log('[WhatsAppService] Send response received:', response ? 'Success' : 'Empty');
 
     return {
@@ -382,9 +394,9 @@ class WhatsAppService {
 
   /**
    * Sends bulk messages with anti-ban rate limiting and jitter delay
-   * @param {Array<string|object>} recipients Array of phone numbers or objects [{ phoneNumber, message }]
+   * @param {Array<string|object>} recipients Array of phone numbers or objects [{ phoneNumber, message, media }]
    * @param {string} defaultMessage Fallback message if recipient object doesn't provide one
-   * @param {object} options Options including minDelayMs and maxDelayMs
+   * @param {object} options Options including minDelayMs, maxDelayMs, media, mediaUrl
    */
   async sendBulk(recipients, defaultMessage = '', options = {}) {
     if (this.status !== 'CONNECTED' || !this.client) {
@@ -397,6 +409,7 @@ class WhatsAppService {
 
     const minDelay = options.minDelayMs || config.rateLimitMinDelayMs;
     const maxDelay = options.maxDelayMs || config.rateLimitMaxDelayMs;
+    const globalMedia = options.media || options.mediaUrl || null;
 
     console.log(`[WhatsAppService] Starting bulk send to ${recipients.length} recipients with anti-ban delay (${minDelay}-${maxDelay}ms)...`);
 
@@ -407,10 +420,11 @@ class WhatsAppService {
     for (let i = 0; i < recipients.length; i++) {
       const item = recipients[i];
       const phoneNumber = typeof item === 'object' ? item.phoneNumber : item;
-      const messageText = (typeof item === 'object' && item.message) ? item.message : defaultMessage;
+      const messageText = (typeof item === 'object' && item.message !== undefined) ? item.message : defaultMessage;
+      const mediaOptions = (typeof item === 'object' && (item.media || item.mediaUrl)) ? (item.media || item.mediaUrl) : globalMedia;
 
       try {
-        const sendResult = await this.sendMessage(phoneNumber, messageText);
+        const sendResult = await this.sendMessage(phoneNumber, messageText, mediaOptions);
         results.push({
           phoneNumber,
           status: 'sent',

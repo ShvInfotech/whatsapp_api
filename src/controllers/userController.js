@@ -62,74 +62,75 @@ class UserController {
 
   async sendMessage(req, res) {
     try {
-      if (!instanceService.userOwnsInstance(req.user._id, req.params.id)) return res.status(404).json({ success: false, error: 'WhatsApp instance not found.' });
-      const { phoneNumber, message } = req.body;
-      if (!phoneNumber || !message) return res.status(400).json({ success: false, error: 'Phone number and message are required.' });
-      const result = await instanceService.sendMessage(req.params.id, phoneNumber, message);
-      return res.json({ success: true, message: 'Message sent successfully.', data: result });
-    } catch (error) {
-      const status = /not connected|not ready|INITIALIZING|DISCONNECTED/i.test(error.message) ? 503 : 400;
-      return res.status(status).json({ success: false, error: error.message || 'Unable to send message.' });
-    }
-  }
-
-  async sendBulk(req, res) {
-    try {
-      if (!instanceService.userOwnsInstance(req.user._id, req.params.id)) return res.status(404).json({ success: false, error: 'WhatsApp instance not found.' });
-      const numbers = req.body.phoneNumbers || req.body.recipients;
-      const message = req.body.message || req.body.defaultMessage;
-      if (!Array.isArray(numbers) || !numbers.length || !message) return res.status(400).json({ success: false, error: 'Phone numbers and message are required.' });
-      const results = [];
-      for (const phoneNumber of numbers) {
-        try {
-          const sent = await instanceService.sendMessage(req.params.id, phoneNumber, message);
-          results.push({ phoneNumber, status: 'sent', messageId: sent.messageId });
-        } catch (error) {
-          results.push({ phoneNumber, status: 'failed', error: error.message });
-        }
-        await new Promise((resolve) => setTimeout(resolve, 2500));
+      if (!instanceService.userOwnsInstance(req.user._id, req.params.id)) {
+        return res.status(404).json({ success: false, error: 'WhatsApp instance not found.' });
       }
-      const successful = results.filter((item) => item.status === 'sent').length;
-      return res.json({ success: true, message: `Bulk messaging completed: ${successful}/${results.length} delivered successfully`, data: { total: results.length, successful, failed: results.length - successful, results } });
-    } catch (error) { return res.status(400).json({ success: false, error: error.message || 'Unable to send bulk messages.' }); }
-  }
+      const { phoneNumber, message, media, mediaUrl, filename, mimetype, image } = req.body;
+      const mediaInput = media || mediaUrl || image || (filename ? { filename, mimetype, data: req.body.data } : null);
 
-  async sendMessage(req, res) {
-    try {
-      const { phoneNumber, message } = req.body;
-      if (!instanceService.userOwnsInstance(req.user._id, req.params.id)) return res.status(404).json({ success: false, error: 'WhatsApp instance not found.' });
-      const data = await instanceService.sendMessage(req.params.id, phoneNumber, message);
+      if (!phoneNumber) {
+        return res.status(400).json({ success: false, error: 'Recipient phone number is required.' });
+      }
+      if ((!message || !message.toString().trim()) && !mediaInput) {
+        return res.status(400).json({ success: false, error: 'Message content or image attachment is required.' });
+      }
+
+      const data = await instanceService.sendMessage(req.params.id, phoneNumber, message || '', mediaInput);
       return res.json({ success: true, message: 'Message sent successfully.', data });
     } catch (error) {
-      return res.status(error.message.includes('not connected') ? 503 : 400).json({ success: false, error: error.message || 'Message could not be sent.' });
+      return res.status(error.message.includes('not connected') ? 503 : 400).json({
+        success: false,
+        error: error.message || 'Message could not be sent.'
+      });
     }
   }
 
   async sendBulk(req, res) {
     try {
-      const { phoneNumbers, message, options = {} } = req.body;
-      if (!instanceService.userOwnsInstance(req.user._id, req.params.id)) return res.status(404).json({ success: false, error: 'WhatsApp instance not found.' });
-      if (!Array.isArray(phoneNumbers) || !phoneNumbers.length || phoneNumbers.length > 100) return res.status(400).json({ success: false, error: 'Provide 1 to 100 phone numbers.' });
-      if (!message || !message.trim()) return res.status(400).json({ success: false, error: 'Message content cannot be empty.' });
+      if (!instanceService.userOwnsInstance(req.user._id, req.params.id)) {
+        return res.status(404).json({ success: false, error: 'WhatsApp instance not found.' });
+      }
+      const { phoneNumbers, recipients, message, defaultMessage, media, mediaUrl, filename, mimetype, image, options = {} } = req.body;
+      const numbers = phoneNumbers || recipients;
+      const msgText = message !== undefined ? message : defaultMessage;
+      const mediaInput = media || mediaUrl || image || (filename ? { filename, mimetype, data: req.body.data } : null);
+
+      if (!Array.isArray(numbers) || !numbers.length || numbers.length > 100) {
+        return res.status(400).json({ success: false, error: 'Provide 1 to 100 phone numbers.' });
+      }
+      if ((!msgText || !msgText.toString().trim()) && !mediaInput) {
+        return res.status(400).json({ success: false, error: 'Message content or image attachment is required.' });
+      }
 
       const minDelay = Math.max(1000, Number(options.minDelayMs) || config.rateLimitMinDelayMs);
       const maxDelay = Math.max(minDelay, Number(options.maxDelayMs) || config.rateLimitMaxDelayMs);
       const results = [];
-      for (let index = 0; index < phoneNumbers.length; index += 1) {
-        const phoneNumber = phoneNumbers[index];
+
+      for (let index = 0; index < numbers.length; index += 1) {
+        const item = numbers[index];
+        const phoneNumber = typeof item === 'object' ? item.phoneNumber : item;
+        const text = (typeof item === 'object' && item.message !== undefined) ? item.message : (msgText || '');
+        const itemMedia = (typeof item === 'object' && (item.media || item.mediaUrl || item.image)) ? (item.media || item.mediaUrl || item.image) : mediaInput;
+
         try {
-          const data = await instanceService.sendMessage(req.params.id, phoneNumber, message);
+          const data = await instanceService.sendMessage(req.params.id, phoneNumber, text, itemMedia);
           results.push({ phoneNumber, status: 'sent', data });
         } catch (error) {
           results.push({ phoneNumber, status: 'failed', error: error.message });
         }
-        if (index < phoneNumbers.length - 1) {
+
+        if (index < numbers.length - 1) {
           const delay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
+
       const successful = results.filter((result) => result.status === 'sent').length;
-      return res.json({ success: true, message: `Bulk messaging completed: ${successful}/${results.length} sent.`, data: { total: results.length, successful, failed: results.length - successful, results } });
+      return res.json({
+        success: true,
+        message: `Bulk messaging completed: ${successful}/${results.length} sent.`,
+        data: { total: results.length, successful, failed: results.length - successful, results }
+      });
     } catch (error) {
       return res.status(500).json({ success: false, error: error.message || 'Bulk messages could not be sent.' });
     }

@@ -160,9 +160,109 @@ function setResult(id, message, isError = false) {
   element.style.color = isError ? '#fca5a5' : '#a7f3d0';
 }
 
+function formatFileSize(bytes) {
+  if (!bytes) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
 const userSingleForm = document.getElementById('userSingleForm');
 const userSingleMsgInput = document.getElementById('userSingleMessage');
 const userSinglePhoneInput = document.getElementById('userSinglePhone');
+
+// Single Message Attachment Handling
+let attachedSingleMedia = null;
+const userSingleDropzone = document.getElementById('userSingleDropzone');
+const userSingleImageFile = document.getElementById('userSingleImageFile');
+const userSingleDropPrompt = document.getElementById('userSingleDropPrompt');
+const userSingleAttachPreview = document.getElementById('userSingleAttachPreview');
+const userSingleThumb = document.getElementById('userSingleThumb');
+const userSingleAttachName = document.getElementById('userSingleAttachName');
+const userSingleAttachSize = document.getElementById('userSingleAttachSize');
+const userSingleRemoveImg = document.getElementById('userSingleRemoveImg');
+const phoneWaImgWrap = document.getElementById('phoneWaImgWrap');
+const phoneWaImg = document.getElementById('phoneWaImg');
+
+function clearSingleAttachment() {
+  attachedSingleMedia = null;
+  if (userSingleImageFile) userSingleImageFile.value = '';
+  if (userSingleAttachPreview) userSingleAttachPreview.classList.add('hidden');
+  if (userSingleDropPrompt) userSingleDropPrompt.classList.remove('hidden');
+  if (phoneWaImgWrap) phoneWaImgWrap.classList.add('hidden');
+  if (phoneWaImg) phoneWaImg.src = '';
+}
+
+function handleSingleFile(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    alert('Please select an image file (PNG, JPG, JPEG, WEBP).');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    alert('Image size exceeds 10MB limit. Please choose a smaller image.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    attachedSingleMedia = {
+      data: dataUrl,
+      name: file.name,
+      size: file.size,
+      mime: file.type
+    };
+    if (userSingleThumb) userSingleThumb.src = dataUrl;
+    if (userSingleAttachName) userSingleAttachName.textContent = file.name;
+    if (userSingleAttachSize) userSingleAttachSize.textContent = formatFileSize(file.size);
+    if (userSingleDropPrompt) userSingleDropPrompt.classList.add('hidden');
+    if (userSingleAttachPreview) userSingleAttachPreview.classList.remove('hidden');
+
+    if (phoneWaImg) phoneWaImg.src = dataUrl;
+    if (phoneWaImgWrap) phoneWaImgWrap.classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+}
+
+if (userSingleDropzone && userSingleImageFile) {
+  userSingleDropzone.addEventListener('click', (e) => {
+    if (e.target.closest('#userSingleRemoveImg')) return;
+    userSingleImageFile.click();
+  });
+
+  userSingleImageFile.addEventListener('change', () => {
+    if (userSingleImageFile.files?.[0]) {
+      handleSingleFile(userSingleImageFile.files[0]);
+    }
+  });
+
+  ['dragenter', 'dragover'].forEach(name => {
+    userSingleDropzone.addEventListener(name, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      userSingleDropzone.classList.add('dragover');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(name => {
+    userSingleDropzone.addEventListener(name, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      userSingleDropzone.classList.remove('dragover');
+    });
+  });
+
+  userSingleDropzone.addEventListener('drop', (e) => {
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleSingleFile(file);
+  });
+
+  userSingleRemoveImg?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearSingleAttachment();
+  });
+}
 
 function updateSinglePreview() {
   const preview = document.getElementById('userSinglePreview');
@@ -171,7 +271,18 @@ function updateSinglePreview() {
   const text = userSingleMsgInput ? userSingleMsgInput.value : '';
 
   if (charBadge) charBadge.textContent = `${text.length} Chars`;
-  if (preview) preview.textContent = text.trim() ? text : 'Type message to preview...';
+  if (preview) {
+    if (text.trim()) {
+      preview.textContent = text;
+      preview.classList.remove('hidden');
+    } else if (attachedSingleMedia) {
+      preview.textContent = '';
+      preview.classList.add('hidden');
+    } else {
+      preview.textContent = 'Type message to preview...';
+      preview.classList.remove('hidden');
+    }
+  }
   if (previewTime) previewTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
@@ -235,22 +346,47 @@ document.getElementById('clearSingleMsg')?.addEventListener('click', () => {
 if (userSingleForm) {
   userSingleForm.addEventListener('submit', async (event) => {
     event.preventDefault();
+    const phone = document.getElementById('userSinglePhone').value.trim();
+    const message = document.getElementById('userSingleMessage').value.trim();
+
+    if (!phone) {
+      return setResult('userSingleResult', 'Please enter a recipient phone number.', true);
+    }
+    if (!message && !attachedSingleMedia) {
+      return setResult('userSingleResult', 'Please enter a message or attach an image.', true);
+    }
+
     const button = document.getElementById('userSendSingle');
     button.disabled = true;
     try {
+      const payload = {
+        phoneNumber: phone,
+        message: message
+      };
+      if (attachedSingleMedia) {
+        payload.media = attachedSingleMedia.data;
+        payload.filename = attachedSingleMedia.name;
+        payload.mimetype = attachedSingleMedia.mime;
+      }
+
       const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/send-message`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: document.getElementById('userSinglePhone').value.trim(), message: document.getElementById('userSingleMessage').value.trim() })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
       const data = await response.safeJson();
       if (!response.ok) throw new Error(data.error || 'Message could not be sent.');
-      setResult('userSingleResult', 'Message sent successfully.');
+      setResult('userSingleResult', attachedSingleMedia ? 'Image and message sent successfully.' : 'Message sent successfully.');
       event.target.reset();
+      clearSingleAttachment();
       updateSinglePreview();
       const recipient = document.getElementById('previewRecipientName');
       if (recipient) recipient.textContent = 'Recipient';
-    } catch (error) { setResult('userSingleResult', error.message, true); }
-    finally { button.disabled = false; }
+    } catch (error) {
+      setResult('userSingleResult', error.message, true);
+    } finally {
+      button.disabled = false;
+    }
   });
 }
 
@@ -258,6 +394,98 @@ const userBulkForm = document.getElementById('userBulkForm');
 const userBulkNumbers = document.getElementById('userBulkNumbers');
 const userBulkMessage = document.getElementById('userBulkMessage');
 const userDelayRange = document.getElementById('userDelayRange');
+
+// Bulk Message Attachment Handling
+let attachedBulkMedia = null;
+const userBulkDropzone = document.getElementById('userBulkDropzone');
+const userBulkImageFile = document.getElementById('userBulkImageFile');
+const userBulkDropPrompt = document.getElementById('userBulkDropPrompt');
+const userBulkAttachPreview = document.getElementById('userBulkAttachPreview');
+const userBulkThumb = document.getElementById('userBulkThumb');
+const userBulkAttachName = document.getElementById('userBulkAttachName');
+const userBulkAttachSize = document.getElementById('userBulkAttachSize');
+const userBulkRemoveImg = document.getElementById('userBulkRemoveImg');
+const userBulkPreviewImgWrap = document.getElementById('userBulkPreviewImgWrap');
+const userBulkPreviewImg = document.getElementById('userBulkPreviewImg');
+
+function clearBulkAttachment() {
+  attachedBulkMedia = null;
+  if (userBulkImageFile) userBulkImageFile.value = '';
+  if (userBulkAttachPreview) userBulkAttachPreview.classList.add('hidden');
+  if (userBulkDropPrompt) userBulkDropPrompt.classList.remove('hidden');
+  if (userBulkPreviewImgWrap) userBulkPreviewImgWrap.classList.add('hidden');
+  if (userBulkPreviewImg) userBulkPreviewImg.src = '';
+}
+
+function handleBulkFile(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    alert('Please select an image file (PNG, JPG, JPEG, WEBP).');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    alert('Image size exceeds 10MB limit. Please choose a smaller image.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    attachedBulkMedia = {
+      data: dataUrl,
+      name: file.name,
+      size: file.size,
+      mime: file.type
+    };
+    if (userBulkThumb) userBulkThumb.src = dataUrl;
+    if (userBulkAttachName) userBulkAttachName.textContent = file.name;
+    if (userBulkAttachSize) userBulkAttachSize.textContent = formatFileSize(file.size);
+    if (userBulkDropPrompt) userBulkDropPrompt.classList.add('hidden');
+    if (userBulkAttachPreview) userBulkAttachPreview.classList.remove('hidden');
+
+    if (userBulkPreviewImg) userBulkPreviewImg.src = dataUrl;
+    if (userBulkPreviewImgWrap) userBulkPreviewImgWrap.classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+}
+
+if (userBulkDropzone && userBulkImageFile) {
+  userBulkDropzone.addEventListener('click', (e) => {
+    if (e.target.closest('#userBulkRemoveImg')) return;
+    userBulkImageFile.click();
+  });
+
+  userBulkImageFile.addEventListener('change', () => {
+    if (userBulkImageFile.files?.[0]) {
+      handleBulkFile(userBulkImageFile.files[0]);
+    }
+  });
+
+  ['dragenter', 'dragover'].forEach(name => {
+    userBulkDropzone.addEventListener(name, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      userBulkDropzone.classList.add('dragover');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(name => {
+    userBulkDropzone.addEventListener(name, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      userBulkDropzone.classList.remove('dragover');
+    });
+  });
+
+  userBulkDropzone.addEventListener('drop', (e) => {
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleBulkFile(file);
+  });
+
+  userBulkRemoveImg?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearBulkAttachment();
+  });
+}
 
 if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
   function parseUserNumbers() {
@@ -267,6 +495,24 @@ if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
     const numbers = parseUserNumbers();
     document.getElementById('userNumberCountBadge').textContent = `${numbers.length} Number${numbers.length === 1 ? '' : 's'}`;
     document.getElementById('userCharCountBadge').textContent = `${userBulkMessage.value.length} Chars`;
+    const preview = document.getElementById('userBulkPreview');
+    const previewTime = document.getElementById('userBulkPreviewTime');
+    const text = userBulkMessage.value.trim();
+    if (preview) {
+      if (text) {
+        preview.textContent = text;
+        preview.classList.remove('hidden');
+      } else if (attachedBulkMedia) {
+        preview.textContent = '';
+        preview.classList.add('hidden');
+      } else {
+        preview.textContent = 'Type message to preview...';
+        preview.classList.remove('hidden');
+      }
+    }
+    if (previewTime) {
+      previewTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
   }
   function updateUserDelay() {
     const delay = Number(userDelayRange.value);
@@ -296,19 +542,65 @@ if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
 
   userBulkForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const button = document.getElementById('userSendBulk'); const phoneNumbers = parseUserNumbers(); const message = userBulkMessage.value.trim();
-    if (!phoneNumbers.length || !message) return setResult('userBulkResult', 'Add at least one valid number and a message.', true);
-    button.disabled = true; const state = document.getElementById('userExecStateBadge'); state.className = 'badge badge-running'; state.textContent = 'Sending...';
-    updateUserBulkProgress(0, phoneNumbers.length, 0, 0); document.getElementById('userLogTableBody').innerHTML = phoneNumbers.map((number, index) => `<tr><td>${index + 1}</td><td>${number}</td><td class="text-muted">Queued</td><td>-</td></tr>`).join('');
+    const button = document.getElementById('userSendBulk');
+    const phoneNumbers = parseUserNumbers();
+    const message = userBulkMessage.value.trim();
+
+    if (!phoneNumbers.length) {
+      return setResult('userBulkResult', 'Add at least one valid recipient number (min 10 digits).', true);
+    }
+    if (!message && !attachedBulkMedia) {
+      return setResult('userBulkResult', 'Please enter a message or attach an image.', true);
+    }
+
+    button.disabled = true;
+    const state = document.getElementById('userExecStateBadge');
+    state.className = 'badge badge-running';
+    state.textContent = 'Sending...';
+    updateUserBulkProgress(0, phoneNumbers.length, 0, 0);
+    document.getElementById('userLogTableBody').innerHTML = phoneNumbers.map((number, index) => `<tr><td>${index + 1}</td><td>${number}</td><td class="text-muted">Queued</td><td>-</td></tr>`).join('');
+
     try {
       const delayMs = Number(userDelayRange.value) * 1000;
-      const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/send-bulk`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phoneNumbers, message, options: { minDelayMs: Math.max(1000, delayMs - 500), maxDelayMs: delayMs + 500 } }) });
-      const data = await response.safeJson(); if (!response.ok) throw new Error(data.error || 'Bulk messages could not be sent.');
-      const results = data.data?.results || []; let sent = 0; let failed = 0;
-      document.getElementById('userLogTableBody').innerHTML = results.map((result, index) => { const ok = result.status === 'sent'; if (ok) sent += 1; else failed += 1; return `<tr><td>${index + 1}</td><td>${result.phoneNumber}</td><td class="${ok ? 'status-sent' : 'status-failed'}">${ok ? 'Sent' : 'Failed'}</td><td>${ok ? 'Delivered to WhatsApp' : (result.error || 'Could not send')}</td></tr>`; }).join('');
-      updateUserBulkProgress(results.length, phoneNumbers.length, sent, failed); state.className = 'badge badge-completed'; state.textContent = 'Completed'; setResult('userBulkResult', data.message || 'Bulk sending completed.');
-    } catch (error) { state.className = 'badge badge-stopped'; state.textContent = 'Failed'; setResult('userBulkResult', error.message, true); }
-    finally { button.disabled = false; }
+      const payload = {
+        phoneNumbers,
+        message,
+        options: { minDelayMs: Math.max(1000, delayMs - 500), maxDelayMs: delayMs + 500 }
+      };
+      if (attachedBulkMedia) {
+        payload.media = attachedBulkMedia.data;
+        payload.filename = attachedBulkMedia.name;
+        payload.mimetype = attachedBulkMedia.mime;
+      }
+
+      const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/send-bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.safeJson();
+      if (!response.ok) throw new Error(data.error || 'Bulk messages could not be sent.');
+
+      const results = data.data?.results || [];
+      let sent = 0;
+      let failed = 0;
+      document.getElementById('userLogTableBody').innerHTML = results.map((result, index) => {
+        const ok = result.status === 'sent';
+        if (ok) sent += 1; else failed += 1;
+        return `<tr><td>${index + 1}</td><td>${result.phoneNumber}</td><td class="${ok ? 'status-sent' : 'status-failed'}">${ok ? 'Sent' : 'Failed'}</td><td>${ok ? (attachedBulkMedia ? 'Delivered with image' : 'Delivered to WhatsApp') : (result.error || 'Could not send')}</td></tr>`;
+      }).join('');
+
+      updateUserBulkProgress(results.length, phoneNumbers.length, sent, failed);
+      state.className = 'badge badge-completed';
+      state.textContent = 'Completed';
+      setResult('userBulkResult', data.message || 'Bulk sending completed.');
+    } catch (error) {
+      state.className = 'badge badge-stopped';
+      state.textContent = 'Failed';
+      setResult('userBulkResult', error.message, true);
+    } finally {
+      button.disabled = false;
+    }
   });
 
   updateUserBulkCounts();
@@ -329,13 +621,14 @@ function getSnippets(instance) {
   return {
     vb: {
       title: 'VB.NET (Desktop Software / WinForms / WPF)',
-      code: `' VB.NET WhatsApp API Integration
+      code: `' VB.NET WhatsApp API Integration (Text + Optional Image)
 Dim strMobileNo As String = "919876543210"
 Dim strMessage As String = "Hello! Your invoice #1042 has been generated."
+Dim strMediaUrl As String = "https://example.com/invoice.jpg" ' Optional image
 Dim strInstance As String = "${id}"
 Dim strToken As String = "${token}"
 
-Dim requestUrl As String = "${origin}/api/send?number=" & strMobileNo & "&type=text&message=" & Uri.EscapeDataString(strMessage) & "&instance_id=" & strInstance & "&access_token=" & strToken
+Dim requestUrl As String = "${origin}/api/send?number=" & strMobileNo & "&type=text&message=" & Uri.EscapeDataString(strMessage) & "&media_url=" & Uri.EscapeDataString(strMediaUrl) & "&instance_id=" & strInstance & "&access_token=" & strToken
 
 Dim client As New System.Net.WebClient()
 Dim response As String = client.DownloadString(requestUrl)
@@ -343,7 +636,7 @@ Console.WriteLine(response)`
     },
     csharp: {
       title: 'C# .NET (Console / ASP.NET / Desktop)',
-      code: `// C# .NET WhatsApp API Integration
+      code: `// C# .NET WhatsApp API Integration (Text + Optional Image)
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -351,10 +644,11 @@ using System.Threading.Tasks;
 using var client = new HttpClient();
 string mobileNo = "919876543210";
 string message = "Hello! Your invoice #1042 has been generated.";
+string mediaUrl = "https://example.com/invoice.jpg"; // Optional image
 string instanceId = "${id}";
 string accessToken = "${token}";
 
-string url = $"${origin}/api/send?number={mobileNo}&type=text&message={Uri.EscapeDataString(message)}&instance_id={instanceId}&access_token={accessToken}";
+string url = $"${origin}/api/send?number={mobileNo}&type=text&message={Uri.EscapeDataString(message)}&media_url={Uri.EscapeDataString(mediaUrl)}&instance_id={instanceId}&access_token={accessToken}";
 
 string response = await client.GetStringAsync(url);
 Console.WriteLine(response);`
@@ -362,12 +656,13 @@ Console.WriteLine(response);`
     php: {
       title: 'PHP (cURL / file_get_contents)',
       code: `<?php
-// PHP WhatsApp API Integration
+// PHP WhatsApp API Integration (Text + Optional Image)
 $baseUrl = "${origin}/api/send";
 $params = [
     'number'       => '919876543210',
     'type'         => 'text',
     'message'      => 'Hello! Your invoice #1042 has been generated.',
+    'media_url'    => 'https://example.com/invoice.jpg', // Optional image URL
     'instance_id'  => '${id}',
     'access_token' => '${token}'
 ];
@@ -379,7 +674,7 @@ echo $response;
     },
     python: {
       title: 'Python (requests library)',
-      code: `# Python WhatsApp API Integration
+      code: `# Python WhatsApp API Integration (Text + Optional Image)
 import requests
 
 url = "${origin}/api/send"
@@ -387,6 +682,7 @@ params = {
     "number": "919876543210",
     "type": "text",
     "message": "Hello! Your invoice #1042 has been generated.",
+    "media_url": "https://example.com/invoice.jpg", # Optional image URL
     "instance_id": "${id}",
     "access_token": "${token}"
 }
@@ -396,16 +692,17 @@ print(response.json())`
     },
     curl: {
       title: 'cURL (Terminal / Command Line)',
-      code: `# cURL Terminal Command
-curl -X GET "${origin}/api/send?number=919876543210&type=text&message=Hello+from+API&instance_id=${id}&access_token=${token}"`
+      code: `# cURL Terminal Command (Text + Optional Image)
+curl -X GET "${origin}/api/send?number=919876543210&type=text&message=Hello+from+API&media_url=https://example.com/invoice.jpg&instance_id=${id}&access_token=${token}"`
     },
     js: {
       title: 'JavaScript / Node.js (fetch API)',
-      code: `// Node.js / Modern JavaScript
+      code: `// Node.js / Modern JavaScript (Text + Optional Image)
 const params = new URLSearchParams({
   number: '919876543210',
   type: 'text',
   message: 'Hello! Your invoice #1042 has been generated.',
+  media_url: 'https://example.com/invoice.jpg', // Optional image URL
   instance_id: '${id}',
   access_token: '${token}'
 });

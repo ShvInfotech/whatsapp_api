@@ -10,7 +10,8 @@ class SendBuddyController {
       // Extract from Query (for GET or URL-encoded params) or Body (for POST JSON/form)
       const number = req.query.number || req.body.number || req.query.phone || req.body.phone;
       const type = req.query.type || req.body.type || 'text';
-      const message = req.query.message || req.body.message;
+      const message = req.query.message || req.body.message || '';
+      const media = req.query.media || req.body.media || req.query.media_url || req.body.media_url || req.query.url || req.body.url || req.query.image || req.body.image;
       const instanceId = req.query.instance_id || req.body.instance_id || req.query.instanceId || req.body.instanceId;
       const accessToken = req.query.access_token || req.body.access_token || req.query.accessToken || req.body.accessToken;
 
@@ -36,10 +37,10 @@ class SendBuddyController {
         });
       }
 
-      if (!message) {
+      if (!message && !media) {
         return res.status(400).json({
           status: 'error',
-          message: "Missing 'message' parameter."
+          message: "Missing 'message' or 'media_url' parameter."
         });
       }
 
@@ -53,7 +54,7 @@ class SendBuddyController {
       }
 
       // 3. Dispatch message through instance
-      const result = await instanceService.sendMessage(instanceId, number, message);
+      const result = await instanceService.sendMessage(instanceId, number, message, media);
 
       return res.status(200).json({
         status: 'success',

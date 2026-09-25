@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode');
 const config = require('../config');
+const { buildMessageMedia } = require('./mediaService');
 
 class InstanceService {
   constructor() {
@@ -535,11 +536,11 @@ class InstanceService {
   /**
    * Send WhatsApp message from a specific instance
    */
-  async sendMessage(instanceId, recipientPhone, message) {
+  async sendMessage(instanceId, recipientPhone, message, mediaOptions = null) {
     // Check if targeting default session
     if (instanceId === config.sessionId || instanceId === 'default' || instanceId === 'safevault-session') {
       const whatsappService = require('./whatsappService');
-      const sent = await whatsappService.sendMessage(recipientPhone, message);
+      const sent = await whatsappService.sendMessage(recipientPhone, message, mediaOptions);
       return {
         messageId: sent.messageId,
         to: sent.recipient,
@@ -560,8 +561,12 @@ class InstanceService {
     if (!recipientPhone || !recipientPhone.toString().trim()) {
       throw new Error('Recipient phone number is required.');
     }
-    if (!message || !message.toString().trim()) {
-      throw new Error('Message content cannot be empty.');
+
+    const hasMedia = !!mediaOptions;
+    const msgText = message !== undefined && message !== null ? message.toString().trim() : '';
+
+    if (!msgText && !hasMedia) {
+      throw new Error('Message content or image attachment is required.');
     }
 
     // Sanitize phone number (strip all non-digits, e.g. +, spaces, dashes)
@@ -585,14 +590,28 @@ class InstanceService {
       console.warn(`[InstanceService] [${instanceId}] getNumberId check warning:`, checkErr.message);
     }
 
+    // Prepare payload (media or text)
+    let payload = msgText;
+    let sendOptions = {};
+    if (hasMedia) {
+      const media = await buildMessageMedia(mediaOptions);
+      if (!media) {
+        throw new Error('Could not parse image attachment.');
+      }
+      payload = media;
+      if (msgText) {
+        sendOptions = { caption: msgText };
+      }
+    }
+
     // Send Message
     let sent = null;
     try {
-      sent = await state.client.sendMessage(targetJid, message.toString().trim());
+      sent = await state.client.sendMessage(targetJid, payload, sendOptions);
     } catch (sendErr) {
       console.warn(`[InstanceService] [${instanceId}] Failed sending to ${targetJid}, trying fallback ${chatId}:`, sendErr.message);
       if (targetJid !== chatId) {
-        sent = await state.client.sendMessage(chatId, message.toString().trim());
+        sent = await state.client.sendMessage(chatId, payload, sendOptions);
       } else {
         throw sendErr;
       }
