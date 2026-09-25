@@ -102,8 +102,9 @@ class UserController {
         return res.status(400).json({ success: false, error: 'Message content or image attachment is required.' });
       }
 
-      const minDelay = Math.max(1000, Number(options.minDelayMs) || config.rateLimitMinDelayMs);
-      const maxDelay = Math.max(minDelay, Number(options.maxDelayMs) || config.rateLimitMaxDelayMs);
+      const baseDelay = Number(options.delayMs) || (Number(options.delaySeconds || options.delay) * 1000) || null;
+      const minDelay = baseDelay ? Math.max(500, baseDelay - 500) : Math.max(500, Number(options.minDelayMs) || config.rateLimitMinDelayMs);
+      const maxDelay = baseDelay ? (baseDelay + 500) : Math.max(minDelay, Number(options.maxDelayMs) || config.rateLimitMaxDelayMs);
       const results = [];
 
       for (let index = 0; index < numbers.length; index += 1) {

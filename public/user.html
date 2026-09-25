@@ -303,7 +303,180 @@
         </div>
       </section>
 
-      <section id="bulkMessageTab" class="user-tab-panel"><div class="panel-header"><div><h2>Bulk WhatsApp Dispatcher</h2><p>Send bulk messages from your private WhatsApp account with safe randomized delays.</p></div><div class="antiban-badge">Anti-Ban Protection Enabled</div></div><div class="grid-2col"><div class="card"><form id="userBulkForm"><div class="card-header"><h3>1. Add Contact Numbers</h3><span id="userNumberCountBadge" class="count-badge">0 Numbers</span></div><div class="form-group"><label for="userBulkNumbers">Enter / Paste Phone Numbers <span class="label-hint">(One per line, comma, or space separated)</span></label><textarea id="userBulkNumbers" rows="6" placeholder="919876543210&#10;919876543211" required></textarea><div class="textarea-actions"><button id="userClearNumbers" type="button" class="btn-text danger">Clear</button></div></div><div class="card-header mt-4"><h3>2. Compose Message</h3><span id="userCharCountBadge" class="count-badge">0 Chars</span></div><div class="form-group mb-3"><div class="label-row"><label>Attach Broadcast Image / Banner (Optional)</label><span class="label-tag">JPG, PNG, WEBP</span></div><div id="userBulkDropzone" class="media-dropzone"><input type="file" id="userBulkImageFile" accept="image/png, image/jpeg, image/jpg, image/webp" class="hidden" /><div class="dropzone-prompt" id="userBulkDropPrompt"><div class="dropzone-icon">🖼️</div><div class="dropzone-text"><span class="dropzone-title">Click to attach broadcast image</span><span class="dropzone-sub">Image will be sent to all recipients with your message as caption</span></div></div><div id="userBulkAttachPreview" class="attach-preview-bar hidden"><img id="userBulkThumb" class="attach-thumb" alt="Preview" /><div class="attach-info"><span id="userBulkAttachName" class="attach-name">banner.jpg</span><span id="userBulkAttachSize" class="attach-size">210 KB</span></div><button type="button" id="userBulkRemoveImg" class="btn-remove-attach" title="Remove image">✕</button></div></div></div><div class="form-group"><label for="userBulkMessage">Message Content / Caption</label><div class="formatting-bar"><button type="button" class="fmt-btn" data-user-fmt="bold" title="Bold"><b>B</b></button><button type="button" class="fmt-btn" data-user-fmt="italic" title="Italic"><i>I</i></button><button type="button" class="fmt-btn" data-user-fmt="strike" title="Strikethrough"><s>S</s></button><button type="button" class="fmt-btn" data-user-fmt="mono" title="Monospace"><code>{ }</code></button></div><textarea id="userBulkMessage" rows="5" placeholder="Type one message or caption for all contacts..."></textarea><div class="wa-preview-box"><span class="preview-label">📱 WhatsApp Bubble Preview</span><div class="wa-bubble wa-bubble-out" style="max-width: 100%; margin-top: 6px;"><div id="userBulkPreviewImgWrap" class="phone-wa-img-wrap hidden"><img id="userBulkPreviewImg" class="phone-wa-bubble-img" alt="Preview" /></div><p id="userBulkPreview">Type message to preview...</p><span class="wa-bubble-time"><span id="userBulkPreviewTime">Just now</span> <span class="wa-ticks">✓✓</span></span></div></div></div><div class="card-header mt-4"><h3>3. Sending Speed &amp; Delay</h3><span id="userDelayDisplay" class="count-badge highlight">4 - 5 Seconds</span></div><div class="delay-box"><div class="slider-row"><label for="userDelayRange">Safe Delay Between Messages:</label><span id="userSliderVal" class="slider-value">4.5s</span></div><input type="range" id="userDelayRange" min="2" max="10" step="0.5" value="4.5"><p class="delay-note">A randomized delay helps keep your WhatsApp activity natural.</p></div><div class="action-buttons"><button id="userSendBulk" class="btn btn-primary btn-large" type="submit">Start Sending Messages</button></div></form></div><div class="card"><div class="card-header"><h3>Live Execution &amp; Delivery Report</h3><span id="userExecStateBadge" class="badge badge-idle">Ready</span></div><div class="progress-section"><div class="progress-info"><span id="userProgressSummary">0 of 0 Completed</span><span id="userProgressPercent">0%</span></div><div class="progress-track"><div id="userProgressBar" class="progress-fill" style="width: 0%"></div></div></div><div class="stats-row"><div class="stat-card"><span class="stat-num" id="userStatTotal">0</span><span class="stat-lbl">Total</span></div><div class="stat-card stat-success"><span class="stat-num" id="userStatSent">0</span><span class="stat-lbl">Sent</span></div><div class="stat-card stat-failed"><span class="stat-num" id="userStatFailed">0</span><span class="stat-lbl">Failed</span></div><div class="stat-card"><span class="stat-num" id="userStatRemaining">0</span><span class="stat-lbl">Remaining</span></div></div><div class="table-header-row"><h4>Delivery Log</h4><button id="userClearLog" class="btn-text" type="button">Clear Log</button></div><div class="table-container"><table class="log-table"><thead><tr><th>#</th><th>Number</th><th>Status</th><th>Details</th></tr></thead><tbody id="userLogTableBody"><tr class="empty-row"><td colspan="4">No messages sent yet. Add numbers and click Start Sending.</td></tr></tbody></table></div><div id="userBulkResult" class="result-box hidden"></div></div></div></section>
+      <section id="bulkMessageTab" class="user-tab-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Bulk WhatsApp Dispatcher</h2>
+            <p>Send bulk messages from your private WhatsApp account with safe randomized delays.</p>
+          </div>
+          <div class="antiban-badge">Anti-Ban Protection Enabled</div>
+        </div>
+
+        <div class="grid-2col">
+          <div class="card">
+            <form id="userBulkForm">
+              <div class="card-header">
+                <h3>1. Add Contact Numbers</h3>
+                <span id="userNumberCountBadge" class="count-badge">0 Numbers</span>
+              </div>
+              <div class="form-group">
+                <label for="userBulkNumbers">Enter / Paste Phone Numbers <span class="label-hint">(One per line, comma, or space separated)</span></label>
+                <textarea id="userBulkNumbers" rows="6" placeholder="919876543210&#10;919876543211" required></textarea>
+                <div class="textarea-actions">
+                  <button id="userClearNumbers" type="button" class="btn-text danger">Clear</button>
+                </div>
+              </div>
+
+              <div class="card-header mt-4">
+                <h3>2. Compose Message</h3>
+                <span id="userCharCountBadge" class="count-badge">0 Chars</span>
+              </div>
+              <div class="form-group mb-3">
+                <div class="label-row">
+                  <label>Attach Broadcast Image / Banner (Optional)</label>
+                  <span class="label-tag">JPG, PNG, WEBP</span>
+                </div>
+                <div id="userBulkDropzone" class="media-dropzone">
+                  <input type="file" id="userBulkImageFile" accept="image/png, image/jpeg, image/jpg, image/webp" class="hidden" />
+                  <div class="dropzone-prompt" id="userBulkDropPrompt">
+                    <div class="dropzone-icon">🖼️</div>
+                    <div class="dropzone-text">
+                      <span class="dropzone-title">Click to attach broadcast image</span>
+                      <span class="dropzone-sub">Image will be sent to all recipients with your message as caption</span>
+                    </div>
+                  </div>
+                  <div id="userBulkAttachPreview" class="attach-preview-bar hidden">
+                    <img id="userBulkThumb" class="attach-thumb" alt="Preview" />
+                    <div class="attach-info">
+                      <span id="userBulkAttachName" class="attach-name">banner.jpg</span>
+                      <span id="userBulkAttachSize" class="attach-size">210 KB</span>
+                    </div>
+                    <button type="button" id="userBulkRemoveImg" class="btn-remove-attach" title="Remove image">✕</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="userBulkMessage">Message Content / Caption</label>
+                <div class="formatting-bar">
+                  <button type="button" class="fmt-btn" data-user-fmt="bold" title="Bold"><b>B</b></button>
+                  <button type="button" class="fmt-btn" data-user-fmt="italic" title="Italic"><i>I</i></button>
+                  <button type="button" class="fmt-btn" data-user-fmt="strike" title="Strikethrough"><s>S</s></button>
+                  <button type="button" class="fmt-btn" data-user-fmt="mono" title="Monospace"><code>{ }</code></button>
+                </div>
+                <textarea id="userBulkMessage" rows="5" placeholder="Type one message or caption for all contacts..."></textarea>
+                <div class="wa-preview-box">
+                  <span class="preview-label">📱 WhatsApp Bubble Preview</span>
+                  <div class="wa-bubble wa-bubble-out" style="max-width: 100%; margin-top: 6px;">
+                    <div id="userBulkPreviewImgWrap" class="phone-wa-img-wrap hidden">
+                      <img id="userBulkPreviewImg" class="phone-wa-bubble-img" alt="Preview" />
+                    </div>
+                    <p id="userBulkPreview">Type message to preview...</p>
+                    <span class="wa-bubble-time"><span id="userBulkPreviewTime">Just now</span> <span class="wa-ticks">✓✓</span></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-header mt-4">
+                <h3>3. Sending Speed &amp; Delay</h3>
+                <span id="userDelayDisplay" class="count-badge highlight">4 - 5 Seconds</span>
+              </div>
+
+              <div class="delay-box">
+                <div class="speed-presets mb-3">
+                  <label class="templates-label" style="display:block; margin-bottom: 6px; font-weight:600; font-size:0.8rem; color:var(--text-muted);">⚡ Quick Speed Presets:</label>
+                  <div class="template-chips" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <button type="button" class="template-chip" data-speed="1.5">⚡ Fast (1.5s)</button>
+                    <button type="button" class="template-chip active" data-speed="4.5">🛡️ Normal (4.5s)</button>
+                    <button type="button" class="template-chip" data-speed="8">🐢 Safe (8s)</button>
+                    <button type="button" class="template-chip" data-speed="12">🔒 Ultra-Safe (12s)</button>
+                  </div>
+                </div>
+
+                <div class="slider-row">
+                  <label for="userDelayRange">Custom Delay Between Messages:</label>
+                  <span id="userSliderVal" class="slider-value">4.5s</span>
+                </div>
+                <input type="range" id="userDelayRange" min="1" max="25" step="0.5" value="4.5">
+                <p class="delay-note">A randomized anti-ban delay keeps your WhatsApp account natural and protected.</p>
+              </div>
+
+              <div class="action-buttons" style="display:flex; gap:0.75rem; margin-top:1.5rem;">
+                <button id="userSendBulk" class="btn btn-primary btn-large" type="submit" style="flex:1;">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  <span>Start Sending Messages</span>
+                </button>
+                <button id="userStopBulk" type="button" class="btn btn-danger btn-large hidden" style="flex:1; background:#ef4444; border-color:#dc2626;">
+                  <span>⏹ Stop Sending</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>Live Execution &amp; Delivery Report</h3>
+              <span id="userExecStateBadge" class="badge badge-idle">Ready</span>
+            </div>
+
+            <div class="progress-section">
+              <div class="progress-info">
+                <span id="userProgressSummary">0 of 0 Completed</span>
+                <span id="userProgressPercent">0%</span>
+              </div>
+              <div class="progress-track">
+                <div id="userProgressBar" class="progress-fill" style="width: 0%"></div>
+              </div>
+              <div id="userCountdownBanner" class="countdown-banner hidden">
+                <span class="pulse-icon">⏳</span>
+                <span id="userCountdownText">Waiting 4.5s for anti-ban safety before next message...</span>
+              </div>
+            </div>
+
+            <div class="stats-row">
+              <div class="stat-card">
+                <span class="stat-num" id="userStatTotal">0</span>
+                <span class="stat-lbl">Total</span>
+              </div>
+              <div class="stat-card stat-success">
+                <span class="stat-num" id="userStatSent">0</span>
+                <span class="stat-lbl">Sent</span>
+              </div>
+              <div class="stat-card stat-failed">
+                <span class="stat-num" id="userStatFailed">0</span>
+                <span class="stat-lbl">Failed</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-num" id="userStatRemaining">0</span>
+                <span class="stat-lbl">Remaining</span>
+              </div>
+            </div>
+
+            <div class="table-header-row">
+              <h4>Delivery Log</h4>
+              <button id="userClearLog" class="btn-text" type="button">Clear Log</button>
+            </div>
+
+            <div class="table-container">
+              <table class="log-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Number</th>
+                    <th>Status</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="userLogTableBody">
+                  <tr class="empty-row"><td colspan="4">No messages sent yet. Add numbers and click Start Sending.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="userBulkResult" class="result-box hidden"></div>
+          </div>
+        </div>
+      </section>
 
       <!-- ============================================== -->
       <!-- API DOCUMENTATION TAB                          -->
