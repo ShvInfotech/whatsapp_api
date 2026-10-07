@@ -5,7 +5,10 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode');
 const config = require('../config');
 const { buildMessageMedia } = require('./mediaService');
+<<<<<<< HEAD
 const whatsappService = require('./whatsappService');
+=======
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
 
 class InstanceService {
   constructor() {
@@ -536,6 +539,7 @@ class InstanceService {
       await this.syncConnectionState(instanceId);
     }
 
+<<<<<<< HEAD
     let dataUrl = state.qrCodeDataUrl;
     if (!dataUrl && state.qrCodeRaw) {
       try {
@@ -548,6 +552,8 @@ class InstanceService {
       } catch (_) {}
     }
 
+=======
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
     return {
       status: state.status,
       isConnected: state.status === 'CONNECTED',
@@ -567,6 +573,10 @@ class InstanceService {
   async sendMessage(instanceId, recipientPhone, message, mediaOptions = null) {
     // Check if targeting default session
     if (instanceId === config.sessionId || instanceId === 'default' || instanceId === 'safevault-session') {
+<<<<<<< HEAD
+=======
+      const whatsappService = require('./whatsappService');
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
       const sent = await whatsappService.sendMessage(recipientPhone, message, mediaOptions);
       return {
         messageId: sent.messageId,
@@ -617,6 +627,7 @@ class InstanceService {
       console.warn(`[InstanceService] [${instanceId}] getNumberId check warning:`, checkErr.message);
     }
 
+<<<<<<< HEAD
     // Prime LID cache to prevent WhatsApp Web "No LID for user" errors
     let lidInfo = null;
     try {
@@ -625,10 +636,13 @@ class InstanceService {
       console.warn(`[InstanceService] [${instanceId}] LID priming warning:`, lidErr.message);
     }
 
+=======
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
     // Prepare payload (media or text)
     let payload = msgText;
     let sendOptions = {};
     if (hasMedia) {
+<<<<<<< HEAD
       let media = await buildMessageMedia(mediaOptions);
       if (!media) {
         throw new Error('Could not parse image attachment.');
@@ -680,10 +694,24 @@ class InstanceService {
     }
 
     // Send Message with automatic LID fallback recovery
+=======
+      const media = await buildMessageMedia(mediaOptions);
+      if (!media) {
+        throw new Error('Could not parse image attachment.');
+      }
+      payload = media;
+      if (msgText) {
+        sendOptions = { caption: msgText };
+      }
+    }
+
+    // Send Message
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
     let sent = null;
     try {
       sent = await state.client.sendMessage(targetJid, payload, sendOptions);
     } catch (sendErr) {
+<<<<<<< HEAD
       console.warn(`[InstanceService] [${instanceId}] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
 
       // 1. Try sending directly to LID if available and different from targetJid
@@ -707,6 +735,12 @@ class InstanceService {
       }
 
       if (!sent) {
+=======
+      console.warn(`[InstanceService] [${instanceId}] Failed sending to ${targetJid}, trying fallback ${chatId}:`, sendErr.message);
+      if (targetJid !== chatId) {
+        sent = await state.client.sendMessage(chatId, payload, sendOptions);
+      } else {
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
         throw sendErr;
       }
     }

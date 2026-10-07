@@ -92,6 +92,7 @@ class UserController {
       if (!instanceService.userOwnsInstance(req.user._id, req.params.id)) {
         return res.status(404).json({ success: false, error: 'WhatsApp instance not found.' });
       }
+<<<<<<< HEAD
 
       // Check quota limit
       const quotaCheck = await checkQuotaAvailable(req.user._id, 1);
@@ -139,6 +140,20 @@ class UserController {
         });
         throw sendErr;
       }
+=======
+      const { phoneNumber, message, media, mediaUrl, filename, mimetype, image } = req.body;
+      const mediaInput = media || mediaUrl || image || (filename ? { filename, mimetype, data: req.body.data } : null);
+
+      if (!phoneNumber) {
+        return res.status(400).json({ success: false, error: 'Recipient phone number is required.' });
+      }
+      if ((!message || !message.toString().trim()) && !mediaInput) {
+        return res.status(400).json({ success: false, error: 'Message content or image attachment is required.' });
+      }
+
+      const data = await instanceService.sendMessage(req.params.id, phoneNumber, message || '', mediaInput);
+      return res.json({ success: true, message: 'Message sent successfully.', data });
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
     } catch (error) {
       return res.status(error.message.includes('not connected') ? 503 : 400).json({
         success: false,
@@ -152,6 +167,7 @@ class UserController {
       if (!instanceService.userOwnsInstance(req.user._id, req.params.id)) {
         return res.status(404).json({ success: false, error: 'WhatsApp instance not found.' });
       }
+<<<<<<< HEAD
 
       const { phoneNumbers, recipients, message, defaultMessage, media, mediaUrl, filename, mimetype, image, options = {} } = req.body;
       const numbers = phoneNumbers || recipients;
@@ -160,17 +176,29 @@ class UserController {
 
       if (!Array.isArray(numbers) || !numbers.length || numbers.length > 200) {
         return res.status(400).json({ success: false, error: 'Provide 1 to 200 phone numbers.' });
+=======
+      const { phoneNumbers, recipients, message, defaultMessage, media, mediaUrl, filename, mimetype, image, options = {} } = req.body;
+      const numbers = phoneNumbers || recipients;
+      const msgText = message !== undefined ? message : defaultMessage;
+      const mediaInput = media || mediaUrl || image || (filename ? { filename, mimetype, data: req.body.data } : null);
+
+      if (!Array.isArray(numbers) || !numbers.length || numbers.length > 100) {
+        return res.status(400).json({ success: false, error: 'Provide 1 to 100 phone numbers.' });
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
       }
       if ((!msgText || !msgText.toString().trim()) && !mediaInput) {
         return res.status(400).json({ success: false, error: 'Message content or image attachment is required.' });
       }
 
+<<<<<<< HEAD
       // Check quota limit
       const quotaCheck = await checkQuotaAvailable(req.user._id, numbers.length);
       if (!quotaCheck.allowed) {
         return res.status(403).json({ success: false, error: quotaCheck.error });
       }
 
+=======
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
       const baseDelay = Number(options.delayMs) || (Number(options.delaySeconds || options.delay) * 1000) || null;
       const minDelay = baseDelay ? Math.max(500, baseDelay - 500) : Math.max(500, Number(options.minDelayMs) || config.rateLimitMinDelayMs);
       const maxDelay = baseDelay ? (baseDelay + 500) : Math.max(minDelay, Number(options.maxDelayMs) || config.rateLimitMaxDelayMs);
@@ -209,10 +237,13 @@ class UserController {
       }
 
       const successful = results.filter((result) => result.status === 'sent').length;
+<<<<<<< HEAD
       if (successful > 0) {
         await incrementMessagesUsed(req.user._id, successful);
       }
 
+=======
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
       return res.json({
         success: true,
         message: `Bulk messaging completed: ${successful}/${results.length} sent.`,

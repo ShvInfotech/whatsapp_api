@@ -302,7 +302,11 @@ body {
   max-width: 1920px;
   width: 100%;
   margin: 0 auto;
+<<<<<<< HEAD
   padding: 0.85rem 2rem;
+=======
+  padding: 0.85rem 1.5rem;
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -661,6 +665,7 @@ textarea:focus {
 }
 .btn-text.danger:hover {
   color: #b91c1c;
+<<<<<<< HEAD
 }
 
 /* Bulk Excel / CSV Upload Bar */
@@ -738,6 +743,8 @@ textarea:focus {
   font-size: 0.75rem;
   color: var(--text-muted);
   margin-right: auto;
+=======
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
 }
 
 /* Formatting Bar */
@@ -3692,6 +3699,7 @@ pre {
   display: block;
 }
 
+<<<<<<< HEAD
 /* ==========================================================================
    Left-Side Navigation & SaaS Workspace Layout
    ========================================================================== */
@@ -6730,3 +6738,5 @@ body.admin-console {
 
 
 
+=======
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1

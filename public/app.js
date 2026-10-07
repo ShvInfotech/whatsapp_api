@@ -11,7 +11,11 @@ let activeQrPollingId = null;
 let qrPollingTimer = null;
 let dashboardRefreshTimer = null;
 
+<<<<<<< HEAD
 // Dynamic Base URL detection
+=======
+// Detect base URL dynamically for subpaths (e.g. /iot/ or /whatsapp_api/) or root deployments
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
 const getApiBaseUrl = () => {
   if (window.API_BASE_URL !== undefined) return window.API_BASE_URL;
   const path = window.location.pathname.replace(/\/(index|admin|dashboard)?(\.(php|html))?\/?$/, '');
@@ -116,8 +120,443 @@ function setupAuthHandlers() {
       loginButton.disabled = true;
       loginButton.textContent = 'Authenticating...';
 
+<<<<<<< HEAD
       try {
         const res = await apiFetch('/api/auth/login', {
+=======
+      tabButtons.forEach(b => b.classList.remove('active'));
+      tabPanels.forEach(p => p.classList.remove('active'));
+
+      button.classList.add('active');
+      const targetPanel = document.getElementById(targetTabId);
+      if (targetPanel) {
+        targetPanel.classList.add('active');
+      }
+
+      if (targetTabId === 'deviceTab') {
+        fetchQrCode();
+      }
+      if (targetTabId === 'usersTab') fetchUsers();
+    });
+  });
+}
+
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+}
+
+async function fetchUsers() {
+  const usersList = document.getElementById('usersList');
+  if (!usersList) return;
+  try {
+    const response = await apiFetch('/api/admin/users');
+    const json = await response.json();
+    if (!response.ok || !json.success) throw new Error(json.error || 'Unable to load users.');
+    const users = json.data || [];
+    usersList.innerHTML = users.length ? users.map((user) => `<tr><td>${escapeHtml(user.fullName)}</td><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.email)}</td><td>${user.createdAt ? new Date(user.createdAt).toLocaleString() : '-'}</td></tr>`).join('') : '<tr><td colspan="4" class="text-secondary">No registered users yet.</td></tr>';
+  } catch (error) {
+    usersList.innerHTML = `<tr><td colspan="4" class="login-error">${escapeHtml(error.message)}</td></tr>`;
+  }
+}
+
+// ==========================================================================
+// Status Polling & Rendering
+// ==========================================================================
+async function fetchStatus() {
+  try {
+    const res = await apiFetch('/api/status');
+    const data = await res.json();
+
+    if (!data.success) return;
+
+    const info = data.data;
+    clientStatus = info.status;
+
+    // Fast polling if waiting for scan/auth, standard if connected
+    const nextInterval = info.isConnected ? 4000 : 1500;
+    if (statusPollingTimer) clearTimeout(statusPollingTimer);
+    statusPollingTimer = setTimeout(fetchStatus, nextInterval);
+
+    // Update Header Status Pill
+    statusPill.className = 'status-pill';
+    if (info.isConnected) {
+      statusPill.classList.add('status-connected');
+      statusText.textContent = 'WhatsApp Connected';
+
+      if (info.clientInfo) {
+        deviceBadge.classList.remove('hidden');
+        deviceName.textContent = info.clientInfo.pushname || 'Safe Vault User';
+        devicePhone.textContent = `(${info.clientInfo.phone || ''})`;
+      }
+
+      // Hide QR Hero Banner and show Connected Banner on index.html
+      if (qrHeroBanner) qrHeroBanner.classList.add('hidden');
+      if (connectedBanner) {
+        connectedBanner.classList.remove('hidden');
+        if (connDeviceInfo) {
+          connDeviceInfo.textContent = `Connected as: ${info.clientInfo?.pushname || 'Safe Vault User'} (+${info.clientInfo?.phone || 'Unknown'}) • Platform: ${info.clientInfo?.platform || 'WhatsApp Web'}`;
+        }
+      }
+
+      // If just transitioned to connected, notify user
+      if (previousConnected === false) {
+        showToast(`🎉 WhatsApp successfully connected as ${info.clientInfo?.pushname || 'User'}!`, 'success');
+      }
+      previousConnected = true;
+
+    } else if (info.status === 'AUTHENTICATING') {
+      previousConnected = false;
+      statusPill.classList.add('status-loading');
+      statusText.textContent = 'Logging In...';
+      deviceBadge.classList.add('hidden');
+
+      if (qrHeroBanner) qrHeroBanner.classList.remove('hidden');
+      if (connectedBanner) connectedBanner.classList.add('hidden');
+
+      if (heroQrLoader) {
+        heroQrLoader.classList.remove('hidden');
+        if (heroLoaderText) heroLoaderText.textContent = 'Authenticating & Syncing session...';
+      }
+      if (heroQrImage) heroQrImage.classList.add('hidden');
+      if (heroBadgeText) heroBadgeText.textContent = 'Logging In...';
+      if (heroNoticeText) heroNoticeText.textContent = '✓ QR Code scanned! Syncing session with your phone...';
+
+    } else if (info.status === 'QR_READY') {
+      previousConnected = false;
+      statusPill.classList.add('status-loading');
+      statusText.textContent = 'Scan QR Code';
+      deviceBadge.classList.add('hidden');
+
+      if (qrHeroBanner) qrHeroBanner.classList.remove('hidden');
+      if (connectedBanner) connectedBanner.classList.add('hidden');
+
+      if (info.qrDataUrl) {
+        if (heroQrImage) {
+          heroQrImage.src = info.qrDataUrl;
+          heroQrImage.classList.remove('hidden');
+        }
+        if (heroQrLoader) heroQrLoader.classList.add('hidden');
+        if (heroBadgeText) heroBadgeText.textContent = 'Scan QR Code to Login';
+        if (heroNoticeText) heroNoticeText.textContent = 'Waiting for scan... (Authentication will sync automatically once scanned)';
+
+        // Also sync QR in deviceTab
+        if (qrImage) {
+          qrImage.src = info.qrDataUrl;
+          qrImage.classList.remove('hidden');
+        }
+        if (qrPlaceholder) qrPlaceholder.classList.add('hidden');
+      } else {
+        if (heroQrLoader) {
+          heroQrLoader.classList.remove('hidden');
+          if (heroLoaderText) heroLoaderText.textContent = 'Loading QR Code...';
+        }
+        if (heroQrImage) heroQrImage.classList.add('hidden');
+      }
+
+    } else {
+      previousConnected = false;
+      statusPill.classList.add('status-disconnected');
+      statusText.textContent = 'Disconnected';
+      deviceBadge.classList.add('hidden');
+
+      if (qrHeroBanner) qrHeroBanner.classList.remove('hidden');
+      if (connectedBanner) connectedBanner.classList.add('hidden');
+
+      if (heroQrLoader) {
+        heroQrLoader.classList.remove('hidden');
+        if (heroLoaderText) heroLoaderText.textContent = 'Starting WhatsApp Engine...';
+      }
+      if (heroQrImage) heroQrImage.classList.add('hidden');
+      if (heroNoticeText) heroNoticeText.textContent = 'Starting WhatsApp Engine. Pairing QR code will appear shortly...';
+    }
+
+    // Update Device Tab Details
+    if (detailStatus) {
+      detailStatus.textContent = info.status;
+      detailStatus.className = 'detail-val badge';
+      if (info.isConnected) {
+        detailStatus.classList.add('badge-completed');
+      } else {
+        detailStatus.classList.add('badge-idle');
+      }
+
+      detailName.textContent = info.clientInfo?.pushname || '-';
+      detailPhone.textContent = info.clientInfo?.phone ? `+${info.clientInfo.phone}` : '-';
+      detailPlatform.textContent = info.clientInfo?.platform || '-';
+      detailTime.textContent = info.lastConnectedAt ? new Date(info.lastConnectedAt).toLocaleString() : '-';
+
+      const defaultIdElem = document.getElementById('defaultInstanceId');
+      const defaultTokenElem = document.getElementById('defaultAccessToken');
+      if (defaultIdElem && info.instanceId) defaultIdElem.textContent = info.instanceId;
+      if (defaultTokenElem && info.accessToken) defaultTokenElem.textContent = info.accessToken;
+    }
+
+    // Device Tab QR update
+    if (info.isConnected) {
+      if (qrImage) qrImage.classList.add('hidden');
+      if (qrPlaceholder) {
+        qrPlaceholder.classList.remove('hidden');
+        qrNotice.textContent = `✓ WhatsApp is connected to +${info.clientInfo?.phone || ''}`;
+      }
+    }
+
+  } catch (err) {
+    statusPill.className = 'status-pill status-disconnected';
+    statusText.textContent = 'Server Offline';
+    if (statusPollingTimer) clearTimeout(statusPollingTimer);
+    statusPollingTimer = setTimeout(fetchStatus, 3000);
+  }
+}
+
+async function fetchQrCode() {
+  try {
+    const res = await apiFetch('/api/qr?format=json', {
+      headers: { 'Accept': 'application/json' }
+    });
+    const data = await res.json();
+
+    if (data.status === 'CONNECTED') {
+      if (qrImage) qrImage.classList.add('hidden');
+      if (qrPlaceholder) {
+        qrPlaceholder.classList.remove('hidden');
+        qrNotice.textContent = '✓ WhatsApp is connected and ready.';
+      }
+    } else if (data.status === 'AUTHENTICATING') {
+      if (qrImage) qrImage.classList.add('hidden');
+      if (qrPlaceholder) {
+        qrPlaceholder.classList.remove('hidden');
+        qrNotice.textContent = 'Restoring saved session from phone...';
+      }
+    } else if (data.qrDataUrl) {
+      if (qrPlaceholder) qrPlaceholder.classList.add('hidden');
+      if (qrImage) {
+        qrImage.src = data.qrDataUrl;
+        qrImage.classList.remove('hidden');
+      }
+    } else {
+      if (qrImage) qrImage.classList.add('hidden');
+      if (qrPlaceholder) {
+        qrPlaceholder.classList.remove('hidden');
+        qrNotice.textContent = 'Initializing WhatsApp engine...';
+      }
+    }
+  } catch (e) {}
+}
+
+// ==========================================================================
+// Phone Number Parsing & Input Handling
+// ==========================================================================
+function parsePhoneNumbers(rawText) {
+  if (!rawText) return [];
+
+  // Split by newlines, commas, semicolons, or tabs
+  const tokens = rawText.split(/[\n,;\t]+/);
+  const result = [];
+  const seen = new Set();
+
+  for (let token of tokens) {
+    // Strip all non-digit characters
+    let cleaned = token.replace(/\D/g, '');
+    if (!cleaned) continue;
+
+    // Remove leading zeros
+    if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
+    else if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+
+    // If Indian 10-digit mobile number, prepend 91
+    if (cleaned.length === 10 && /^[6-9]/.test(cleaned)) {
+      cleaned = '91' + cleaned;
+    }
+
+    // Must be valid international format (10 to 15 digits)
+    if (cleaned.length >= 10 && cleaned.length <= 15 && !seen.has(cleaned)) {
+      seen.add(cleaned);
+      result.push(cleaned);
+    }
+  }
+
+  return result;
+}
+
+function setupInputs() {
+  bulkNumbersInput.addEventListener('input', () => {
+    parsedNumbers = parsePhoneNumbers(bulkNumbersInput.value);
+    numberCountBadge.textContent = `${parsedNumbers.length} Number${parsedNumbers.length === 1 ? '' : 's'}`;
+  });
+
+  const bulkPreview = document.getElementById('bulkMessagePreview');
+  const bulkPreviewTime = document.getElementById('bulkPreviewTime');
+  const singlePreview = document.getElementById('singleMessagePreview');
+  const singlePreviewTime = document.getElementById('singlePreviewTime');
+
+  bulkMessageInput.addEventListener('input', () => {
+    charCountBadge.textContent = `${bulkMessageInput.value.length} Chars`;
+    if (bulkPreview) {
+      bulkPreview.textContent = bulkMessageInput.value || 'Type your message above to see preview...';
+    }
+    if (bulkPreviewTime) {
+      bulkPreviewTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+  });
+
+  if (singleMessage && singlePreview) {
+    singleMessage.addEventListener('input', () => {
+      singlePreview.textContent = singleMessage.value || 'Type your message above to see preview...';
+      if (singlePreviewTime) {
+        singlePreviewTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+    });
+  }
+
+  btnSampleNumbers.addEventListener('click', () => {
+    bulkNumbersInput.value = '918140349408\n919727899812';
+    parsedNumbers = parsePhoneNumbers(bulkNumbersInput.value);
+    numberCountBadge.textContent = `${parsedNumbers.length} Numbers`;
+    showToast('Loaded 2 test numbers: 918140349408 & 919727899812', 'success');
+  });
+
+  btnClearNumbers.addEventListener('click', () => {
+    bulkNumbersInput.value = '';
+    parsedNumbers = [];
+    numberCountBadge.textContent = '0 Numbers';
+  });
+
+  btnClearLog.addEventListener('click', () => {
+    logTableBody.innerHTML = `
+      <tr class="empty-row">
+        <td colspan="5">Log cleared. Ready for next dispatch.</td>
+      </tr>
+    `;
+    resetStats();
+  });
+}
+
+function setupDelaySlider() {
+  delayRange.addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    sliderVal.textContent = `${val}s`;
+    delayDisplay.textContent = `${Math.max(1, Math.floor(val - 0.5))} - ${Math.ceil(val + 0.5)} Seconds`;
+  });
+}
+
+function setupFormattingButtons() {
+  document.querySelectorAll('.fmt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const textarea = bulkMessageInput;
+      const fmt = btn.getAttribute('data-fmt');
+      const emoji = btn.getAttribute('data-emoji');
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const sel = textarea.value.substring(start, end);
+
+      let insert = '';
+      if (emoji) {
+        insert = emoji;
+      } else if (fmt === 'bold') {
+        insert = `*${sel || 'bold text'}*`;
+      } else if (fmt === 'italic') {
+        insert = `_${sel || 'italic text'}_`;
+      } else if (fmt === 'strike') {
+        insert = `~${sel || 'strike text'}~`;
+      } else if (fmt === 'mono') {
+        insert = `\`\`\`${sel || 'code text'}\`\`\``;
+      }
+
+      textarea.setRangeText(insert, start, end, 'end');
+      textarea.focus();
+      charCountBadge.textContent = `${textarea.value.length} Chars`;
+    });
+  });
+}
+
+// ==========================================================================
+// Bulk Message Sending Engine (Sequential with 4-5s Anti-Ban Delay)
+// ==========================================================================
+btnStartBulk.addEventListener('click', async () => {
+  if (isSendingBulk) return;
+
+  parsedNumbers = parsePhoneNumbers(bulkNumbersInput.value);
+  const message = bulkMessageInput.value.trim();
+
+  if (parsedNumbers.length === 0) {
+    showToast('Please enter at least one valid phone number.', 'error');
+    bulkNumbersInput.focus();
+    return;
+  }
+
+  if (!message) {
+    showToast('Please enter the message text.', 'error');
+    bulkMessageInput.focus();
+    return;
+  }
+
+  if (clientStatus !== 'CONNECTED') {
+    showToast(`WhatsApp is not connected (Current: ${clientStatus}). Please check QR code.`, 'error');
+    return;
+  }
+
+  // Start Bulk Dispatch
+  isSendingBulk = true;
+  shouldStopBulk = false;
+
+  btnStartBulk.classList.add('hidden');
+  btnStopBulk.classList.remove('hidden');
+  execStateBadge.className = 'badge badge-running';
+  execStateBadge.textContent = 'Sending...';
+
+  const total = parsedNumbers.length;
+  let sentCount = 0;
+  let failedCount = 0;
+
+  statTotal.textContent = total;
+  statSent.textContent = '0';
+  statFailed.textContent = '0';
+  statRemaining.textContent = total;
+  updateProgress(0, total);
+
+  // Initialize table rows
+  logTableBody.innerHTML = '';
+  parsedNumbers.forEach((num, index) => {
+    const row = document.createElement('tr');
+    row.id = `row-${index}`;
+    row.innerHTML = `
+      <td>${index + 1}</td>
+      <td><strong>+${num}</strong></td>
+      <td><span class="tag-pending">Pending</span></td>
+      <td>-</td>
+      <td class="text-muted">Queued</td>
+    `;
+    logTableBody.appendChild(row);
+  });
+
+  const baseDelaySec = parseFloat(delayRange.value) || 4.5;
+
+  for (let i = 0; i < total; i++) {
+    if (shouldStopBulk) {
+      showToast('Bulk messaging stopped by user.', 'error');
+      break;
+    }
+
+    const phone = parsedNumbers[i];
+    const row = document.getElementById(`row-${i}`);
+    if (row) {
+      row.children[2].innerHTML = '<span class="tag-sending">Sending...</span>';
+    }
+
+    const timeStr = new Date().toLocaleTimeString();
+
+    try {
+      let response;
+      const bulkInstanceSelect = document.getElementById('bulkInstanceSelect');
+      const selectedInstanceId = bulkInstanceSelect ? bulkInstanceSelect.value : null;
+
+      if (selectedInstanceId) {
+        const selOpt = bulkInstanceSelect.options[bulkInstanceSelect.selectedIndex];
+        const token = selOpt ? selOpt.dataset.token : '';
+        response = await apiFetch(`/api/send?number=${encodeURIComponent(phone)}&type=text&message=${encodeURIComponent(message)}&instance_id=${encodeURIComponent(selectedInstanceId)}&access_token=${encodeURIComponent(token)}`);
+      } else {
+        response = await apiFetch('/api/send-message', {
+>>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
