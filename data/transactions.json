@@ -1,0 +1,50 @@
+[
+  {
+    "id": "tx_seed_101",
+    "orderId": "order_PRO_98241",
+    "paymentId": "pay_PRO_48102948",
+    "userId": "6abceb9415a04be4382f0fa8",
+    "userName": "User One",
+    "userEmail": "user1@example.com",
+    "planId": "pro",
+    "planName": "Pro Business Plan",
+    "amount": 1499,
+    "currency": "INR",
+    "creditsAdded": 25000,
+    "status": "captured",
+    "method": "Razorpay UPI",
+    "createdAt": "2026-09-30T10:59:32.000Z"
+  },
+  {
+    "id": "tx_seed_102",
+    "orderId": "order_PRO_81923",
+    "paymentId": "pay_PRO_19284712",
+    "userId": "6abcea1015a04be4382f0fa7",
+    "userName": "Shop Owner",
+    "userEmail": "shopowner@example.com",
+    "planId": "pro",
+    "planName": "Pro Business Plan",
+    "amount": 1499,
+    "currency": "INR",
+    "creditsAdded": 25000,
+    "status": "captured",
+    "method": "Razorpay Card",
+    "createdAt": "2026-09-30T10:53:04.000Z"
+  },
+  {
+    "id": "tx_seed_103",
+    "orderId": "order_STR_57192",
+    "paymentId": "pay_STR_89102451",
+    "userId": "6abde37d07a0eab24a3d62ca",
+    "userName": "Yash V Gajera",
+    "userEmail": "yash_test@example.com",
+    "planId": "starter",
+    "planName": "Starter Booster Plan",
+    "amount": 499,
+    "currency": "INR",
+    "creditsAdded": 5000,
+    "status": "captured",
+    "method": "Razorpay Netbanking",
+    "createdAt": "2026-10-01T04:57:15.000Z"
+  }
+]

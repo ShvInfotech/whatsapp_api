@@ -1,0 +1,359 @@
+[
+  {
+    "id": "tpl_ord_77df351c",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "name": "E-Commerce Order Confirmation",
+    "code": "order_confirmation",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, thank you for your order! Your order #{{order_id}} for {{amount}} has been confirmed. Track status here: {{tracking_link}}",
+    "variables": [
+      "customer_name",
+      "order_id",
+      "amount",
+      "tracking_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-09-30T10:36:46.488Z"
+  },
+  {
+    "id": "tpl_shp_0511fded",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "name": "Order Dispatched & Tracking",
+    "code": "order_dispatched",
+    "category": "ecommerce",
+    "content": "Hello {{customer_name}}, great news! Your order #{{order_id}} has been shipped via {{courier}}. Tracking No: {{tracking_number}}. Live tracking: {{tracking_link}}",
+    "variables": [
+      "customer_name",
+      "order_id",
+      "courier",
+      "tracking_number",
+      "tracking_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-09-30T10:36:46.488Z"
+  },
+  {
+    "id": "tpl_crt_822e1911",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "name": "Abandoned Cart Reminder",
+    "code": "cart_reminder",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, you left {{item_name}} in your shopping cart! Complete your order now and enjoy {{discount}} off: {{checkout_link}}",
+    "variables": [
+      "customer_name",
+      "item_name",
+      "discount",
+      "checkout_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-09-30T10:36:46.488Z"
+  },
+  {
+    "id": "tpl_vlt_c9ae73be",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "name": "Safe Vault Access Alert",
+    "code": "vault_access_alert",
+    "category": "alerts",
+    "content": "Security Alert: User {{person_name}} has accessed Locker/Vault #{{locker_id}} at {{datetime}}. Security Token: {{auth_token}}",
+    "variables": [
+      "person_name",
+      "locker_id",
+      "datetime",
+      "auth_token"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-09-30T10:36:46.488Z"
+  },
+  {
+    "id": "tpl_ord_a7116b40",
+    "userId": "6abceb9415a04be4382f0fa8",
+    "name": "E-Commerce Order Confirmation",
+    "code": "order_confirmation",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, thank you for your order! Your order #{{order_id}} for {{amount}} has been confirmed. Track status here: {{tracking_link}}",
+    "variables": [
+      "customer_name",
+      "order_id",
+      "amount",
+      "tracking_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-09-30T11:00:37.258Z"
+  },
+  {
+    "id": "tpl_shp_8d1625a0",
+    "userId": "6abceb9415a04be4382f0fa8",
+    "name": "Order Dispatched & Tracking",
+    "code": "order_dispatched",
+    "category": "ecommerce",
+    "content": "Hello {{customer_name}}, great news! Your order #{{order_id}} has been shipped via {{courier}}. Tracking No: {{tracking_number}}. Live tracking: {{tracking_link}}",
+    "variables": [
+      "customer_name",
+      "order_id",
+      "courier",
+      "tracking_number",
+      "tracking_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-09-30T11:00:37.258Z"
+  },
+  {
+    "id": "tpl_crt_d12079cc",
+    "userId": "6abceb9415a04be4382f0fa8",
+    "name": "Abandoned Cart Reminder",
+    "code": "cart_reminder",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, you left {{item_name}} in your shopping cart! Complete your order now and enjoy {{discount}} off: {{checkout_link}}",
+    "variables": [
+      "customer_name",
+      "item_name",
+      "discount",
+      "checkout_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-09-30T11:00:37.258Z"
+  },
+  {
+    "id": "tpl_vlt_3b1d95d3",
+    "userId": "6abceb9415a04be4382f0fa8",
+    "name": "Safe Vault Access Alert",
+    "code": "vault_access_alert",
+    "category": "alerts",
+    "content": "Security Alert: User {{person_name}} has accessed Locker/Vault #{{locker_id}} at {{datetime}}. Security Token: {{auth_token}}",
+    "variables": [
+      "person_name",
+      "locker_id",
+      "datetime",
+      "auth_token"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-09-30T11:00:37.258Z"
+  },
+  {
+    "id": "tpl_9933527a988b",
+    "userId": "6abceb9415a04be4382f0fa8",
+    "name": "Order Delivery Alert",
+    "code": "order_delivery",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, your order {{order_id}} is out for delivery!",
+    "variables": [
+      "customer_name",
+      "order_id"
+    ],
+    "isDefault": false,
+    "createdAt": "2026-09-30T11:32:48.618Z",
+    "updatedAt": "2026-09-30T11:32:48.618Z"
+  },
+  {
+    "id": "tpl_f3f3be72ebac",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "name": "Security OTP Verification",
+    "code": "security_otp_verification",
+    "category": "alerts",
+    "content": "Dear {{customer_name}}, your {{service_name}} verification OTP code is {{otp_code}}. Valid for {{validity_minutes}}. Do NOT share with anyone.",
+    "variables": [
+      "customer_name",
+      "service_name",
+      "otp_code",
+      "validity_minutes"
+    ],
+    "isDefault": false,
+    "createdAt": "2026-09-30T12:36:18.162Z",
+    "updatedAt": "2026-09-30T12:36:18.162Z"
+  },
+  {
+    "id": "tpl_ord_43b4ea52",
+    "userId": "6abde37d07a0eab24a3d62ca",
+    "name": "E-Commerce Order Confirmation",
+    "code": "order_confirmation",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, thank you for your order! Your order #{{order_id}} for {{amount}} has been confirmed. Track status here: {{tracking_link}}",
+    "variables": [
+      "customer_name",
+      "order_id",
+      "amount",
+      "tracking_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-01T04:39:28.114Z"
+  },
+  {
+    "id": "tpl_shp_0ee23509",
+    "userId": "6abde37d07a0eab24a3d62ca",
+    "name": "Order Dispatched & Tracking",
+    "code": "order_dispatched",
+    "category": "ecommerce",
+    "content": "Hello {{customer_name}}, great news! Your order #{{order_id}} has been shipped via {{courier}}. Tracking No: {{tracking_number}}. Live tracking: {{tracking_link}}",
+    "variables": [
+      "customer_name",
+      "order_id",
+      "courier",
+      "tracking_number",
+      "tracking_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-01T04:39:28.118Z"
+  },
+  {
+    "id": "tpl_crt_b57923af",
+    "userId": "6abde37d07a0eab24a3d62ca",
+    "name": "Abandoned Cart Reminder",
+    "code": "cart_reminder",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, you left {{item_name}} in your shopping cart! Complete your order now and enjoy {{discount}} off: {{checkout_link}}",
+    "variables": [
+      "customer_name",
+      "item_name",
+      "discount",
+      "checkout_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-01T04:39:28.118Z"
+  },
+  {
+    "id": "tpl_vlt_744d8c58",
+    "userId": "6abde37d07a0eab24a3d62ca",
+    "name": "Safe Vault Access Alert",
+    "code": "vault_access_alert",
+    "category": "alerts",
+    "content": "Security Alert: User {{person_name}} has accessed Locker/Vault #{{locker_id}} at {{datetime}}. Security Token: {{auth_token}}",
+    "variables": [
+      "person_name",
+      "locker_id",
+      "datetime",
+      "auth_token"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-01T04:39:28.118Z"
+  },
+  {
+    "id": "tpl_ord_e319325f",
+    "userId": "6ab362bf89f5077435419198",
+    "name": "E-Commerce Order Confirmation",
+    "code": "order_confirmation",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, thank you for your order! Your order #{{order_id}} for {{amount}} has been confirmed. Track status here: {{tracking_link}}",
+    "variables": [
+      "customer_name",
+      "order_id",
+      "amount",
+      "tracking_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-02T05:09:00.098Z"
+  },
+  {
+    "id": "tpl_shp_5b33884a",
+    "userId": "6ab362bf89f5077435419198",
+    "name": "Order Dispatched & Tracking",
+    "code": "order_dispatched",
+    "category": "ecommerce",
+    "content": "Hello {{customer_name}}, great news! Your order #{{order_id}} has been shipped via {{courier}}. Tracking No: {{tracking_number}}. Live tracking: {{tracking_link}}",
+    "variables": [
+      "customer_name",
+      "order_id",
+      "courier",
+      "tracking_number",
+      "tracking_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-02T05:09:00.098Z"
+  },
+  {
+    "id": "tpl_crt_9a6e58a4",
+    "userId": "6ab362bf89f5077435419198",
+    "name": "Abandoned Cart Reminder",
+    "code": "cart_reminder",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, you left {{item_name}} in your shopping cart! Complete your order now and enjoy {{discount}} off: {{checkout_link}}",
+    "variables": [
+      "customer_name",
+      "item_name",
+      "discount",
+      "checkout_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-02T05:09:00.098Z"
+  },
+  {
+    "id": "tpl_vlt_edb56afd",
+    "userId": "6ab362bf89f5077435419198",
+    "name": "Safe Vault Access Alert",
+    "code": "vault_access_alert",
+    "category": "alerts",
+    "content": "Security Alert: User {{person_name}} has accessed Locker/Vault #{{locker_id}} at {{datetime}}. Security Token: {{auth_token}}",
+    "variables": [
+      "person_name",
+      "locker_id",
+      "datetime",
+      "auth_token"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-02T05:09:00.098Z"
+  },
+  {
+    "id": "tpl_ord_7ed6e2be",
+    "userId": "6abf7160e73b0b280ce5f535",
+    "name": "E-Commerce Order Confirmation",
+    "code": "order_confirmation",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, thank you for your order! Your order #{{order_id}} for {{amount}} has been confirmed. Track status here: {{tracking_link}}",
+    "variables": [
+      "customer_name",
+      "order_id",
+      "amount",
+      "tracking_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-02T08:54:56.442Z"
+  },
+  {
+    "id": "tpl_shp_a2b6f3de",
+    "userId": "6abf7160e73b0b280ce5f535",
+    "name": "Order Dispatched & Tracking",
+    "code": "order_dispatched",
+    "category": "ecommerce",
+    "content": "Hello {{customer_name}}, great news! Your order #{{order_id}} has been shipped via {{courier}}. Tracking No: {{tracking_number}}. Live tracking: {{tracking_link}}",
+    "variables": [
+      "customer_name",
+      "order_id",
+      "courier",
+      "tracking_number",
+      "tracking_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-02T08:54:56.442Z"
+  },
+  {
+    "id": "tpl_crt_87871c4c",
+    "userId": "6abf7160e73b0b280ce5f535",
+    "name": "Abandoned Cart Reminder",
+    "code": "cart_reminder",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, you left {{item_name}} in your shopping cart! Complete your order now and enjoy {{discount}} off: {{checkout_link}}",
+    "variables": [
+      "customer_name",
+      "item_name",
+      "discount",
+      "checkout_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-02T08:54:56.442Z"
+  },
+  {
+    "id": "tpl_vlt_eaccd6b6",
+    "userId": "6abf7160e73b0b280ce5f535",
+    "name": "Safe Vault Access Alert",
+    "code": "vault_access_alert",
+    "category": "alerts",
+    "content": "Security Alert: User {{person_name}} has accessed Locker/Vault #{{locker_id}} at {{datetime}}. Security Token: {{auth_token}}",
+    "variables": [
+      "person_name",
+      "locker_id",
+      "datetime",
+      "auth_token"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-02T08:54:56.442Z"
+  }
+]

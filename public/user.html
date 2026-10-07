@@ -3,13 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Safe Vault - My WhatsApp</title>
+  <title>Pixano Connect - WhatsApp SaaS Workspace</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.1.0" />
+  <link rel="stylesheet" href="style.css?v=3.0.0" />
+  <!-- Razorpay Official Checkout Gateway SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body class="user-portal">
+  <!-- ============================================== -->
+  <!-- AUTHENTICATION SCREEN                          -->
+  <!-- ============================================== -->
   <section id="userAuth" class="login-screen" aria-label="User login">
     <!-- User Login Form -->
     <form id="userLoginForm" class="login-card">
@@ -19,7 +24,7 @@
             <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.03-1.25-.75-.67-1.26-1.5-1.41-1.75-.15-.25-.02-.39.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.17-.48-.29z"/>
           </svg>
         </div>
-        <h1>User Workspace</h1>
+        <h1>Pixano Connect</h1>
         <p>Login to your private WhatsApp messaging workspace</p>
       </div>
 
@@ -41,7 +46,6 @@
 
       <div class="auth-footer-links">
         <button id="showRegister" class="auth-link-btn" type="button">New user? Create an account &rarr;</button>
-        <a class="auth-sub-link" href="admin.html">Go to Admin Console</a>
       </div>
     </form>
 
@@ -57,12 +61,12 @@
           </svg>
         </div>
         <h1>Create Account</h1>
-        <p>Register for a dedicated private WhatsApp instance</p>
+        <p>Register for a dedicated WhatsApp Cloud SaaS instance</p>
       </div>
 
       <div class="auth-field">
         <label for="registerFullName">Full Name</label>
-        <input id="registerFullName" placeholder="e.g. John Doe" required />
+        <input id="registerFullName" placeholder="e.g. Rajesh Patel" required />
       </div>
 
       <div class="auth-field">
@@ -72,7 +76,7 @@
 
       <div class="auth-field">
         <label for="registerEmail">Email Address</label>
-        <input id="registerEmail" type="email" placeholder="john@example.com" autocomplete="email" required />
+        <input id="registerEmail" type="email" placeholder="rajesh@example.com" autocomplete="email" required />
       </div>
 
       <div class="auth-field">
@@ -82,7 +86,7 @@
 
       <p id="registerError" class="login-error hidden"></p>
 
-      <button class="btn btn-primary w-full" type="submit">Create User Account</button>
+      <button class="btn btn-primary w-full" type="submit">Create Account &amp; Start Free Trial</button>
 
       <div class="auth-divider"><span>or</span></div>
 
@@ -92,24 +96,1660 @@
     </form>
   </section>
 
-  <section id="userDashboard" class="hidden">
-    <header class="navbar">
-      <div class="nav-container">
-        <div class="brand"><div class="brand-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/></svg></div><div class="brand-text"><h1>Safe Vault <span>WhatsApp Workspace</span></h1><span class="brand-subtitle">Connect &amp; Link Your WhatsApp Account</span></div></div>
-        <div class="nav-status"><div class="status-pill status-loading"><span class="status-dot"></span><span id="userNavStatus" class="status-label">Checking Status...</span></div><div class="device-badge"><span id="welcomeUser">Signed in</span></div><button id="userLogout" class="btn btn-secondary btn-logout" type="button">Logout</button></div>
+  <!-- ============================================== -->
+  <!-- STEP 2: CONNECT WHATSAPP ONBOARDING SCREEN     -->
+  <!-- Opens directly after login when WhatsApp is not connected -->
+  <!-- ============================================== -->
+  <section id="userConnectScreen" class="connect-screen hidden" aria-label="Connect WhatsApp Device">
+    <!-- Connect Header -->
+    <header class="connect-header">
+      <div class="connect-header-inner">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <circle cx="12" cy="11" r="3"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <h2>Pixano Connect <span>Device Pairing</span></h2>
+          </div>
+        </div>
+
+        <div class="connect-user-actions">
+          <div class="connect-user-chip">
+            <span class="user-chip-avatar" id="connectUserAvatar">U</span>
+            <span class="user-chip-name" id="connectUserName">User</span>
+          </div>
+          <button id="connectScreenLogout" class="btn btn-secondary btn-sm" type="button" title="Sign out of account">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Sign Out</span>
+          </button>
+        </div>
       </div>
     </header>
 
-    <main class="main-content">
-      <section id="myDeviceTab" class="user-tab-panel active"><section class="qr-hero-card"><div class="qr-hero-content">
-        <div class="qr-hero-text"><div class="hero-badge"><span class="pulse-dot"></span><span id="instanceStatus">Loading your private session...</span></div><h2 id="instanceName">My WhatsApp Instance</h2><p id="userHeroDescription" class="hero-desc">Connect your personal WhatsApp account securely. This workspace never displays or uses another user's WhatsApp session.</p>
-          <div id="userQrSteps" class="hero-steps"><div class="step-item"><span class="step-num">1</span><span>Open <strong>WhatsApp</strong> on your phone</span></div><div class="step-item"><span class="step-num">2</span><span>Go to <strong>Linked Devices</strong></span></div><div class="step-item"><span class="step-num">3</span><span>Choose <strong>Link a Device</strong></span></div><div class="step-item"><span class="step-num">4</span><span>Scan the QR code shown here</span></div></div>
-          <div id="connectedInfo" class="hidden connected-tag"></div><div id="userAppLinkBox" class="user-app-link hidden"><span>App API Link</span><code id="userAppLinkText"></code></div><div class="user-device-actions"><button id="copyUserAppLink" class="btn btn-secondary hidden" type="button">Copy App API Link</button><button id="resetMySession" class="btn btn-danger" type="button">Reset / Change WhatsApp Number</button></div>
+    <!-- Connect Main Container -->
+    <div class="connect-container">
+      <div class="connect-card">
+        <!-- Connecting State View -->
+        <div id="connectPendingView" class="connect-view-wrapper">
+          <div class="connect-card-header">
+            <div class="connect-badge">
+              <span class="pulse-dot"></span>
+              <span id="connectStatusBadge">Waiting for WhatsApp Pairing</span>
+            </div>
+            <h1>Link Your WhatsApp to Continue</h1>
+            <p class="connect-subtitle">
+              Scan the QR code below from your smartphone. Your messaging dashboard will open immediately once WhatsApp is connected.
+            </p>
+          </div>
+
+          <div class="connect-grid">
+            <!-- Left: Step-by-Step Instructions -->
+            <div class="connect-steps-col">
+              <div class="connect-steps-title">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                <span>Follow 4 Easy Steps on Your Phone:</span>
+              </div>
+
+              <div class="connect-step-list">
+                <div class="c-step-item">
+                  <div class="c-step-num">1</div>
+                  <div class="c-step-content">
+                    <h4>Open WhatsApp</h4>
+                    <p>Open WhatsApp on your mobile phone</p>
+                  </div>
+                </div>
+
+                <div class="c-step-item">
+                  <div class="c-step-num">2</div>
+                  <div class="c-step-content">
+                    <h4>Go to Linked Devices</h4>
+                    <p>Tap <strong>Menu (⋮)</strong> on Android or <strong>Settings (⚙️)</strong> on iPhone &rarr; Tap <strong>Linked Devices</strong></p>
+                  </div>
+                </div>
+
+                <div class="c-step-item">
+                  <div class="c-step-num">3</div>
+                  <div class="c-step-content">
+                    <h4>Tap "Link a Device"</h4>
+                    <p>Tap the green <strong>Link a Device</strong> button to turn on camera</p>
+                  </div>
+                </div>
+
+                <div class="c-step-item">
+                  <div class="c-step-num">4</div>
+                  <div class="c-step-content">
+                    <h4>Scan this QR Code</h4>
+                    <p>Point your phone camera at this QR code to connect instantly</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="connect-tip-box">
+                <div class="tip-icon">🔒</div>
+                <div class="tip-text">
+                  <strong>Private &amp; Secure Session:</strong> Your WhatsApp personal chats stay 100% private on your phone. This instance only sends the automated messages and templates you trigger.
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Live QR Code Box -->
+            <div class="connect-qr-col">
+              <div class="connect-qr-card">
+                <div class="connect-qr-header">
+                  <span class="qr-header-title">SCAN WITH PHONE</span>
+                  <span class="qr-live-pill">
+                    <span class="pulse-green"></span>
+                    <span>Live Auto-Sync</span>
+                  </span>
+                </div>
+
+                <div class="connect-qr-frame" id="connectQrFrame">
+                  <!-- Loader overlay -->
+                  <div id="connectQrLoader" class="connect-qr-loader">
+                    <div class="custom-spinner"></div>
+                    <p id="connectQrLoaderText">Loading Secure QR Code...</p>
+                  </div>
+
+                  <!-- QR image -->
+                  <img id="connectQrImage" class="connect-qr-img hidden" alt="Scan WhatsApp QR Code" />
+                </div>
+
+                <div class="connect-qr-footer">
+                  <p id="connectQrFooterStatus" class="qr-status-msg">
+                    Point your camera at this QR code
+                  </p>
+                  <button type="button" id="btnRefreshConnectQr" class="btn btn-secondary btn-sm">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    <span>Refresh QR Code</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="qr-hero-visual"><div id="userQrFrame" class="qr-frame"><div id="userQrLoader" class="qr-loading-overlay"><div class="custom-spinner"></div><p>Loading QR Code...</p></div><img id="userQrImage" class="hero-qr-img hidden" alt="Your WhatsApp QR code" /><div id="userConnectedVisual" class="user-connected-visual hidden"><div class="user-connected-check">✓</div><h3>WhatsApp Connected</h3><p>Your private messaging workspace is ready to use.</p></div></div><div id="userQrAutoRefresh" class="qr-auto-refresh"><span class="pulse-green"></span><span>Live Auto-Sync (Auto Refresh)</span></div></div>
-      </div></section></section>
-    </main>
+
+        <!-- Success Connected Celebration View (Shown once connected) -->
+        <div id="connectSuccessView" class="connect-success-view hidden">
+          <div class="success-animation-circle">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <h2>WhatsApp Connected Successfully!</h2>
+          <p class="success-subtitle">Your WhatsApp account has been connected and paired successfully.</p>
+
+          <div class="connected-device-pill">
+            <div class="dev-icon">📱</div>
+            <div class="dev-info">
+              <strong id="connectSuccessPushName">WhatsApp User</strong>
+              <span id="connectSuccessPhoneDetails">+91XXXXXXXXXX</span>
+            </div>
+            <span class="status-pill status-connected">✓ Online</span>
+          </div>
+
+          <div class="redirect-countdown-box">
+            <div class="spinner-small"></div>
+            <span>Entering your Dashboard in a moment...</span>
+          </div>
+
+          <button id="btnForceEnterDashboard" type="button" class="btn btn-primary btn-lg mt-3">
+            <span>Enter Dashboard Now</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
   </section>
-  <script src="user.js?v=2.1.0"></script>
+
+  <!-- ============================================== -->
+  <!-- MAIN USER DASHBOARD                            -->
+  <!-- ============================================== -->
+  <section id="userDashboard" class="hidden">
+    <!-- TOP NAVIGATION BAR -->
+    <header class="navbar user-navbar">
+      <div class="nav-container">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <circle cx="12" cy="11" r="3"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <h1>Pixano Connect <span>WhatsApp SaaS Portal</span></h1>
+            <span class="brand-subtitle">Automated WhatsApp Messaging, Templates &amp; E-Commerce API</span>
+          </div>
+        </div>
+
+        <div class="nav-status">
+          <div class="status-pill status-loading" id="userNavStatusPill">
+            <span class="status-dot"></span>
+            <span id="userNavStatus" class="status-label">Checking Status...</span>
+          </div>
+
+          <!-- Active SaaS Plan Tag in Header -->
+          <div class="header-plan-badge" id="headerPlanBadge" title="Active Subscription Tier">
+            <span class="plan-icon">⚡</span>
+            <span id="headerPlanText">PRO SAAS PLAN</span>
+          </div>
+
+          <!-- User Profile Trigger & Dropdown Menu in Header -->
+          <div class="header-profile-menu-container" id="headerProfileContainer">
+            <button type="button" class="header-profile-btn" id="headerProfileBtn" aria-expanded="false" aria-haspopup="true" title="User Account &amp; Settings">
+              <div class="header-profile-avatar" id="headerProfileAvatar">U</div>
+              <div class="header-profile-info hidden-mobile">
+                <span class="header-profile-name" id="headerProfileName">User Account</span>
+                <span class="header-profile-sub" id="headerProfileSub">@workspace</span>
+              </div>
+              <svg class="header-profile-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+
+            <!-- Dropdown Menu Card -->
+            <div class="header-profile-dropdown hidden" id="headerProfileDropdown">
+              <!-- Dropdown User Info -->
+              <div class="dropdown-user-header">
+                <div class="dropdown-avatar" id="dropdownAvatar">U</div>
+                <div class="dropdown-user-info">
+                  <div class="dropdown-user-name" id="dropdownUserName">User Account</div>
+                  <div class="dropdown-user-email" id="dropdownUserEmail">user@workspace</div>
+                  <div class="dropdown-user-id" id="dropdownUserId">ID: user</div>
+                </div>
+              </div>
+
+              <!-- Dropdown Message Credits Widget -->
+              <div class="dropdown-credits-card">
+                <div class="dropdown-credits-row">
+                  <span class="dropdown-credits-lbl">MESSAGE CREDITS</span>
+                  <span class="dropdown-credits-val" id="dropdownCreditsVal">2,500 / 2,500</span>
+                </div>
+                <div class="dropdown-credits-track">
+                  <div class="dropdown-credits-fill" id="dropdownCreditsBar" style="width: 100%;"></div>
+                </div>
+                <div class="dropdown-credits-footer">
+                  <span id="dropdownCreditsExpiry">30 Days Validity</span>
+                  <button type="button" class="dropdown-recharge-btn" id="btnDropdownRecharge">Recharge / Upgrade</button>
+                </div>
+              </div>
+
+              <div class="dropdown-divider"></div>
+
+              <!-- Quick Links inside Dropdown -->
+              <div class="dropdown-menu-list">
+                <button type="button" class="dropdown-menu-item" data-dropdown-tab="settingsTab">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  <span>Account Settings</span>
+                </button>
+                <button type="button" class="dropdown-menu-item" data-dropdown-tab="plansTab">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/></svg>
+                  <span>Plans &amp; Recharge</span>
+                </button>
+              </div>
+
+              <div class="dropdown-divider"></div>
+
+              <!-- Sign Out Link in Dropdown -->
+              <button type="button" class="dropdown-logout-btn" id="headerDropdownLogout">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span>Sign Out Workspace</span>
+              </button>
+            </div>
+          </div>
+
+          <button id="mobileSidebarToggle" class="btn btn-secondary mobile-menu-btn" type="button" title="Toggle Menu">
+            ☰ Menu
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2-COLUMN LAYOUT: NAVIGATION SIDEBAR (LEFT) + MAIN WORKSPACE (RIGHT) -->
+    <div class="user-workspace-layout">
+      <!-- ============================================== -->
+      <!-- LEFT SIDEBAR: NAVIGATION MENU                  -->
+      <!-- ============================================== -->
+      <aside class="workspace-sidebar-left" id="workspaceSidebar">
+        <!-- VERTICAL NAVIGATION MENU (LEFT SIDE) -->
+        <div class="sidebar-menu-title">NAVIGATION MENU</div>
+        <nav class="sidebar-nav-menu">
+          <button class="sidebar-nav-item active" data-user-tab="myDeviceTab" type="button">
+            <span class="nav-item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            </span>
+            <span class="nav-item-text">My WhatsApp</span>
+            <span class="nav-item-badge" id="navDeviceBadge">Online</span>
+          </button>
+
+          <button class="sidebar-nav-item" data-user-tab="singleMessageTab" type="button">
+            <span class="nav-item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </span>
+            <span class="nav-item-text">Single Message</span>
+          </button>
+
+          <button class="sidebar-nav-item" data-user-tab="bulkMessageTab" type="button">
+            <span class="nav-item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </span>
+            <span class="nav-item-text">Bulk Messenger</span>
+            <span class="nav-item-badge badge-tag">Anti-Ban</span>
+          </button>
+
+          <button class="sidebar-nav-item" data-user-tab="templatesTab" type="button">
+            <span class="nav-item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </span>
+            <span class="nav-item-text">Message Templates</span>
+            <span class="nav-item-badge highlight" id="navTplCount">4</span>
+          </button>
+
+          <button class="sidebar-nav-item" data-user-tab="logsTab" type="button">
+            <span class="nav-item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </span>
+            <span class="nav-item-text">Logs &amp; Analytics</span>
+            <span class="nav-item-badge success">Live</span>
+          </button>
+
+          <button class="sidebar-nav-item" data-user-tab="apiDocsTab" type="button">
+            <span class="nav-item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </span>
+            <span class="nav-item-text">API &amp; Webhooks</span>
+          </button>
+
+          <button class="sidebar-nav-item" data-user-tab="plansTab" type="button">
+            <span class="nav-item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/></svg>
+            </span>
+            <span class="nav-item-text">Plans &amp; Recharge</span>
+          </button>
+
+          <button class="sidebar-nav-item" data-user-tab="settingsTab" type="button">
+            <span class="nav-item-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </span>
+            <span class="nav-item-text">Account Settings</span>
+          </button>
+        </nav>
+
+        <!-- Sidebar Sign Out Button (Fixed at Bottom, Red Color) -->
+        <div class="sidebar-footer">
+          <button id="userLogout" class="btn btn-sidebar-logout w-full" type="button" title="Sign out of current workspace">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Sign Out Workspace</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ============================================== -->
+      <!-- MAIN WORKSPACE VIEW PANELS (RIGHT)             -->
+      <!-- ============================================== -->
+      <main class="workspace-main-panel">
+        <!-- TAB 1: MY WHATSAPP (INSTANCE & QR PAIRING & OPERATIONAL OVERVIEW) -->
+        <section id="myDeviceTab" class="user-tab-panel active">
+          <!-- 1. CONNECTED STATE: RICH OPERATIONAL DASHBOARD -->
+          <div id="overviewConnectedView" class="dashboard-overview-container hidden">
+            <!-- Connected Session Hero Banner -->
+            <div class="dash-hero-banner">
+              <div class="dash-hero-left">
+                <div class="dash-avatar-badge">📱</div>
+                <div class="dash-hero-info">
+                  <div class="dash-hero-pill-row">
+                    <span class="status-pill status-connected">● Active &amp; Online</span>
+                    <span class="tag-pill tag-secure">🔒 Multi-Device v2 Engine</span>
+                  </div>
+                  <h2 id="dashConnectedName">WhatsApp Business Account</h2>
+                  <p id="dashConnectedPhone" class="dash-hero-sub">+91 XXXXXXXXXX • Dedicated Enterprise Session</p>
+                </div>
+              </div>
+              <div class="dash-hero-actions">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnDashSyncSession" title="Synchronize WhatsApp session state">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  <span>Re-Sync</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" data-user-tab="settingsTab">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  <span>Settings</span>
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" id="btnDashDisconnect">
+                  <span>Disconnect</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Live Operational KPI Cards -->
+            <div class="analytics-kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-icon-wrap" style="background:#e0f2fe; color:#0284c7;">🚀</div>
+                <div>
+                  <span class="kpi-label">Messages Today</span>
+                  <div class="kpi-value" id="dashKpiSentToday">0</div>
+                  <span class="kpi-subtext">Active daily throughput</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon-wrap" style="background:#ecfdf5; color:#059669;">✓</div>
+                <div>
+                  <span class="kpi-label">Delivery Success</span>
+                  <div class="kpi-value" id="dashKpiSuccessRate">100%</div>
+                  <span class="kpi-subtext">WhatsApp network verified</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon-wrap" style="background:#fef3c7; color:#d97706;">⚡</div>
+                <div>
+                  <span class="kpi-label">Available Credits</span>
+                  <div class="kpi-value" id="dashKpiCredits">2,500</div>
+                  <span class="kpi-subtext">Safe sending allowance</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon-wrap" style="background:#f3e8ff; color:#7e22ce;">📊</div>
+                <div>
+                  <span class="kpi-label">Total Lifetime Sent</span>
+                  <div class="kpi-value" id="dashKpiTotalSent">0</div>
+                  <span class="kpi-subtext">Dispatched via portal &amp; API</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Action Launchpad Cards -->
+            <div class="dash-section-header">
+              <h3>Quick Actions &amp; Messaging Tools</h3>
+              <p>Direct shortcuts into your active WhatsApp messaging tools</p>
+            </div>
+            <div class="dash-launchpad-grid">
+              <div class="launchpad-card" data-user-tab="singleMessageTab">
+                <div class="launchpad-icon">💬</div>
+                <h4>Single Message</h4>
+                <p>Send direct WhatsApp messages with rich media attachments and phone preview.</p>
+                <span class="launchpad-link">Open Composer &rarr;</span>
+              </div>
+              <div class="launchpad-card" data-user-tab="bulkMessageTab">
+                <div class="launchpad-icon">📢</div>
+                <h4>Bulk Broadcast</h4>
+                <p>Upload Excel or CSV sheets, auto-format numbers, and launch bulk campaigns.</p>
+                <span class="launchpad-link">Launch Campaign &rarr;</span>
+              </div>
+              <div class="launchpad-card" data-user-tab="templatesTab">
+                <div class="launchpad-icon">📑</div>
+                <h4>Message Templates</h4>
+                <p>Manage categorized templates with dynamic variables &amp; test sender.</p>
+                <span class="launchpad-link">View Templates &rarr;</span>
+              </div>
+              <div class="launchpad-card" data-user-tab="apiDocsTab">
+                <div class="launchpad-icon">⚡</div>
+                <h4>API &amp; Webhooks</h4>
+                <p>Integrate WhatsApp alerts into WooCommerce, Shopify, PHP, or Node.js apps.</p>
+                <span class="launchpad-link">View API Docs &rarr;</span>
+              </div>
+              <div class="launchpad-card featured-launchpad" data-user-tab="plansTab">
+                <div class="launchpad-icon">💳</div>
+                <h4>Plans &amp; Recharge</h4>
+                <p>Upgrade message limits or purchase credit boosters via Razorpay payment gateway.</p>
+                <span class="launchpad-link text-primary font-bold">Manage Billing &rarr;</span>
+              </div>
+            </div>
+
+            <!-- Recent Messaging Activity Table -->
+            <div class="recent-dispatches-card">
+              <div class="recent-dispatches-header">
+                <div>
+                  <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-primary); margin:0 0 0.2rem 0;">Recent Dispatches Activity</h3>
+                  <span class="subtext">Live view of recently transmitted WhatsApp messages</span>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" data-user-tab="logsTab">
+                  View Full Logs &rarr;
+                </button>
+              </div>
+              <div class="recent-dispatches-table-container">
+                <table class="recent-dispatches-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 14%;">Time</th>
+                      <th style="width: 24%;">Recipient</th>
+                      <th style="width: 14%;">Type</th>
+                      <th style="width: 32%;">Message Snippet</th>
+                      <th style="width: 16%;">Delivery Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashRecentLogsBody">
+                    <tr><td colspan="5" class="text-secondary" style="text-align:center; padding:2rem;">Loading recent message dispatches...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. PENDING / QR SCAN VIEW (Shown when disconnected or resetting) -->
+          <div id="overviewQrSection">
+            <section class="qr-hero-card">
+              <div class="qr-hero-content">
+                <div class="qr-hero-text">
+                  <div class="hero-badge">
+                    <span class="pulse-dot"></span>
+                    <span id="instanceStatus">Loading your private session...</span>
+                  </div>
+                  <h2 id="instanceName">My WhatsApp Instance</h2>
+                  <p id="userHeroDescription" class="hero-desc">Connect your personal or business WhatsApp account. This dedicated instance sends your orders, OTPs, and customer alerts.</p>
+                  
+                  <div id="userQrSteps" class="hero-steps">
+                    <div class="step-item"><span class="step-num">1</span><span>Open <strong>WhatsApp</strong> on your phone</span></div>
+                    <div class="step-item"><span class="step-num">2</span><span>Go to <strong>Linked Devices</strong></span></div>
+                    <div class="step-item"><span class="step-num">3</span><span>Choose <strong>Link a Device</strong></span></div>
+                    <div class="step-item"><span class="step-num">4</span><span>Scan the QR code shown here</span></div>
+                  </div>
+
+                  <div id="connectedInfo" class="hidden connected-tag"></div>
+                  <div id="userAppLinkBox" class="user-app-link hidden">
+                    <span>App API Link</span>
+                    <code id="userAppLinkText"></code>
+                  </div>
+
+                  <div class="user-device-actions">
+                    <button id="copyUserAppLink" class="btn btn-secondary hidden" type="button">Copy App API Link</button>
+                    <button id="resetMySession" class="btn btn-danger" type="button">Reset / Change WhatsApp Number</button>
+                  </div>
+                </div>
+
+                <div class="qr-hero-visual">
+                  <div id="userQrFrame" class="qr-frame">
+                    <div id="userQrLoader" class="qr-loading-overlay">
+                      <div class="custom-spinner"></div>
+                      <p id="userQrLoaderText">Loading QR Code...</p>
+                    </div>
+                    <img id="userQrImage" class="hero-qr-img hidden" alt="Your WhatsApp QR code" />
+                    <div id="userConnectedVisual" class="user-connected-visual hidden">
+                      <div class="user-connected-check">✓</div>
+                      <h3>WhatsApp Connected</h3>
+                      <p>Your WhatsApp session is active and ready for automatic messaging.</p>
+                    </div>
+                  </div>
+                  <div id="userQrAutoRefresh" class="qr-auto-refresh">
+                    <span class="pulse-green"></span>
+                    <span>Live Auto-Sync (Real-Time)</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- TAB 2: SINGLE MESSAGE MESSENGER -->
+        <section id="singleMessageTab" class="user-tab-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-badge-row">
+                <span class="tag-pill tag-instant">⚡ Instant Direct Message</span>
+                <span class="tag-pill tag-secure">🔒 End-to-End Encrypted</span>
+              </div>
+              <h2>Single Message Messenger</h2>
+              <p>Compose, format and instantly dispatch personalized WhatsApp messages with real-time phone preview.</p>
+            </div>
+          </div>
+
+          <div class="single-messenger-grid">
+            <!-- Composer Card -->
+            <div class="card single-composer-card">
+              <div class="card-header">
+                <div class="composer-title-group">
+                  <div class="composer-icon">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  </div>
+                  <div>
+                    <h3>Compose WhatsApp Message</h3>
+                    <span class="subtext">Direct delivery from your connected WhatsApp session</span>
+                  </div>
+                </div>
+              </div>
+
+              <form id="userSingleForm" class="single-form-body">
+                <!-- Recipient input -->
+                <div class="form-group">
+                  <div class="label-row">
+                    <label for="userSinglePhone">Recipient Phone Number</label>
+                    <span class="label-tag">With Country Code</span>
+                  </div>
+                  <div class="phone-input-wrapper">
+                    <span class="phone-prefix-icon">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </span>
+                    <input id="userSinglePhone" type="tel" placeholder="e.g. 919876543210" autocomplete="tel" required />
+                  </div>
+                  <span class="input-hint">Enter digits only with country code (e.g., <strong>91</strong> for India, <strong>1</strong> for US).</span>
+                </div>
+
+                <!-- Quick Templates chips -->
+                <div class="form-group mb-2">
+                  <label class="templates-label">⚡ Quick Starter Templates</label>
+                  <div class="template-chips">
+                    <button type="button" class="template-chip" data-tpl="greeting">👋 Greeting</button>
+                    <button type="button" class="template-chip" data-tpl="payment">💳 Payment Alert</button>
+                    <button type="button" class="template-chip" data-tpl="order">📦 Order Update</button>
+                    <button type="button" class="template-chip" data-tpl="meeting">📅 Meeting Notice</button>
+                  </div>
+                </div>
+
+                <!-- Image Attachment -->
+                <div class="form-group mb-3">
+                  <div class="label-row">
+                    <label>Attach Photo / Image (Optional)</label>
+                    <span class="label-tag">JPG, PNG, WEBP</span>
+                  </div>
+                  <div id="userSingleDropzone" class="media-dropzone">
+                    <input type="file" id="userSingleImageFile" accept="image/png, image/jpeg, image/jpg, image/webp" class="hidden" />
+                    <div class="dropzone-prompt" id="userSingleDropPrompt">
+                      <div class="dropzone-icon">📷</div>
+                      <div class="dropzone-text">
+                        <span class="dropzone-title">Click to attach photo / image</span>
+                        <span class="dropzone-sub">Max size: 5MB • Text message will be sent as photo caption</span>
+                      </div>
+                    </div>
+                    <div id="userSingleAttachPreview" class="attach-preview-bar hidden">
+                      <img id="userSingleThumb" class="attach-thumb" alt="Preview" />
+                      <div class="attach-info">
+                        <span id="userSingleAttachName" class="attach-name">photo.jpg</span>
+                        <span id="userSingleAttachSize" class="attach-size">145 KB</span>
+                      </div>
+                      <button type="button" id="userSingleRemoveImg" class="btn-remove-attach" title="Remove image">✕</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Message Body -->
+                <div class="form-group">
+                  <div class="label-row">
+                    <label for="userSingleMessage">Message Content / Caption</label>
+                    <span id="userSingleCharBadge" class="count-badge">0 Chars</span>
+                  </div>
+
+                  <!-- Formatting Toolbar -->
+                  <div class="formatting-bar single-fmt-bar">
+                    <button type="button" class="fmt-btn" data-single-fmt="bold" title="Bold (*text*)"><b>B</b></button>
+                    <button type="button" class="fmt-btn" data-single-fmt="italic" title="Italic (_text_)"><i>I</i></button>
+                    <button type="button" class="fmt-btn" data-single-fmt="strike" title="Strikethrough (~text~)"><s>S</s></button>
+                    <button type="button" class="fmt-btn" data-single-fmt="mono" title="Monospace (```text```)"><code>{ }</code></button>
+                    <span class="fmt-separator"></span>
+                    <button type="button" id="clearSingleMsg" class="fmt-btn-clear" title="Clear message">Clear</button>
+                  </div>
+
+                  <textarea id="userSingleMessage" rows="5" placeholder="Type your WhatsApp message or caption here...&#10;Supports *bold*, _italic_, ~strikethrough~, and ```code```."></textarea>
+                </div>
+
+                <div class="single-action-row">
+                  <button id="userSendSingle" class="btn btn-primary btn-large btn-send-single" type="submit">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    <span>Send WhatsApp Message</span>
+                  </button>
+                </div>
+              </form>
+
+              <div id="userSingleResult" class="result-box hidden"></div>
+            </div>
+
+            <!-- Realistic Phone Mockup -->
+            <div class="card phone-preview-card">
+              <div class="card-header">
+                <h3>Live Phone Preview</h3>
+                <span class="badge badge-running" style="background: rgba(0, 168, 132, 0.1); color: #008069; border: 1px solid rgba(0, 168, 132, 0.3);"><span class="pulse-dot"></span> Live Sync</span>
+              </div>
+
+              <div class="phone-mockup-wrapper">
+                <div class="phone-frame">
+                  <div class="phone-notch"></div>
+                  <div class="phone-screen">
+                    <div class="phone-wa-header">
+                      <div class="phone-wa-avatar">W</div>
+                      <div class="phone-wa-contact">
+                        <span class="phone-wa-name" id="previewWaRecipient">Recipient</span>
+                        <span class="phone-wa-status">online</span>
+                      </div>
+                    </div>
+                    <div class="phone-wa-chat">
+                      <div class="phone-wa-bubble">
+                        <div id="userSinglePreviewImgWrap" class="phone-wa-img-wrap hidden">
+                          <img id="userSinglePreviewImg" class="phone-wa-bubble-img" alt="Attached Preview" />
+                        </div>
+                        <div id="userSinglePreviewText" class="phone-wa-text">Type a message to see preview...</div>
+                        <div class="phone-wa-time">
+                          <span id="userSinglePreviewTime">10:30 AM</span>
+                          <span class="wa-ticks">✓✓</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: BULK MESSENGER -->
+        <section id="bulkMessageTab" class="user-tab-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Bulk WhatsApp Dispatcher</h2>
+              <p>Broadcast messages with smart anti-ban randomized delays and live progress tracking.</p>
+            </div>
+            <div class="antiban-badge">Anti-Ban Protection Active</div>
+          </div>
+
+          <div class="grid-2col">
+            <div class="card">
+              <form id="userBulkForm">
+                <div class="card-header">
+                  <h3>1. Add Contact Numbers</h3>
+                  <span id="userNumberCountBadge" class="count-badge">0 Numbers</span>
+                </div>
+                <!-- Excel / CSV File Upload & Auto-Format Bar -->
+                <div class="bulk-excel-upload-bar">
+                  <input type="file" id="userBulkExcelFile" accept=".xlsx, .xls, .csv, text/csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" class="hidden" />
+                  <div class="bulk-excel-btns">
+                    <button type="button" id="btnUploadExcel" class="btn btn-secondary btn-sm">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                      <span>📊 Upload Excel / CSV (.xlsx, .csv)</span>
+                    </button>
+                    <button type="button" id="btnAutoFormat91" class="btn btn-secondary btn-sm" title="Convert all 10-digit numbers to 91 country code format">
+                      <span>⚡ Auto +91 Format</span>
+                    </button>
+                  </div>
+                  <div id="bulkExcelFileInfo" class="bulk-excel-status hidden">
+                    <span id="bulkExcelFileName" class="bulk-file-name">contacts.xlsx</span>
+                    <button type="button" id="btnClearUploadedFile" class="btn-remove-file" title="Remove file">✕</button>
+                  </div>
+                  <span class="bulk-upload-note">Upload an Excel or CSV file. All numbers are extracted and automatically formatted with <strong>91</strong> prefix.</span>
+                </div>
+
+                <div class="form-group">
+                  <div class="label-row">
+                    <label for="userBulkNumbers">Enter / Paste Phone Numbers <span class="label-hint">(One per line or comma separated)</span></label>
+                    <span class="auto-91-badge" title="10-digit numbers automatically get 91 prefix">✓ Auto +91 Active</span>
+                  </div>
+                  <textarea id="userBulkNumbers" rows="6" placeholder="9876543210 (automatically converts to 919876543210)&#10;919876543211&#10;919876543212" required></textarea>
+                  <div class="textarea-actions">
+                    <span class="textarea-hint-left">Tip: 10-digit numbers automatically get <strong>91</strong> prefix on blur/paste</span>
+                    <button id="userClearNumbers" type="button" class="btn-text danger">Clear</button>
+                  </div>
+                </div>
+
+                <div class="card-header mt-4">
+                  <h3>2. Compose Broadcast Message</h3>
+                  <span id="userCharCountBadge" class="count-badge">0 Chars</span>
+                </div>
+                <div class="form-group mb-3">
+                  <div class="label-row">
+                    <label>Attach Broadcast Image (Optional)</label>
+                    <span class="label-tag">JPG, PNG, WEBP</span>
+                  </div>
+                  <div id="userBulkDropzone" class="media-dropzone">
+                    <input type="file" id="userBulkImageFile" accept="image/png, image/jpeg, image/jpg, image/webp" class="hidden" />
+                    <div class="dropzone-prompt" id="userBulkDropPrompt">
+                      <div class="dropzone-icon">🖼️</div>
+                      <div class="dropzone-text">
+                        <span class="dropzone-title">Click to attach broadcast banner</span>
+                        <span class="dropzone-sub">Image sent with caption to all contacts</span>
+                      </div>
+                    </div>
+                    <div id="userBulkAttachPreview" class="attach-preview-bar hidden">
+                      <img id="userBulkThumb" class="attach-thumb" alt="Preview" />
+                      <div class="attach-info">
+                        <span id="userBulkAttachName" class="attach-name">banner.jpg</span>
+                        <span id="userBulkAttachSize" class="attach-size">210 KB</span>
+                      </div>
+                      <button type="button" id="userBulkRemoveImg" class="btn-remove-attach" title="Remove image">✕</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="userBulkMessage">Message Content</label>
+                  <div class="formatting-bar">
+                    <button type="button" class="fmt-btn" data-user-fmt="bold" title="Bold"><b>B</b></button>
+                    <button type="button" class="fmt-btn" data-user-fmt="italic" title="Italic"><i>I</i></button>
+                    <button type="button" class="fmt-btn" data-user-fmt="strike" title="Strikethrough"><s>S</s></button>
+                    <button type="button" class="fmt-btn" data-user-fmt="mono" title="Monospace"><code>{ }</code></button>
+                  </div>
+                  <textarea id="userBulkMessage" rows="5" placeholder="Type message for all contacts..."></textarea>
+                  <div class="wa-preview-box">
+                    <span class="preview-label">📱 Preview</span>
+                    <div class="wa-bubble wa-bubble-out" style="max-width: 100%; margin-top: 6px;">
+                      <div id="userBulkPreviewImgWrap" class="phone-wa-img-wrap hidden">
+                        <img id="userBulkPreviewImg" class="phone-wa-bubble-img" alt="Preview" />
+                      </div>
+                      <p id="userBulkPreview">Type message to preview...</p>
+                      <span class="wa-bubble-time"><span id="userBulkPreviewTime">Just now</span> <span class="wa-ticks">✓✓</span></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-header mt-4">
+                  <h3>3. Sending Delay &amp; Protection</h3>
+                  <span id="userDelayDisplay" class="count-badge highlight">4 - 5 Seconds</span>
+                </div>
+
+                <div class="delay-box">
+                  <div class="speed-presets mb-3">
+                    <div class="template-chips" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                      <button type="button" class="template-chip" data-speed="1.5">⚡ Fast (1.5s)</button>
+                      <button type="button" class="template-chip active" data-speed="4.5">🛡️ Normal (4.5s)</button>
+                      <button type="button" class="template-chip" data-speed="8">🐢 Safe (8s)</button>
+                      <button type="button" class="template-chip" data-speed="12">🔒 Ultra-Safe (12s)</button>
+                    </div>
+                  </div>
+
+                  <div class="slider-row">
+                    <label for="userDelayRange">Custom Delay:</label>
+                    <span id="userSliderVal" class="slider-value">4.5s</span>
+                  </div>
+                  <input type="range" id="userDelayRange" min="1" max="25" step="0.5" value="4.5">
+                  <p class="delay-note">Randomized intervals keep your WhatsApp account safe and natural.</p>
+                </div>
+
+                <div class="action-buttons" style="display:flex; gap:0.75rem; margin-top:1.5rem;">
+                  <button id="userSendBulk" class="btn btn-primary btn-large" type="submit" style="flex:1;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    <span>Start Bulk Broadcast</span>
+                  </button>
+                  <button id="userStopBulk" type="button" class="btn btn-danger btn-large hidden" style="flex:1; background:#ef4444; border-color:#dc2626;">
+                    <span>⏹ Stop Broadcast</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Delivery Progress Card -->
+            <div class="card">
+              <div class="card-header">
+                <h3>Live Broadcast Report</h3>
+                <span id="userExecStateBadge" class="badge badge-idle">Ready</span>
+              </div>
+
+              <div class="progress-section">
+                <div class="progress-info">
+                  <span id="userProgressSummary">0 of 0 Completed</span>
+                  <span id="userProgressPercent">0%</span>
+                </div>
+                <div class="progress-track">
+                  <div id="userProgressBar" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <div id="userCountdownBanner" class="countdown-banner hidden">
+                  <span class="pulse-icon">⏳</span>
+                  <span id="userCountdownText">Waiting for safety interval...</span>
+                </div>
+              </div>
+
+              <div class="stats-row">
+                <div class="stat-card">
+                  <span class="stat-num" id="userStatTotal">0</span>
+                  <span class="stat-lbl">Total</span>
+                </div>
+                <div class="stat-card stat-success">
+                  <span class="stat-num" id="userStatSent">0</span>
+                  <span class="stat-lbl">Sent</span>
+                </div>
+                <div class="stat-card stat-failed">
+                  <span class="stat-num" id="userStatFailed">0</span>
+                  <span class="stat-lbl">Failed</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-num" id="userStatRemaining">0</span>
+                  <span class="stat-lbl">Remaining</span>
+                </div>
+              </div>
+
+              <div class="table-header-row">
+                <h4>Batch Log</h4>
+                <button id="userClearLog" class="btn-text" type="button">Clear</button>
+              </div>
+
+              <div class="table-container">
+                <table class="log-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Number</th>
+                      <th>Status</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody id="userLogTableBody">
+                    <tr class="empty-row"><td colspan="4">No messages sent yet in this session.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div id="userBulkResult" class="result-box hidden"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- TAB 4: MESSAGE TEMPLATES (NEW SAAS FEATURE!)   -->
+        <!-- ============================================== -->
+        <section id="templatesTab" class="user-tab-panel">
+          <div class="panel-header flex-between">
+            <div>
+              <div class="panel-badge-row">
+                <span class="tag-pill tag-instant">⚡ Dynamic Placeholders</span>
+                <span class="tag-pill tag-secure">🛒 E-Commerce Ready</span>
+              </div>
+              <h2>Message Templates Manager</h2>
+              <p>Create reusable templates with variables like <code>{{customer_name}}</code>, <code>{{order_id}}</code> and <code>{{amount}}</code>.</p>
+            </div>
+            <div>
+              <button type="button" id="btnOpenNewTemplateModal" class="btn btn-primary">
+                + Create New Template
+              </button>
+            </div>
+          </div>
+
+          <!-- Filters bar -->
+          <div class="template-filter-bar">
+            <div class="filter-chips" id="tplCategoryFilters">
+              <button type="button" class="filter-chip active" data-cat="all">All Templates</button>
+              <button type="button" class="filter-chip" data-cat="ecommerce">📦 E-Commerce</button>
+              <button type="button" class="filter-chip" data-cat="alerts">🚨 Security &amp; Alerts</button>
+              <button type="button" class="filter-chip" data-cat="marketing">📣 Marketing</button>
+            </div>
+            <div class="tpl-search-wrap">
+              <input type="text" id="tplSearchInput" placeholder="Search templates..." class="tpl-search-box" />
+            </div>
+          </div>
+
+          <!-- Templates Grid -->
+          <div class="templates-grid" id="templatesContainer">
+            <div class="loading-state-card">
+              <div class="custom-spinner"></div>
+              <p>Loading your message templates...</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- TAB 5: LOGS & ANALYTICS (NEW SAAS FEATURE!)    -->
+        <!-- ============================================== -->
+        <section id="logsTab" class="user-tab-panel">
+          <div class="panel-header flex-between">
+            <div>
+              <div class="panel-badge-row">
+                <span class="tag-pill tag-instant">📊 Live Delivery Telemetry</span>
+                <span class="tag-pill tag-secure">⚡ Auto-Recorded</span>
+              </div>
+              <h2>Delivery Logs &amp; Analytics</h2>
+              <p>Real-time delivery records for all single, bulk, template and automated API messages.</p>
+            </div>
+            <div class="action-buttons-sm">
+              <button type="button" id="btnRefreshLogs" class="btn btn-secondary btn-sm">🔄 Refresh</button>
+              <button type="button" id="btnClearLogs" class="btn btn-danger btn-sm">Clear History</button>
+            </div>
+          </div>
+
+          <!-- 4 SaaS KPI Cards -->
+          <div class="analytics-kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-icon-wrap" style="background: rgba(0, 168, 132, 0.12); color: #008069;">📨</div>
+              <div class="kpi-content">
+                <span class="kpi-label">Total Dispatched</span>
+                <h3 class="kpi-value" id="kpiTotalDispatched">0</h3>
+                <span class="kpi-subtext">All-time lifetime messages</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon-wrap" style="background: rgba(37, 211, 102, 0.12); color: #25d366;">✓</div>
+              <div class="kpi-content">
+                <span class="kpi-label">Delivery Success Rate</span>
+                <h3 class="kpi-value" id="kpiSuccessRate">100%</h3>
+                <span class="kpi-subtext">Optimal sender health</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon-wrap" style="background: rgba(2, 132, 199, 0.12); color: #0284c7;">📅</div>
+              <div class="kpi-content">
+                <span class="kpi-label">Dispatched Today</span>
+                <h3 class="kpi-value" id="kpiSentToday">0</h3>
+                <span class="kpi-subtext">Active daily velocity</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon-wrap" style="background: rgba(217, 119, 6, 0.12); color: #d97706;">💳</div>
+              <div class="kpi-content">
+                <span class="kpi-label">Credits Remaining</span>
+                <h3 class="kpi-value" id="kpiCreditsRemaining">2,500</h3>
+                <span class="kpi-subtext">From your current plan</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Logs Data Table -->
+          <div class="card mt-4">
+            <div class="card-header flex-between">
+              <h3>Live Message Delivery Telemetry</h3>
+              <span class="badge badge-running"><span class="pulse-dot"></span> Auto-Sync</span>
+            </div>
+
+            <div class="table-container">
+              <table class="log-table" id="masterLogTable">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Recipient</th>
+                    <th>Type</th>
+                    <th>Message Preview</th>
+                    <th>Status</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="masterLogTableBody">
+                  <tr class="empty-row"><td colspan="6">No delivery logs recorded yet. Send a message to see live logs.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- TAB 6: API DOCS & E-COMMERCE INTEGRATION       -->
+        <!-- ============================================== -->
+        <section id="apiDocsTab" class="user-tab-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-badge-row">
+                <span class="tag-pill tag-instant">⚡ Universal REST API</span>
+                <span class="tag-pill tag-secure">🛒 WooCommerce &amp; Shopify Ready</span>
+              </div>
+              <h2>Developer API &amp; E-Commerce Gateway</h2>
+              <p>Integrate WhatsApp notifications into WordPress/WooCommerce, Shopify, Node.js, PHP, or Python applications.</p>
+            </div>
+          </div>
+
+          <!-- Live Credentials Card -->
+          <div class="api-credentials-card">
+            <div class="api-cred-header">
+              <div class="api-cred-title">
+                <span class="api-key-icon">🔑</span>
+                <div>
+                  <h3>Your Live Instance Credentials</h3>
+                  <p>Keep your Access Token secret. It authenticates all API dispatch calls.</p>
+                </div>
+              </div>
+              <div id="docConnectionStatus" class="status-pill status-loading">
+                <span class="status-dot"></span>
+                <span id="docStatusText">Checking Status...</span>
+              </div>
+            </div>
+
+            <div class="api-cred-grid">
+              <div class="api-cred-item">
+                <div class="api-cred-label">INSTANCE ID</div>
+                <div class="api-cred-val-box">
+                  <code id="docInstanceId">Loading...</code>
+                  <button type="button" class="btn-copy-sm" id="btnCopyDocInstanceId" title="Copy Instance ID">Copy</button>
+                </div>
+              </div>
+
+              <div class="api-cred-item">
+                <div class="api-cred-label">ACCESS TOKEN</div>
+                <div class="api-cred-val-box">
+                  <code id="docAccessToken">••••••••••••••••••••</code>
+                  <button type="button" class="btn-copy-sm" id="btnToggleToken" title="Show/Hide Token">Show</button>
+                  <button type="button" class="btn-copy-sm" id="btnCopyDocToken" title="Copy Access Token">Copy</button>
+                </div>
+              </div>
+
+              <div class="api-cred-item">
+                <div class="api-cred-label">API BASE URL</div>
+                <div class="api-cred-val-box">
+                  <code id="docBaseUrl">Loading...</code>
+                  <button type="button" class="btn-copy-sm" id="btnCopyDocBaseUrl" title="Copy Base URL">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- WooCommerce One-Click Integration Box -->
+          <div class="card mt-4 border-highlight-card">
+            <div class="card-header flex-between">
+              <div style="display:flex; align-items:center; gap:0.6rem;">
+                <span style="font-size:1.4rem;">🛍️</span>
+                <div>
+                  <h3 style="margin:0;">WooCommerce / WordPress Automatic Order Notifications</h3>
+                  <span class="subtext">Drop this PHP snippet into your theme's <code>functions.php</code> to send instant WhatsApp order updates!</span>
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" id="btnCopyWooCode">📋 Copy WooCommerce Snippet</button>
+            </div>
+            <pre class="code-snippet-pre" style="max-height: 280px; overflow-y: auto;"><code id="wooCommerceSnippetCode">Loading snippet...</code></pre>
+          </div>
+
+          <!-- Send Template API Endpoint Card -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <div>
+                <span class="badge badge-post">POST</span>
+                <code class="endpoint-name">/api/send-template</code>
+              </div>
+              <span class="tag-pill tag-instant">Dynamic Template Dispatch</span>
+            </div>
+            <p class="text-secondary" style="font-size: 0.9rem; margin-top: 0.4rem;">
+              Dispatch customized template messages with dynamic variable payloads from your E-commerce backend or CRM.
+            </p>
+
+            <div class="code-mini-box mt-3">
+              <div class="code-mini-lbl">Request Body (JSON):</div>
+              <pre><code>{
+  "instance_id": "<span class="tpl-replace-inst">YOUR_INSTANCE_ID</span>",
+  "access_token": "<span class="tpl-replace-tok">YOUR_ACCESS_TOKEN</span>",
+  "number": "919876543210",
+  "template_code": "order_confirmation",
+  "variables": {
+    "customer_name": "Rajesh Patel",
+    "order_id": "#1042",
+    "amount": "₹1,850",
+    "tracking_link": "https://mystore.com/track/1042"
+  }
+}</code></pre>
+            </div>
+          </div>
+
+          <!-- SendBuddy Universal Dispatch Card -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <div>
+                <span class="badge-get-post">GET / POST</span>
+                <code class="endpoint-name">/api/send</code>
+              </div>
+              <span class="tag-pill tag-instant">SendBuddy Drop-In</span>
+            </div>
+            <p class="text-secondary" style="font-size: 0.9rem; margin-top: 0.4rem;">
+              Call via standard HTTP GET query parameters or POST body.
+            </p>
+
+            <div class="live-url-box">
+              <div class="live-url-top">
+                <span class="live-url-badge">⚡ Ready-to-Use Live URL</span>
+                <button type="button" class="btn btn-primary btn-xs" id="btnCopyLiveUrl">📋 Copy Full URL</button>
+              </div>
+              <pre class="live-url-code"><code id="docLiveUrl">Generating your custom API link...</code></pre>
+            </div>
+          </div>
+
+          <!-- Code Snippets Generator -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3>Developer Code Snippets</h3>
+              <div class="code-lang-tabs" id="docCodeTabs">
+                <button type="button" class="lang-tab-btn active" data-lang="php">PHP</button>
+                <button type="button" class="lang-tab-btn" data-lang="js">Node.js</button>
+                <button type="button" class="lang-tab-btn" data-lang="curl">cURL</button>
+                <button type="button" class="lang-tab-btn" data-lang="python">Python</button>
+                <button type="button" class="lang-tab-btn" data-lang="csharp">C# (.NET)</button>
+              </div>
+            </div>
+
+            <div class="code-snippet-container">
+              <div class="code-snippet-header">
+                <span id="docSnippetTitle" class="snippet-lang-title">PHP (E-Commerce &amp; Backend)</span>
+                <button type="button" class="btn btn-secondary btn-xs" id="btnCopySnippet">Copy Code</button>
+              </div>
+              <pre class="code-snippet-pre"><code id="docSnippetCode"></code></pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- TAB 6: PLANS & CREDIT RECHARGE (RAZORPAY)      -->
+        <!-- ============================================== -->
+        <section id="plansTab" class="user-tab-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-badge-row">
+                <span class="tag-pill tag-instant">⚡ Official Razorpay Gateway</span>
+                <span class="tag-pill tag-secure">🔒 100% Secure Transaction</span>
+              </div>
+              <h2>SaaS Plans &amp; Credit Recharge</h2>
+              <p>Scale message quotas, unlock high-priority multi-instance dispatch, and recharge credits with instant Razorpay activation.</p>
+            </div>
+          </div>
+
+          <!-- Current Plan & Quota Summary Banner -->
+          <div class="plan-summary-banner">
+            <div class="plan-summary-item">
+              <span class="summary-lbl">CURRENT ACTIVE PLAN</span>
+              <strong id="plansPageCurrentTag" class="summary-val text-primary">⚡ PRO SAAS PLAN</strong>
+            </div>
+            <div class="plan-summary-item">
+              <span class="summary-lbl">CREDITS REMAINING</span>
+              <strong id="plansPageCurrentCredits" class="summary-val">2,500 / 2,500 Available</strong>
+            </div>
+            <div class="plan-summary-item">
+              <span class="summary-lbl">EXPIRY / VALIDITY</span>
+              <strong id="plansPageCurrentExpiry" class="summary-val">30 Days Left</strong>
+            </div>
+          </div>
+
+          <!-- Tabs: Subscription Tiers vs Top-Up Packs -->
+          <div class="pricing-tabs-bar">
+            <button type="button" class="pricing-tab-btn active" id="plansPageTabMonthly">
+              <span>📅 Monthly Subscription Plans</span>
+            </button>
+            <button type="button" class="pricing-tab-btn" id="plansPageTabTopup">
+              <span>⚡ Quick Credit Booster Top-Ups</span>
+            </button>
+          </div>
+
+          <!-- 1. Monthly Subscription Tiers -->
+          <div id="plansPageSectionMonthly" class="pricing-plans-grid">
+            <!-- Plan 1: Starter -->
+            <div class="pricing-plan-box">
+              <div class="plan-box-badge">STARTER</div>
+              <h4>Starter Booster</h4>
+              <p class="plan-box-desc">For small businesses getting started with automated WhatsApp alerts.</p>
+              <div class="plan-box-price">
+                <span class="price-currency">₹</span><span class="price-amount">499</span>
+                <span class="price-period">/ month</span>
+              </div>
+              <div class="plan-box-quota">
+                <strong>5,000 Messages</strong> / month
+              </div>
+              <ul class="plan-feature-list">
+                <li>✓ 1 WhatsApp Instance</li>
+                <li>✓ Single &amp; Bulk Dispatcher</li>
+                <li>✓ Anti-Ban Smart Delay Protection</li>
+                <li>✓ Standard REST API Access</li>
+                <li>✓ Message Logs &amp; Delivery Tracking</li>
+              </ul>
+              <button type="button" class="btn btn-primary w-full btn-razorpay-pay" data-plan="starter" data-name="Starter Booster" data-price="499">
+                <span>💳 Pay ₹499 via Razorpay</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm w-full mt-2 btn-sim-pay" data-plan="starter" title="Simulate payment without gateway">
+                <span>⚡ Instant Test Mode</span>
+              </button>
+            </div>
+
+            <!-- Plan 2: Pro (Featured) -->
+            <div class="pricing-plan-box plan-featured">
+              <div class="plan-featured-tag">★ MOST POPULAR</div>
+              <div class="plan-box-badge badge-pro">PRO BUSINESS</div>
+              <h4>Pro Business</h4>
+              <p class="plan-box-desc">Everything needed for expanding E-Commerce stores &amp; fast-growing businesses.</p>
+              <div class="plan-box-price">
+                <span class="price-currency">₹</span><span class="price-amount">1,499</span>
+                <span class="price-period">/ month</span>
+              </div>
+              <div class="plan-box-quota">
+                <strong>25,000 Messages</strong> / month
+              </div>
+              <ul class="plan-feature-list">
+                <li>✓ 3 Active WhatsApp Instances</li>
+                <li>✓ Bulk Broadcast + Excel/CSV 1-Click Upload</li>
+                <li>✓ Dynamic Template Variables &amp; Live Simulation</li>
+                <li>✓ WooCommerce &amp; Shopify Automatic Notifications</li>
+                <li>✓ High Priority Dispatch Queue</li>
+                <li>✓ 24/7 Priority Support</li>
+              </ul>
+              <button type="button" class="btn btn-primary w-full btn-razorpay-pay" data-plan="pro" data-name="Pro Business" data-price="1499">
+                <span>💳 Pay ₹1,499 via Razorpay</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm w-full mt-2 btn-sim-pay" data-plan="pro" title="Simulate payment without gateway">
+                <span>⚡ Instant Test Mode</span>
+              </button>
+            </div>
+
+            <!-- Plan 3: Agency Unlimited -->
+            <div class="pricing-plan-box">
+              <div class="plan-box-badge badge-agency">ENTERPRISE</div>
+              <h4>Agency / Unlimited</h4>
+              <p class="plan-box-desc">Full agency capability with maximum dispatch speed &amp; volume.</p>
+              <div class="plan-box-price">
+                <span class="price-currency">₹</span><span class="price-amount">3,999</span>
+                <span class="price-period">/ month</span>
+              </div>
+              <div class="plan-box-quota">
+                <strong>1,00,000 Messages</strong> / month
+              </div>
+              <ul class="plan-feature-list">
+                <li>✓ Unlimited WhatsApp Numbers / Instances</li>
+                <li>✓ Highest Priority Parallel Sending Queue</li>
+                <li>✓ Unlimited REST API &amp; Webhooks Traffic</li>
+                <li>✓ Custom Sender Templates &amp; Campaigns</li>
+                <li>✓ Dedicated Account Manager &amp; Custom Integration</li>
+                <li>✓ Multi-Device Standalone Web Pairing</li>
+              </ul>
+              <button type="button" class="btn btn-primary w-full btn-razorpay-pay" data-plan="agency" data-name="Agency / Unlimited" data-price="3999">
+                <span>💳 Pay ₹3,999 via Razorpay</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm w-full mt-2 btn-sim-pay" data-plan="agency" title="Simulate payment without gateway">
+                <span>⚡ Instant Test Mode</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. Credit Booster Packs -->
+          <div id="plansPageSectionTopup" class="topup-packs-grid hidden">
+            <div class="topup-card">
+              <div class="topup-icon">⚡</div>
+              <div class="topup-details">
+                <h4>+2,500 Credits Booster</h4>
+                <p>Quick message recharge added directly to your existing balance.</p>
+              </div>
+              <div class="topup-price-box">
+                <span class="topup-price">₹199</span>
+                <button type="button" class="btn btn-primary btn-sm btn-razorpay-pay" data-plan="topup_2k" data-name="+2,500 Credits" data-price="199">
+                  <span>💳 Pay ₹199 Razorpay</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm btn-sim-pay" data-plan="topup_2k">
+                  <span>⚡ Test</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="topup-card featured-topup">
+              <div class="topup-icon">🚀</div>
+              <div class="topup-details">
+                <div class="tag-pill tag-secure" style="display:inline-block; margin-bottom:4px;">Best Value Top-Up</div>
+                <h4>+10,000 Credits Booster</h4>
+                <p>Substantial volume booster for active broadcast campaigns.</p>
+              </div>
+              <div class="topup-price-box">
+                <span class="topup-price">₹599</span>
+                <button type="button" class="btn btn-primary btn-sm btn-razorpay-pay" data-plan="topup_10k" data-name="+10,000 Credits" data-price="599">
+                  <span>💳 Pay ₹599 Razorpay</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm btn-sim-pay" data-plan="topup_10k">
+                  <span>⚡ Test</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="topup-card">
+              <div class="topup-icon">🏢</div>
+              <div class="topup-details">
+                <h4>+50,000 Credits Enterprise Pack</h4>
+                <p>High-volume recharge for mega sales and large customer bases.</p>
+              </div>
+              <div class="topup-price-box">
+                <span class="topup-price">₹1,799</span>
+                <button type="button" class="btn btn-primary btn-sm btn-razorpay-pay" data-plan="topup_50k" data-name="+50,000 Credits" data-price="1799">
+                  <span>💳 Pay ₹1,799 Razorpay</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm btn-sim-pay" data-plan="topup_50k">
+                  <span>⚡ Test</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Billing Support Box -->
+          <div class="payment-help-box mt-4">
+            <div class="payment-help-icon">💬</div>
+            <div class="payment-help-text">
+              <strong>Need Custom Pricing, GST Invoice or Enterprise SLAs?</strong>
+              <p>We accept UPI, NetBanking, Credit/Debit Cards, Corporate Cards, and International Payments via Razorpay. For official GST tax invoices, contact our WhatsApp desk.</p>
+            </div>
+            <a href="https://wa.me/919999999999?text=Hello%2C+I+want+to+recharge%2Fupgrade+my+Pixano+Connect+WhatsApp+SaaS+Plan" target="_blank" class="btn btn-secondary btn-sm">
+              <span>📱 WhatsApp Billing Desk</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- TAB 7: USER ACCOUNT SETTINGS & WHATSAPP        -->
+        <!-- ============================================== -->
+        <section id="settingsTab" class="user-tab-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-badge-row">
+                <span class="tag-pill tag-secure">🔒 Account Security &amp; Credentials</span>
+              </div>
+              <h2>Account Settings &amp; WhatsApp Session</h2>
+              <p>Manage your account credentials, login password, and dedicated WhatsApp multi-device connection.</p>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <!-- Card 1: User Profile & Credentials -->
+            <div class="card settings-card">
+              <div class="card-header">
+                <div class="composer-title-group">
+                  <div class="composer-icon" style="background:#e0f2fe; color:#0284c7;">👤</div>
+                  <div>
+                    <h3>Profile &amp; User ID</h3>
+                    <span class="subtext">Update your account name, username, and contact email</span>
+                  </div>
+                </div>
+              </div>
+              <form id="formUserProfile" class="settings-form-body">
+                <div class="form-group">
+                  <label for="settingsFullName">Full Name</label>
+                  <input id="settingsFullName" type="text" placeholder="e.g. Rajesh Patel" required />
+                </div>
+                <div class="form-group">
+                  <label for="settingsUsername">User ID / Username</label>
+                  <input id="settingsUsername" type="text" placeholder="e.g. rajesh_patel" required />
+                  <span class="input-hint">Letters, numbers, dot, dash, and underscore (3-30 chars).</span>
+                </div>
+                <div class="form-group">
+                  <label for="settingsEmail">Email Address</label>
+                  <input id="settingsEmail" type="email" placeholder="e.g. rajesh@example.com" required />
+                </div>
+                <p id="profileErrorMsg" class="login-error hidden"></p>
+                <div class="settings-action-row">
+                  <button type="submit" class="btn btn-primary" id="btnSaveProfile">
+                    <span>Save Profile Changes</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Card 2: Security & Password Management -->
+            <div class="card settings-card">
+              <div class="card-header">
+                <div class="composer-title-group">
+                  <div class="composer-icon" style="background:#fee2e2; color:#dc2626;">🔑</div>
+                  <div>
+                    <h3>Change Password</h3>
+                    <span class="subtext">Ensure your account remains safe with a strong password</span>
+                  </div>
+                </div>
+              </div>
+              <form id="formChangePassword" class="settings-form-body">
+                <div class="form-group">
+                  <label for="settingsCurrentPassword">Current Password</label>
+                  <input id="settingsCurrentPassword" type="password" placeholder="Enter current password" autocomplete="current-password" required />
+                </div>
+                <div class="form-group">
+                  <label for="settingsNewPassword">New Password</label>
+                  <input id="settingsNewPassword" type="password" minlength="8" placeholder="Minimum 8 characters" autocomplete="new-password" required />
+                </div>
+                <div class="form-group">
+                  <label for="settingsConfirmPassword">Confirm New Password</label>
+                  <input id="settingsConfirmPassword" type="password" minlength="8" placeholder="Re-enter new password" autocomplete="new-password" required />
+                </div>
+                <p id="passwordErrorMsg" class="login-error hidden"></p>
+                <div class="settings-action-row">
+                  <button type="submit" class="btn btn-secondary" id="btnSavePassword">
+                    <span>Update Password</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Card 3: WhatsApp Session & Connection Management -->
+            <div class="card settings-card span-full">
+              <div class="card-header flex-between">
+                <div class="composer-title-group">
+                  <div class="composer-icon" style="background:#ecfdf5; color:#00a884;">📱</div>
+                  <div>
+                    <h3>WhatsApp Connection &amp; Device Session</h3>
+                    <span class="subtext">Monitor and control your linked WhatsApp multi-device session</span>
+                  </div>
+                </div>
+                <span class="status-pill status-connected" id="settingsConnStatusPill">● Connected</span>
+              </div>
+              <div class="settings-session-content">
+                <div class="session-info-grid">
+                  <div class="session-info-item">
+                    <span class="session-lbl">Connected Phone</span>
+                    <strong id="settingsPhoneVal" class="session-val">+91 XXXXXXXXXX</strong>
+                  </div>
+                  <div class="session-info-item">
+                    <span class="session-lbl">Push Name</span>
+                    <strong id="settingsPushnameVal" class="session-val">User</strong>
+                  </div>
+                  <div class="session-info-item">
+                    <span class="session-lbl">Instance ID</span>
+                    <code id="settingsInstanceIdVal" class="session-val-code">inst_xxx</code>
+                  </div>
+                  <div class="session-info-item">
+                    <span class="session-lbl">Multi-Device Protocol</span>
+                    <strong class="session-val">WhatsApp Web v2.26</strong>
+                  </div>
+                </div>
+
+                <div class="session-actions-box">
+                  <div class="session-actions-info">
+                    <strong>Need to reconnect or switch phone numbers?</strong>
+                    <p>Disconnecting will log out your active session and generate a new QR pairing code immediately.</p>
+                  </div>
+                  <div class="session-btn-group">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnSettingsSyncSession">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                      <span>Re-Sync Session</span>
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" id="btnSettingsDisconnect">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+                      <span>Disconnect WhatsApp Session</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <!-- ============================================== -->
+  <!-- MODAL 1: CREATE NEW MESSAGE TEMPLATE           -->
+  <!-- ============================================== -->
+  <div id="modalNewTemplate" class="saas-modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card modal-card-wide">
+      <div class="modal-header flex-between">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span style="font-size:1.3rem;">📑</span>
+          <h3>Create Custom Message Template</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btnCloseNewTplModal">✕</button>
+      </div>
+
+      <form id="formNewTemplate" class="modal-form-flex">
+        <div class="modal-body-scroll">
+          <div class="modal-split-grid">
+            <!-- LEFT COLUMN: Editor Form -->
+            <div class="modal-editor-col">
+              <div class="form-group mb-2">
+                <label for="tplNameInput">Template Display Name</label>
+                <input type="text" id="tplNameInput" placeholder="e.g. Order Delivery Alert" required />
+              </div>
+
+              <div class="grid-2col mb-2">
+                <div class="form-group">
+                  <label for="tplCodeInput">Template Code</label>
+                  <input type="text" id="tplCodeInput" placeholder="auto_generated_code" />
+                  <span class="input-hint">API parameter: <code>template_code</code></span>
+                </div>
+                <div class="form-group">
+                  <label for="tplCategorySelect">Category</label>
+                  <select id="tplCategorySelect">
+                    <option value="ecommerce">📦 E-Commerce</option>
+                    <option value="alerts">🚨 Security / Alerts</option>
+                    <option value="marketing">📣 Marketing &amp; Offers</option>
+                    <option value="general">💬 General</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Quick Variable Insertion Pills -->
+              <div class="form-group mb-2">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+                  <label class="templates-label" style="margin:0;">⚡ Click to Insert Placeholder Variable:</label>
+                  <span id="tplCategoryBadge" class="count-badge" style="font-size:0.72rem; background:#f0fdf4; color:#166534; border-color:#bbf7d0;">📦 E-Commerce</span>
+                </div>
+                <div class="template-chips" id="tplVarChips">
+                  <!-- Populated dynamically per category -->
+                </div>
+              </div>
+
+              <div class="form-group mb-0">
+                <label for="tplContentInput">Message Template Content</label>
+                <textarea id="tplContentInput" rows="4" placeholder="Enter template text... Use {{variables}} to insert dynamic content" required></textarea>
+              </div>
+
+              <p id="tplErrorMsg" class="login-error hidden mt-2"></p>
+            </div>
+
+            <!-- RIGHT COLUMN: Real-Time WhatsApp Phone Simulation -->
+            <div class="modal-preview-col">
+              <div class="modal-preview-box">
+                <div class="modal-preview-topbar">
+                  <div class="topbar-avatar">W</div>
+                  <div class="topbar-info">
+                    <strong>WhatsApp Live Preview</strong>
+                    <span>Real-Time Rendering</span>
+                  </div>
+                </div>
+                <div class="modal-preview-chat-body">
+                  <div class="chat-date-pill">TODAY</div>
+                  <div class="wa-bubble wa-bubble-out" style="max-width: 100%; white-space: pre-wrap; word-break: break-word;">
+                    <p id="tplLivePreview">Type content to see preview...</p>
+                    <span class="wa-bubble-time">Just now <span class="wa-ticks">✓✓</span></span>
+                  </div>
+                </div>
+                <div class="modal-preview-caption">
+                  ⚡ Dynamic variables like <code>{{customer_name}}</code> replace automatically.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sticky Pinned Footer -->
+        <div class="modal-footer flex-between">
+          <button type="button" class="btn btn-secondary" id="btnCancelNewTpl">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveTemplate">
+            <span>💾 Save Template</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL 2: TEST SEND TEMPLATE MESSAGE            -->
+  <!-- ============================================== -->
+  <div id="modalTestSendTemplate" class="saas-modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <div class="modal-header flex-between">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span style="font-size:1.3rem;">⚡</span>
+          <div>
+            <h3 id="testTplModalTitle">Test Send Template</h3>
+            <span class="subtext" id="testTplModalCode">Template Code</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btnCloseTestTplModal">✕</button>
+      </div>
+
+      <form id="formTestSendTemplate" class="modal-form-flex">
+        <div class="modal-body-scroll">
+          <div class="form-group">
+            <label for="testTplPhone">Recipient Phone Number (with Country Code)</label>
+            <input type="tel" id="testTplPhone" placeholder="e.g. 919876543210" required />
+          </div>
+
+          <div class="form-group">
+            <label>Fill Dynamic Template Variables:</label>
+            <div id="testTplVariablesContainer" class="dynamic-var-fields">
+              <!-- Dynamically populated per variable -->
+            </div>
+          </div>
+
+          <!-- Rendered Result Preview -->
+          <div class="wa-preview-box">
+            <span class="preview-label">📱 Message That Will Be Sent:</span>
+            <div class="wa-bubble wa-bubble-out" style="max-width: 100%; margin-top: 6px; white-space: pre-wrap; word-break: break-word;">
+              <p id="testTplRenderedPreview">Fill in the fields above to preview message...</p>
+              <span class="wa-bubble-time">Just now <span class="wa-ticks">✓✓</span></span>
+            </div>
+          </div>
+
+          <p id="testTplErrorMsg" class="login-error hidden mt-3"></p>
+        </div>
+
+        <div class="modal-footer flex-between">
+          <button type="button" class="btn btn-secondary" id="btnCancelTestTpl">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitTestSend">
+            <span>🚀 Send Test Message Now</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- SheetJS library for high-speed client-side Excel (.xlsx, .xls) and CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="user.js?v=3.0.0"></script>
 </body>
 </html>

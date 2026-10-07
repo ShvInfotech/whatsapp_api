@@ -1,16 +1,17 @@
 /**
- * Safe Vault WhatsApp Automation Console - Frontend Client
+ * Safe Vault WhatsApp SaaS - Super Admin Console Controller
+ * 100% English UI, Real-time System Analytics, Tenant & Billing Control
  */
 
 // State
-let clientStatus = 'DISCONNECTED';
-let isSendingBulk = false;
-let shouldStopBulk = false;
-let parsedNumbers = [];
-let previousConnected = null;
-let statusPollingTimer = null;
+let allUsersCache = [];
+let allTransactionsCache = [];
+let instancesCache = [];
+let activeQrPollingId = null;
+let qrPollingTimer = null;
+let dashboardRefreshTimer = null;
 
-// Detect base URL dynamically for subpaths (e.g. /iot/ or /whatsapp_api/) or root deployments
+// Dynamic Base URL detection
 const getApiBaseUrl = () => {
   if (window.API_BASE_URL !== undefined) return window.API_BASE_URL;
   const path = window.location.pathname.replace(/\/(index|admin|dashboard)?(\.(php|html))?\/?$/, '');
@@ -18,17 +19,18 @@ const getApiBaseUrl = () => {
 };
 const API_BASE_URL = getApiBaseUrl();
 
-function apiFetch(endpoint, options) {
+function apiFetch(endpoint, options = {}) {
   return fetch(`${API_BASE_URL}${endpoint}`, { credentials: 'include', ...options });
 }
 
+// DOM Elements
 const loginScreen = document.getElementById('loginScreen');
 const loginForm = document.getElementById('loginForm');
 const loginUsername = document.getElementById('loginUsername');
 const loginPassword = document.getElementById('loginPassword');
 const loginError = document.getElementById('loginError');
 const loginButton = document.getElementById('loginButton');
-const btnAdminLogout = document.getElementById('btnAdminLogout');
+
 const forgotPasswordForm = document.getElementById('forgotPasswordForm');
 const showForgotPassword = document.getElementById('showForgotPassword');
 const showLogin = document.getElementById('showLogin');
@@ -39,976 +41,893 @@ const newPassword = document.getElementById('newPassword');
 const recoveryError = document.getElementById('recoveryError');
 const resetPasswordButton = document.getElementById('resetPasswordButton');
 
-// DOM Elements
-const statusPill = document.getElementById('statusPill');
-const statusText = document.getElementById('statusText');
-const deviceBadge = document.getElementById('deviceBadge');
-const deviceName = document.getElementById('deviceName');
-const devicePhone = document.getElementById('devicePhone');
+const btnAdminLogout = document.getElementById('btnAdminLogout');
+const headerAdminLogout = document.getElementById('headerAdminLogout');
 
-// QR Hero Banner & Connected Banner on index.html
-const qrHeroBanner = document.getElementById('qrHeroBanner');
-const heroBadgeText = document.getElementById('heroBadgeText');
-const heroTitle = document.getElementById('heroTitle');
-const heroStatusNotice = document.getElementById('heroStatusNotice');
-const heroNoticeText = document.getElementById('heroNoticeText');
-const heroQrLoader = document.getElementById('heroQrLoader');
-const heroLoaderText = document.getElementById('heroLoaderText');
-const heroQrImage = document.getElementById('heroQrImage');
-const connectedBanner = document.getElementById('connectedBanner');
-const connDeviceInfo = document.getElementById('connDeviceInfo');
-const btnBannerReset = document.getElementById('btnBannerReset');
+// Admin Profile Dropdown Elements
+const adminProfileContainer = document.getElementById('adminProfileContainer');
+const adminProfileBtn = document.getElementById('adminProfileBtn');
+const adminProfileDropdown = document.getElementById('adminProfileDropdown');
+const adminDisplayName = document.getElementById('adminDisplayName');
+const adminProfileFullName = document.getElementById('adminProfileFullName');
 
-const bulkNumbersInput = document.getElementById('bulkNumbers');
-const bulkMessageInput = document.getElementById('bulkMessage');
-const numberCountBadge = document.getElementById('numberCountBadge');
-const charCountBadge = document.getElementById('charCountBadge');
-const delayRange = document.getElementById('delayRange');
-const sliderVal = document.getElementById('sliderVal');
-const delayDisplay = document.getElementById('delayDisplay');
-
-const btnStartBulk = document.getElementById('btnStartBulk');
-const btnStopBulk = document.getElementById('btnStopBulk');
-const btnSampleNumbers = document.getElementById('btnSampleNumbers');
-const btnClearNumbers = document.getElementById('btnClearNumbers');
-
-const progressBar = document.getElementById('progressBar');
-const progressPercent = document.getElementById('progressPercent');
-const progressSummary = document.getElementById('progressSummary');
-const countdownBanner = document.getElementById('countdownBanner');
-const countdownText = document.getElementById('countdownText');
-const execStateBadge = document.getElementById('execStateBadge');
-
-const statTotal = document.getElementById('statTotal');
-const statSent = document.getElementById('statSent');
-const statFailed = document.getElementById('statFailed');
-const statRemaining = document.getElementById('statRemaining');
-const logTableBody = document.getElementById('logTableBody');
-const btnClearLog = document.getElementById('btnClearLog');
-
-// Tabs
-const tabButtons = document.querySelectorAll('.tab-btn');
-const tabPanels = document.querySelectorAll('.tab-panel');
-
-// Device Tab Elements
-const detailStatus = document.getElementById('detailStatus');
-const detailName = document.getElementById('detailName');
-const detailPhone = document.getElementById('detailPhone');
-const detailPlatform = document.getElementById('detailPlatform');
-const detailTime = document.getElementById('detailTime');
-const qrBox = document.getElementById('qrBox');
-const qrImage = document.getElementById('qrImage');
-const qrPlaceholder = document.getElementById('qrPlaceholder');
-const qrNotice = document.getElementById('qrNotice');
-const btnRefreshStatus = document.getElementById('btnRefreshStatus');
-const btnResetSession = document.getElementById('btnResetSession');
-
-// Single Send Tab Elements
-const singleForm = document.getElementById('singleForm');
-const singlePhone = document.getElementById('singlePhone');
-const singleMessage = document.getElementById('singleMessage');
-const btnSendSingle = document.getElementById('btnSendSingle');
-const singleResultBox = document.getElementById('singleResultBox');
-
+// Toast
 const toast = document.getElementById('toast');
 
 // ==========================================================================
 // Initialization
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', async () => {
+  setupAuthHandlers();
   const loggedIn = await restoreAdminSession();
   if (!loggedIn) return;
-  startDashboard();
+  startAdminConsole();
 });
-
-function startDashboard() {
-  setupTabs();
-  setupInputs();
-  setupDelaySlider();
-  setupFormattingButtons();
-  setupSingleSender();
-  setupDeviceActions();
-  setupInstanceManagement();
-
-  // Initial status check & adaptive polling
-  fetchStatus();
-  fetchInstances();
-  fetchUsers();
-}
 
 async function restoreAdminSession() {
   try {
-    const response = await apiFetch('/api/auth/me');
-    if (!response.ok) return false;
+    const res = await apiFetch('/api/auth/me');
+    if (!res.ok) return false;
+    const json = await res.json();
+    if (!json.success) return false;
+
     document.body.classList.remove('auth-required');
-    loginScreen.classList.add('hidden');
+    if (loginScreen) loginScreen.classList.add('hidden');
+
+    if (json.data) {
+      if (adminDisplayName) adminDisplayName.textContent = json.data.displayName || json.data.username || 'Administrator';
+      if (adminProfileFullName) adminProfileFullName.textContent = json.data.displayName || 'Safe Vault Administrator';
+    }
     return true;
   } catch (_) {
     return false;
   }
 }
 
-if (loginForm) {
-  loginForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    loginError.classList.add('hidden');
-    loginButton.disabled = true;
-    loginButton.textContent = 'Checking...';
-    try {
-      const response = await apiFetch('/api/auth/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: loginUsername.value.trim(), password: loginPassword.value })
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.error || 'Login failed.');
-      document.body.classList.remove('auth-required');
-      loginScreen.classList.add('hidden');
-      startDashboard();
-    } catch (error) {
-      loginError.textContent = error.message;
-      loginError.classList.remove('hidden');
-    } finally {
-      loginButton.disabled = false;
-      loginButton.textContent = 'Login as Admin';
-    }
-  });
-}
+function startAdminConsole() {
+  setupNavigationTabs();
+  setupProfileDropdown();
+  setupDashboardControls();
+  setupUserManagement();
+  setupBillingManagement();
+  setupInstancesManagement();
 
-function toggleRecoveryForm(showRecovery) {
-  loginForm.classList.toggle('hidden', showRecovery);
-  forgotPasswordForm.classList.toggle('hidden', !showRecovery);
-}
+  // Load all initial data
+  loadDashboardStats();
+  loadUsers();
+  loadTransactions();
+  loadInstances();
 
-if (showForgotPassword) showForgotPassword.addEventListener('click', () => toggleRecoveryForm(true));
-if (showLogin) showLogin.addEventListener('click', () => toggleRecoveryForm(false));
-
-if (forgotPasswordForm) {
-  forgotPasswordForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    recoveryError.classList.add('hidden');
-    resetPasswordButton.disabled = true;
-    resetPasswordButton.textContent = 'Updating...';
-    try {
-      const response = await apiFetch('/api/auth/forgot-password', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: recoveryUsername.value.trim(), email: recoveryEmail.value.trim(),
-          recoveryCode: recoveryCode.value, newPassword: newPassword.value
-        })
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.error || 'Password reset failed.');
-      loginError.textContent = data.message;
-      loginError.classList.remove('hidden');
-      loginPassword.value = '';
-      forgotPasswordForm.reset();
-      toggleRecoveryForm(false);
-    } catch (error) {
-      recoveryError.textContent = error.message;
-      recoveryError.classList.remove('hidden');
-    } finally {
-      resetPasswordButton.disabled = false;
-      resetPasswordButton.textContent = 'Update Password';
-    }
-  });
-}
-
-if (btnAdminLogout) {
-  btnAdminLogout.addEventListener('click', async () => {
-    await apiFetch('/api/auth/logout', { method: 'POST' });
-    if (statusPollingTimer) clearTimeout(statusPollingTimer);
-    window.location.reload();
-  });
+  // Auto-refresh dashboard metrics every 30s
+  clearInterval(dashboardRefreshTimer);
+  dashboardRefreshTimer = setInterval(() => {
+    loadDashboardStats(true);
+  }, 30000);
 }
 
 // ==========================================================================
-// Tab Switching
+// Authentication Handlers
 // ==========================================================================
-function setupTabs() {
-  tabButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      const targetTabId = button.getAttribute('data-tab');
-
-      tabButtons.forEach(b => b.classList.remove('active'));
-      tabPanels.forEach(p => p.classList.remove('active'));
-
-      button.classList.add('active');
-      const targetPanel = document.getElementById(targetTabId);
-      if (targetPanel) {
-        targetPanel.classList.add('active');
-      }
-
-      if (targetTabId === 'deviceTab') {
-        fetchQrCode();
-      }
-      if (targetTabId === 'usersTab') fetchUsers();
-    });
-  });
-}
-
-function escapeHtml(value) {
-  return String(value || '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
-}
-
-async function fetchUsers() {
-  const usersList = document.getElementById('usersList');
-  if (!usersList) return;
-  try {
-    const response = await apiFetch('/api/admin/users');
-    const json = await response.json();
-    if (!response.ok || !json.success) throw new Error(json.error || 'Unable to load users.');
-    const users = json.data || [];
-    usersList.innerHTML = users.length ? users.map((user) => {
-      const status = user.status || 'active';
-      const nextStatus = status === 'active' ? 'inactive' : 'active';
-      const actionLabel = status === 'active' ? 'Deactivate' : 'Activate';
-      return `<tr><td>${escapeHtml(user.fullName)}</td><td>${escapeHtml(user.username)}</td><td>${escapeHtml(user.email)}</td><td><span class="user-status user-status-${escapeHtml(status)}">${escapeHtml(status)}</span></td><td>${user.createdAt ? new Date(user.createdAt).toLocaleString() : '-'}</td><td><button class="btn btn-sm ${status === 'active' ? 'btn-danger' : 'btn-primary'} user-status-action" data-user-id="${escapeHtml(user.id)}" data-next-status="${nextStatus}" type="button">${actionLabel}</button></td></tr>`;
-    }).join('') : '<tr><td colspan="6" class="text-secondary">No registered users yet.</td></tr>';
-    usersList.querySelectorAll('.user-status-action').forEach((button) => button.addEventListener('click', () => updateUserStatus(button)));
-  } catch (error) {
-    usersList.innerHTML = `<tr><td colspan="6" class="login-error">${escapeHtml(error.message)}</td></tr>`;
-  }
-}
-
-async function updateUserStatus(button) {
-  button.disabled = true;
-  try {
-    const response = await apiFetch(`/api/admin/users/${encodeURIComponent(button.dataset.userId)}/status`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: button.dataset.nextStatus })
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.error || 'Unable to update user status.');
-    await fetchUsers();
-  } catch (error) {
-    showToast(error.message, 'error');
-    button.disabled = false;
-  }
-}
-
-// ==========================================================================
-// Status Polling & Rendering
-// ==========================================================================
-async function fetchStatus() {
-  try {
-    const res = await apiFetch('/api/status');
-    const data = await res.json();
-
-    if (!data.success) return;
-
-    const info = data.data;
-    clientStatus = info.status;
-
-    // Fast polling if waiting for scan/auth, standard if connected
-    const nextInterval = info.isConnected ? 4000 : 1500;
-    if (statusPollingTimer) clearTimeout(statusPollingTimer);
-    statusPollingTimer = setTimeout(fetchStatus, nextInterval);
-
-    // Update Header Status Pill
-    statusPill.className = 'status-pill';
-    if (info.isConnected) {
-      statusPill.classList.add('status-connected');
-      statusText.textContent = 'WhatsApp Connected';
-
-      if (info.clientInfo) {
-        deviceBadge.classList.remove('hidden');
-        deviceName.textContent = info.clientInfo.pushname || 'Safe Vault User';
-        devicePhone.textContent = `(${info.clientInfo.phone || ''})`;
-      }
-
-      // Hide QR Hero Banner and show Connected Banner on index.html
-      if (qrHeroBanner) qrHeroBanner.classList.add('hidden');
-      if (connectedBanner) {
-        connectedBanner.classList.remove('hidden');
-        if (connDeviceInfo) {
-          connDeviceInfo.textContent = `Connected as: ${info.clientInfo?.pushname || 'Safe Vault User'} (+${info.clientInfo?.phone || 'Unknown'}) • Platform: ${info.clientInfo?.platform || 'WhatsApp Web'}`;
-        }
-      }
-
-      // If just transitioned to connected, notify user
-      if (previousConnected === false) {
-        showToast(`🎉 WhatsApp successfully connected as ${info.clientInfo?.pushname || 'User'}!`, 'success');
-      }
-      previousConnected = true;
-
-    } else if (info.status === 'AUTHENTICATING') {
-      previousConnected = false;
-      statusPill.classList.add('status-loading');
-      statusText.textContent = 'Logging In...';
-      deviceBadge.classList.add('hidden');
-
-      if (qrHeroBanner) qrHeroBanner.classList.remove('hidden');
-      if (connectedBanner) connectedBanner.classList.add('hidden');
-
-      if (heroQrLoader) {
-        heroQrLoader.classList.remove('hidden');
-        if (heroLoaderText) heroLoaderText.textContent = 'Authenticating & Syncing session...';
-      }
-      if (heroQrImage) heroQrImage.classList.add('hidden');
-      if (heroBadgeText) heroBadgeText.textContent = 'Logging In...';
-      if (heroNoticeText) heroNoticeText.textContent = '✓ QR Code scanned! Syncing session with your phone...';
-
-    } else if (info.status === 'QR_READY') {
-      previousConnected = false;
-      statusPill.classList.add('status-loading');
-      statusText.textContent = 'Scan QR Code';
-      deviceBadge.classList.add('hidden');
-
-      if (qrHeroBanner) qrHeroBanner.classList.remove('hidden');
-      if (connectedBanner) connectedBanner.classList.add('hidden');
-
-      if (info.qrDataUrl) {
-        if (heroQrImage) {
-          heroQrImage.src = info.qrDataUrl;
-          heroQrImage.classList.remove('hidden');
-        }
-        if (heroQrLoader) heroQrLoader.classList.add('hidden');
-        if (heroBadgeText) heroBadgeText.textContent = 'Scan QR Code to Login';
-        if (heroNoticeText) heroNoticeText.textContent = 'Waiting for scan... (Authentication will sync automatically once scanned)';
-
-        // Also sync QR in deviceTab
-        if (qrImage) {
-          qrImage.src = info.qrDataUrl;
-          qrImage.classList.remove('hidden');
-        }
-        if (qrPlaceholder) qrPlaceholder.classList.add('hidden');
-      } else {
-        if (heroQrLoader) {
-          heroQrLoader.classList.remove('hidden');
-          if (heroLoaderText) heroLoaderText.textContent = 'Loading QR Code...';
-        }
-        if (heroQrImage) heroQrImage.classList.add('hidden');
-      }
-
-    } else {
-      previousConnected = false;
-      statusPill.classList.add('status-disconnected');
-      statusText.textContent = 'Disconnected';
-      deviceBadge.classList.add('hidden');
-
-      if (qrHeroBanner) qrHeroBanner.classList.remove('hidden');
-      if (connectedBanner) connectedBanner.classList.add('hidden');
-
-      if (heroQrLoader) {
-        heroQrLoader.classList.remove('hidden');
-        if (heroLoaderText) heroLoaderText.textContent = 'Starting WhatsApp Engine...';
-      }
-      if (heroQrImage) heroQrImage.classList.add('hidden');
-      if (heroNoticeText) heroNoticeText.textContent = 'Starting WhatsApp Engine. Pairing QR code will appear shortly...';
-    }
-
-    // Update Device Tab Details
-    if (detailStatus) {
-      detailStatus.textContent = info.status;
-      detailStatus.className = 'detail-val badge';
-      if (info.isConnected) {
-        detailStatus.classList.add('badge-completed');
-      } else {
-        detailStatus.classList.add('badge-idle');
-      }
-
-      detailName.textContent = info.clientInfo?.pushname || '-';
-      detailPhone.textContent = info.clientInfo?.phone ? `+${info.clientInfo.phone}` : '-';
-      detailPlatform.textContent = info.clientInfo?.platform || '-';
-      detailTime.textContent = info.lastConnectedAt ? new Date(info.lastConnectedAt).toLocaleString() : '-';
-
-      const defaultIdElem = document.getElementById('defaultInstanceId');
-      const defaultTokenElem = document.getElementById('defaultAccessToken');
-      if (defaultIdElem && info.instanceId) defaultIdElem.textContent = info.instanceId;
-      if (defaultTokenElem && info.accessToken) defaultTokenElem.textContent = info.accessToken;
-    }
-
-    // Device Tab QR update
-    if (info.isConnected) {
-      if (qrImage) qrImage.classList.add('hidden');
-      if (qrPlaceholder) {
-        qrPlaceholder.classList.remove('hidden');
-        qrNotice.textContent = `✓ WhatsApp is connected to +${info.clientInfo?.phone || ''}`;
-      }
-    }
-
-  } catch (err) {
-    statusPill.className = 'status-pill status-disconnected';
-    statusText.textContent = 'Server Offline';
-    if (statusPollingTimer) clearTimeout(statusPollingTimer);
-    statusPollingTimer = setTimeout(fetchStatus, 3000);
-  }
-}
-
-async function fetchQrCode() {
-  try {
-    const res = await apiFetch('/api/qr?format=json', {
-      headers: { 'Accept': 'application/json' }
-    });
-    const data = await res.json();
-
-    if (data.status === 'CONNECTED') {
-      if (qrImage) qrImage.classList.add('hidden');
-      if (qrPlaceholder) {
-        qrPlaceholder.classList.remove('hidden');
-        qrNotice.textContent = '✓ WhatsApp is connected and ready.';
-      }
-    } else if (data.status === 'AUTHENTICATING') {
-      if (qrImage) qrImage.classList.add('hidden');
-      if (qrPlaceholder) {
-        qrPlaceholder.classList.remove('hidden');
-        qrNotice.textContent = 'Restoring saved session from phone...';
-      }
-    } else if (data.qrDataUrl) {
-      if (qrPlaceholder) qrPlaceholder.classList.add('hidden');
-      if (qrImage) {
-        qrImage.src = data.qrDataUrl;
-        qrImage.classList.remove('hidden');
-      }
-    } else {
-      if (qrImage) qrImage.classList.add('hidden');
-      if (qrPlaceholder) {
-        qrPlaceholder.classList.remove('hidden');
-        qrNotice.textContent = 'Initializing WhatsApp engine...';
-      }
-    }
-  } catch (e) {}
-}
-
-// ==========================================================================
-// Phone Number Parsing & Input Handling
-// ==========================================================================
-function parsePhoneNumbers(rawText) {
-  if (!rawText) return [];
-
-  // Split by newlines, commas, semicolons, or tabs
-  const tokens = rawText.split(/[\n,;\t]+/);
-  const result = [];
-  const seen = new Set();
-
-  for (let token of tokens) {
-    // Strip all non-digit characters
-    let cleaned = token.replace(/\D/g, '');
-    if (!cleaned) continue;
-
-    // Remove leading zeros
-    if (cleaned.startsWith('00')) cleaned = cleaned.substring(2);
-    else if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
-
-    // If Indian 10-digit mobile number, prepend 91
-    if (cleaned.length === 10 && /^[6-9]/.test(cleaned)) {
-      cleaned = '91' + cleaned;
-    }
-
-    // Must be valid international format (10 to 15 digits)
-    if (cleaned.length >= 10 && cleaned.length <= 15 && !seen.has(cleaned)) {
-      seen.add(cleaned);
-      result.push(cleaned);
-    }
-  }
-
-  return result;
-}
-
-function setupInputs() {
-  bulkNumbersInput.addEventListener('input', () => {
-    parsedNumbers = parsePhoneNumbers(bulkNumbersInput.value);
-    numberCountBadge.textContent = `${parsedNumbers.length} Number${parsedNumbers.length === 1 ? '' : 's'}`;
-  });
-
-  const bulkPreview = document.getElementById('bulkMessagePreview');
-  const bulkPreviewTime = document.getElementById('bulkPreviewTime');
-  const singlePreview = document.getElementById('singleMessagePreview');
-  const singlePreviewTime = document.getElementById('singlePreviewTime');
-
-  bulkMessageInput.addEventListener('input', () => {
-    charCountBadge.textContent = `${bulkMessageInput.value.length} Chars`;
-    if (bulkPreview) {
-      bulkPreview.textContent = bulkMessageInput.value || 'Type your message above to see preview...';
-    }
-    if (bulkPreviewTime) {
-      bulkPreviewTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-  });
-
-  if (singleMessage && singlePreview) {
-    singleMessage.addEventListener('input', () => {
-      singlePreview.textContent = singleMessage.value || 'Type your message above to see preview...';
-      if (singlePreviewTime) {
-        singlePreviewTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      }
-    });
-  }
-
-  btnSampleNumbers.addEventListener('click', () => {
-    bulkNumbersInput.value = '918140349408\n919727899812';
-    parsedNumbers = parsePhoneNumbers(bulkNumbersInput.value);
-    numberCountBadge.textContent = `${parsedNumbers.length} Numbers`;
-    showToast('Loaded 2 test numbers: 918140349408 & 919727899812', 'success');
-  });
-
-  btnClearNumbers.addEventListener('click', () => {
-    bulkNumbersInput.value = '';
-    parsedNumbers = [];
-    numberCountBadge.textContent = '0 Numbers';
-  });
-
-  btnClearLog.addEventListener('click', () => {
-    logTableBody.innerHTML = `
-      <tr class="empty-row">
-        <td colspan="5">Log cleared. Ready for next dispatch.</td>
-      </tr>
-    `;
-    resetStats();
-  });
-}
-
-function setupDelaySlider() {
-  delayRange.addEventListener('input', (e) => {
-    const val = parseFloat(e.target.value);
-    sliderVal.textContent = `${val}s`;
-    delayDisplay.textContent = `${Math.max(1, Math.floor(val - 0.5))} - ${Math.ceil(val + 0.5)} Seconds`;
-  });
-}
-
-function setupFormattingButtons() {
-  document.querySelectorAll('.fmt-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const textarea = bulkMessageInput;
-      const fmt = btn.getAttribute('data-fmt');
-      const emoji = btn.getAttribute('data-emoji');
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const sel = textarea.value.substring(start, end);
-
-      let insert = '';
-      if (emoji) {
-        insert = emoji;
-      } else if (fmt === 'bold') {
-        insert = `*${sel || 'bold text'}*`;
-      } else if (fmt === 'italic') {
-        insert = `_${sel || 'italic text'}_`;
-      } else if (fmt === 'strike') {
-        insert = `~${sel || 'strike text'}~`;
-      } else if (fmt === 'mono') {
-        insert = `\`\`\`${sel || 'code text'}\`\`\``;
-      }
-
-      textarea.setRangeText(insert, start, end, 'end');
-      textarea.focus();
-      charCountBadge.textContent = `${textarea.value.length} Chars`;
-    });
-  });
-}
-
-// ==========================================================================
-// Bulk Message Sending Engine (Sequential with 4-5s Anti-Ban Delay)
-// ==========================================================================
-btnStartBulk.addEventListener('click', async () => {
-  if (isSendingBulk) return;
-
-  parsedNumbers = parsePhoneNumbers(bulkNumbersInput.value);
-  const message = bulkMessageInput.value.trim();
-
-  if (parsedNumbers.length === 0) {
-    showToast('Please enter at least one valid phone number.', 'error');
-    bulkNumbersInput.focus();
-    return;
-  }
-
-  if (!message) {
-    showToast('Please enter the message text.', 'error');
-    bulkMessageInput.focus();
-    return;
-  }
-
-  if (clientStatus !== 'CONNECTED') {
-    showToast(`WhatsApp is not connected (Current: ${clientStatus}). Please check QR code.`, 'error');
-    return;
-  }
-
-  // Start Bulk Dispatch
-  isSendingBulk = true;
-  shouldStopBulk = false;
-
-  btnStartBulk.classList.add('hidden');
-  btnStopBulk.classList.remove('hidden');
-  execStateBadge.className = 'badge badge-running';
-  execStateBadge.textContent = 'Sending...';
-
-  const total = parsedNumbers.length;
-  let sentCount = 0;
-  let failedCount = 0;
-
-  statTotal.textContent = total;
-  statSent.textContent = '0';
-  statFailed.textContent = '0';
-  statRemaining.textContent = total;
-  updateProgress(0, total);
-
-  // Initialize table rows
-  logTableBody.innerHTML = '';
-  parsedNumbers.forEach((num, index) => {
-    const row = document.createElement('tr');
-    row.id = `row-${index}`;
-    row.innerHTML = `
-      <td>${index + 1}</td>
-      <td><strong>+${num}</strong></td>
-      <td><span class="tag-pending">Pending</span></td>
-      <td>-</td>
-      <td class="text-muted">Queued</td>
-    `;
-    logTableBody.appendChild(row);
-  });
-
-  const baseDelaySec = parseFloat(delayRange.value) || 4.5;
-
-  for (let i = 0; i < total; i++) {
-    if (shouldStopBulk) {
-      showToast('Bulk messaging stopped by user.', 'error');
-      break;
-    }
-
-    const phone = parsedNumbers[i];
-    const row = document.getElementById(`row-${i}`);
-    if (row) {
-      row.children[2].innerHTML = '<span class="tag-sending">Sending...</span>';
-    }
-
-    const timeStr = new Date().toLocaleTimeString();
-
-    try {
-      let response;
-      const bulkInstanceSelect = document.getElementById('bulkInstanceSelect');
-      const selectedInstanceId = bulkInstanceSelect ? bulkInstanceSelect.value : null;
-
-      if (selectedInstanceId) {
-        const selOpt = bulkInstanceSelect.options[bulkInstanceSelect.selectedIndex];
-        const token = selOpt ? selOpt.dataset.token : '';
-        response = await apiFetch(`/api/send?number=${encodeURIComponent(phone)}&type=text&message=${encodeURIComponent(message)}&instance_id=${encodeURIComponent(selectedInstanceId)}&access_token=${encodeURIComponent(token)}`);
-      } else {
-        response = await apiFetch('/api/send-message', {
+function setupAuthHandlers() {
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loginError.classList.add('hidden');
+      loginButton.disabled = true;
+      loginButton.textContent = 'Authenticating...';
+
+      try {
+        const res = await apiFetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            phoneNumber: phone,
-            message: message
+            username: loginUsername.value.trim(),
+            password: loginPassword.value
           })
         });
-      }
 
-      const resData = await response.json();
-      const isSuccess = response.ok && (resData.success || resData.status === 'success');
-
-      if (isSuccess) {
-        sentCount++;
-        statSent.textContent = sentCount;
-        if (row) {
-          row.children[2].innerHTML = '<span class="tag-sent">✓ Sent</span>';
-          row.children[3].textContent = timeStr;
-          row.children[4].textContent = 'Delivered';
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || 'Invalid administrator username or password.');
         }
-      } else {
-        failedCount++;
-        statFailed.textContent = failedCount;
-        if (row) {
-          row.children[2].innerHTML = '<span class="tag-failed">✕ Failed</span>';
-          row.children[3].textContent = timeStr;
-          row.children[4].textContent = resData.message || resData.error || 'Failed to send';
-        }
+
+        document.body.classList.remove('auth-required');
+        loginScreen.classList.add('hidden');
+        showToast('Super Admin authenticated successfully!', 'success');
+        startAdminConsole();
+      } catch (err) {
+        loginError.textContent = err.message;
+        loginError.classList.remove('hidden');
+      } finally {
+        loginButton.disabled = false;
+        loginButton.textContent = 'Sign In as Super Administrator';
       }
-    } catch (sendErr) {
-      failedCount++;
-      statFailed.textContent = failedCount;
-      if (row) {
-        row.children[2].innerHTML = '<span class="tag-failed">✕ Error</span>';
-        row.children[3].textContent = timeStr;
-        row.children[4].textContent = sendErr.message;
-      }
-    }
-
-    statRemaining.textContent = total - (i + 1);
-    updateProgress(i + 1, total);
-
-    // If more messages remaining, apply randomized 4 to 5 second delay
-    if (i < total - 1 && !shouldStopBulk) {
-      // Apply jitter: e.g. 4.5s +/- 0.6s -> 3.9s to 5.1s
-      const jitterMs = (baseDelaySec * 1000) + (Math.random() * 1200 - 600);
-      await runCountdown(Math.round(jitterMs / 100) / 10);
-    }
+    });
   }
 
-  // Finished
-  countdownBanner.classList.add('hidden');
-  isSendingBulk = false;
-  btnStartBulk.classList.remove('hidden');
-  btnStopBulk.classList.add('hidden');
-
-  if (shouldStopBulk) {
-    execStateBadge.className = 'badge badge-stopped';
-    execStateBadge.textContent = 'Stopped';
-  } else {
-    execStateBadge.className = 'badge badge-completed';
-    execStateBadge.textContent = 'Finished';
-    showToast(`Bulk dispatch completed: ${sentCount}/${total} delivered successfully!`, 'success');
-  }
-});
-
-btnStopBulk.addEventListener('click', () => {
-  if (isSendingBulk) {
-    shouldStopBulk = true;
-    btnStopBulk.textContent = 'Stopping...';
-  }
-});
-
-function updateProgress(current, total) {
-  const percent = total > 0 ? Math.round((current / total) * 100) : 0;
-  progressBar.style.width = `${percent}%`;
-  progressPercent.textContent = `${percent}%`;
-  progressSummary.textContent = `${current} of ${total} Completed`;
-}
-
-async function runCountdown(totalSeconds) {
-  countdownBanner.classList.remove('hidden');
-  let remaining = totalSeconds;
-
-  while (remaining > 0 && !shouldStopBulk) {
-    countdownText.textContent = `Waiting ${remaining.toFixed(1)}s (Anti-Ban safety delay before next message)...`;
-    await new Promise(r => setTimeout(r, 200));
-    remaining -= 0.2;
-  }
-
-  countdownBanner.classList.add('hidden');
-}
-
-function resetStats() {
-  statTotal.textContent = '0';
-  statSent.textContent = '0';
-  statFailed.textContent = '0';
-  statRemaining.textContent = '0';
-  updateProgress(0, 0);
-  execStateBadge.className = 'badge badge-idle';
-  execStateBadge.textContent = 'Ready';
-}
-
-// ==========================================================================
-// Single Message Sender
-// ==========================================================================
-function setupSingleSender() {
-  singleForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const phone = singlePhone.value.trim();
-    const msg = singleMessage.value.trim();
-
-    if (!phone || !msg) {
-      showToast('Please enter both phone number and message.', 'error');
-      return;
-    }
-
-    btnSendSingle.disabled = true;
-    btnSendSingle.textContent = 'Sending WhatsApp message...';
-    singleResultBox.classList.add('hidden');
-
+  // Logout Handlers
+  const handleLogout = async () => {
     try {
-      let res;
-      const singleInstanceSelect = document.getElementById('singleInstanceSelect');
-      const selectedInstanceId = singleInstanceSelect ? singleInstanceSelect.value : null;
+      await apiFetch('/api/auth/logout', { method: 'POST' });
+    } catch (_) {}
+    window.location.reload();
+  };
 
-      if (selectedInstanceId) {
-        const selOpt = singleInstanceSelect.options[singleInstanceSelect.selectedIndex];
-        const token = selOpt ? selOpt.dataset.token : '';
-        res = await apiFetch(`/api/send?number=${encodeURIComponent(phone)}&type=text&message=${encodeURIComponent(msg)}&instance_id=${encodeURIComponent(selectedInstanceId)}&access_token=${encodeURIComponent(token)}`);
-      } else {
-        res = await apiFetch('/api/send-message', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: phone, message: msg })
-        });
-      }
+  if (btnAdminLogout) btnAdminLogout.addEventListener('click', handleLogout);
+  if (headerAdminLogout) headerAdminLogout.addEventListener('click', handleLogout);
 
-      const data = await res.json();
-      singleResultBox.classList.remove('hidden');
-
-      const isSuccess = res.ok && (data.success || data.status === 'success');
-
-      if (isSuccess) {
-        singleResultBox.className = 'result-box result-success';
-        singleResultBox.innerHTML = `
-          <strong>✓ Message Sent Successfully!</strong>
-          <p>Recipient: +${data.data?.to || data.data?.recipient || phone}</p>
-          <p>Message ID: <code>${data.data?.id || data.data?.messageId || 'Delivered'}</code></p>
-        `;
-        showToast('Message delivered successfully!', 'success');
-      } else {
-        singleResultBox.className = 'result-box result-error';
-        singleResultBox.innerHTML = `
-          <strong>✕ Failed to Send</strong>
-          <p>${data.message || data.error || 'Unknown error'}</p>
-        `;
-        showToast(data.message || data.error || 'Failed to send message', 'error');
-      }
-    } catch (err) {
-      singleResultBox.className = 'result-box result-error';
-      singleResultBox.textContent = `Network Error: ${err.message}`;
-    } finally {
-      btnSendSingle.disabled = false;
-      btnSendSingle.innerHTML = `
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        Send WhatsApp Message
-      `;
-    }
-  });
-}
-
-// ==========================================================================
-// Device & QR Actions
-// ==========================================================================
-function setupDeviceActions() {
-  if (statusPill) {
-    statusPill.style.cursor = 'pointer';
-    statusPill.title = 'Click to view status / QR Code';
-    statusPill.addEventListener('click', () => {
-      if (clientStatus !== 'CONNECTED') {
-        if (qrHeroBanner) {
-          qrHeroBanner.scrollIntoView({ behavior: 'smooth' });
-        }
-      }
+  // Forgot password toggles
+  if (showForgotPassword) {
+    showForgotPassword.addEventListener('click', () => {
+      loginForm.classList.add('hidden');
+      forgotPasswordForm.classList.remove('hidden');
     });
   }
 
-  if (btnRefreshStatus) {
-    btnRefreshStatus.addEventListener('click', () => {
-      fetchStatus();
-      fetchQrCode();
-      showToast('Status refreshed', 'success');
+  if (showLogin) {
+    showLogin.addEventListener('click', () => {
+      forgotPasswordForm.classList.add('hidden');
+      loginForm.classList.remove('hidden');
     });
   }
 
-  if (btnBannerReset) {
-    btnBannerReset.addEventListener('click', async () => {
-      if (!confirm('Are you sure you want to log out / change your WhatsApp number?')) {
-        return;
-      }
-
-      btnBannerReset.disabled = true;
-      btnBannerReset.textContent = 'Logging out...';
-
-      // Instant UI feedback
-      clientStatus = 'INITIALIZING';
-      if (qrHeroBanner) qrHeroBanner.classList.remove('hidden');
-      if (connectedBanner) connectedBanner.classList.add('hidden');
-      if (heroQrLoader) {
-        heroQrLoader.classList.remove('hidden');
-        if (heroLoaderText) heroLoaderText.textContent = 'Logging out WhatsApp and generating fresh QR code...';
-      }
-      if (heroQrImage) heroQrImage.classList.add('hidden');
+  if (forgotPasswordForm) {
+    forgotPasswordForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      recoveryError.classList.add('hidden');
+      resetPasswordButton.disabled = true;
+      resetPasswordButton.textContent = 'Verifying...';
 
       try {
-        const res = await apiFetch('/api/reset-session', {
+        const res = await apiFetch('/api/auth/forgot-password', {
           method: 'POST',
-          headers: { 'Accept': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: recoveryUsername.value.trim(),
+            email: recoveryEmail.value.trim(),
+            recoveryCode: recoveryCode.value.trim(),
+            newPassword: newPassword.value
+          })
         });
-        const data = await res.json();
-        showToast(data.message || 'Logged out. Fresh QR code is loading...', 'success');
-        fetchStatus();
-      } catch (e) {
-        showToast('Error logging out: ' + e.message, 'error');
+
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || 'Failed to verify recovery details.');
+        }
+
+        showToast('Admin password updated! Please sign in.', 'success');
+        forgotPasswordForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+        loginPassword.value = '';
+      } catch (err) {
+        recoveryError.textContent = err.message;
+        recoveryError.classList.remove('hidden');
       } finally {
-        btnBannerReset.disabled = false;
-        btnBannerReset.textContent = 'Logout / Change Number';
+        resetPasswordButton.disabled = false;
+        resetPasswordButton.textContent = 'Update Password';
       }
     });
   }
+}
 
-  btnResetSession.addEventListener('click', async () => {
-    if (!confirm('Are you sure you want to clear your WhatsApp session and pair again with a fresh QR code?')) {
-      return;
-    }
+// ==========================================================================
+// Navigation & Profile Menu
+// ==========================================================================
+function setupNavigationTabs() {
+  const navItems = document.querySelectorAll('.admin-nav-item');
+  const panels = document.querySelectorAll('.tab-panel');
 
-    btnResetSession.disabled = true;
-    btnResetSession.textContent = 'Resetting Session...';
+  navItems.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.dataset.tab;
+      if (!targetTab) return;
 
-    // Instant UI feedback
-    clientStatus = 'INITIALIZING';
-    if (qrHeroBanner) qrHeroBanner.classList.remove('hidden');
-    if (connectedBanner) connectedBanner.classList.add('hidden');
-    if (heroQrLoader) {
-      heroQrLoader.classList.remove('hidden');
-      if (heroLoaderText) heroLoaderText.textContent = 'Logging out WhatsApp and generating fresh QR code...';
-    }
-    if (heroQrImage) heroQrImage.classList.add('hidden');
+      navItems.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
 
-    try {
-      const res = await apiFetch('/api/reset-session', {
-        method: 'POST',
-        headers: { 'Accept': 'application/json' }
+      panels.forEach((p) => {
+        if (p.id === targetTab) {
+          p.classList.add('active');
+        } else {
+          p.classList.remove('active');
+        }
       });
-      const data = await res.json();
-      showToast(data.message || 'Session reset. Loading fresh QR code...', 'success');
-      fetchStatus();
-    } catch (e) {
-      showToast('Error resetting session: ' + e.message, 'error');
-    } finally {
-      btnResetSession.disabled = false;
-      btnResetSession.innerHTML = `
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        Reset Session (Clear & Scan New QR)
-      `;
+
+      // Lazy refresh for selected tab
+      if (targetTab === 'usersTab') loadUsers();
+      if (targetTab === 'billingTab') loadTransactions();
+      if (targetTab === 'instancesTab') loadInstances();
+    });
+  });
+
+  // Profile dropdown shortcuts
+  document.querySelectorAll('[data-jump-tab]').forEach((link) => {
+    link.addEventListener('click', () => {
+      const target = link.dataset.jumpTab;
+      const targetBtn = document.querySelector(`.admin-nav-item[data-tab="${target}"]`);
+      if (targetBtn) targetBtn.click();
+      if (adminProfileDropdown) adminProfileDropdown.classList.add('hidden');
+    });
+  });
+}
+
+function setupProfileDropdown() {
+  if (!adminProfileBtn || !adminProfileDropdown) return;
+
+  adminProfileBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isHidden = adminProfileDropdown.classList.contains('hidden');
+    adminProfileDropdown.classList.toggle('hidden', !isHidden);
+    adminProfileBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!adminProfileContainer?.contains(e.target)) {
+      adminProfileDropdown.classList.add('hidden');
+      adminProfileBtn.setAttribute('aria-expanded', 'false');
     }
   });
 }
 
 // ==========================================================================
-// Toast Notification
+// Tab 1: System Dashboard Overview
 // ==========================================================================
-let toastTimer = null;
-function showToast(msg, type = 'success') {
-  clearTimeout(toastTimer);
-  toast.textContent = msg;
-  toast.className = `toast ${type}`;
-  toast.classList.remove('hidden');
-
-  toastTimer = setTimeout(() => {
-    toast.classList.add('hidden');
-  }, 4000);
-}
-
-// ==========================================================================
-// Multi-Instance Management
-// ==========================================================================
-let instancesCache = [];
-let activeQrPollingId = null;
-let qrPollingTimer = null;
-
-function setupInstanceManagement() {
-  const btnOpenCreateInstance = document.getElementById('btnOpenCreateInstance');
-  const createInstanceModal = document.getElementById('createInstanceModal');
-  const btnCloseCreateModal = document.getElementById('btnCloseCreateModal');
-  const btnCancelCreateModal = document.getElementById('btnCancelCreateModal');
-  const createInstanceForm = document.getElementById('createInstanceForm');
-  const instanceNameInput = document.getElementById('instanceNameInput');
-
-  const instanceQrModal = document.getElementById('instanceQrModal');
-  const btnCloseQrModal = document.getElementById('btnCloseQrModal');
-  const btnCopyPublicScanLink = document.getElementById('btnCopyPublicScanLink');
-
-  if (btnOpenCreateInstance) {
-    btnOpenCreateInstance.addEventListener('click', () => {
-      createInstanceModal.classList.remove('hidden');
-      instanceNameInput.value = '';
-      instanceNameInput.focus();
+function setupDashboardControls() {
+  const btnRefresh = document.getElementById('btnRefreshDashboard');
+  if (btnRefresh) {
+    btnRefresh.addEventListener('click', () => {
+      loadDashboardStats();
+      showToast('Dashboard metrics refreshed.', 'success');
     });
   }
 
-  const closeCreate = () => createInstanceModal.classList.add('hidden');
-  if (btnCloseCreateModal) btnCloseCreateModal.addEventListener('click', closeCreate);
-  if (btnCancelCreateModal) btnCancelCreateModal.addEventListener('click', closeCreate);
+  const btnQuickCreate = document.getElementById('btnQuickCreateInst');
+  if (btnQuickCreate) {
+    btnQuickCreate.addEventListener('click', () => {
+      document.getElementById('createInstanceModal')?.classList.remove('hidden');
+    });
+  }
+}
 
-  if (createInstanceForm) {
-    createInstanceForm.addEventListener('submit', async (e) => {
+async function loadDashboardStats(isBackground = false) {
+  try {
+    const res = await apiFetch('/api/admin/dashboard-stats');
+    if (!res.ok) return;
+    const json = await res.json();
+    if (!json.success || !json.data) return;
+
+    const { users, instances, dispatches, revenue, recentActivity } = json.data;
+
+    // 1. Users KPI
+    const kpiTotalUsers = document.getElementById('kpiTotalUsers');
+    const kpiActiveUsers = document.getElementById('kpiActiveUsers');
+    const sidebarUserCount = document.getElementById('sidebarUserCount');
+    if (kpiTotalUsers) kpiTotalUsers.textContent = users.total || 0;
+    if (kpiActiveUsers) kpiActiveUsers.textContent = `${users.active || 0} Active`;
+    if (sidebarUserCount) sidebarUserCount.textContent = users.total || 0;
+
+    // 2. Instances KPI
+    const kpiConnectedSessions = document.getElementById('kpiConnectedSessions');
+    const kpiTotalSessions = document.getElementById('kpiTotalSessions');
+    const kpiPendingQrSessions = document.getElementById('kpiPendingQrSessions');
+    const sidebarInstCount = document.getElementById('sidebarInstCount');
+    if (kpiConnectedSessions) kpiConnectedSessions.textContent = instances.connected || 0;
+    if (kpiTotalSessions) kpiTotalSessions.textContent = `${instances.total || 0} Total`;
+    if (kpiPendingQrSessions) kpiPendingQrSessions.textContent = `${instances.pendingQr || 0} QR Ready`;
+    if (sidebarInstCount) sidebarInstCount.textContent = instances.total || 0;
+
+    // 3. Dispatches KPI
+    const kpiTodayDispatches = document.getElementById('kpiTodayDispatches');
+    const kpiSuccessRate = document.getElementById('kpiSuccessRate');
+    const kpiTotalDispatches = document.getElementById('kpiTotalDispatches');
+    if (kpiTodayDispatches) kpiTodayDispatches.textContent = (dispatches.today || 0).toLocaleString();
+    if (kpiSuccessRate) kpiSuccessRate.textContent = `${dispatches.successRate || 100}% Success`;
+    if (kpiTotalDispatches) kpiTotalDispatches.textContent = `${(dispatches.total || 0).toLocaleString()} Lifetime`;
+
+    // 4. Revenue KPI
+    const kpiTotalRevenue = document.getElementById('kpiTotalRevenue');
+    const kpiTodayRevenue = document.getElementById('kpiTodayRevenue');
+    const kpiTotalOrders = document.getElementById('kpiTotalOrders');
+    const sidebarRevenueBadge = document.getElementById('sidebarRevenueBadge');
+    const revTotal = revenue.totalRevenue || 0;
+    if (kpiTotalRevenue) kpiTotalRevenue.textContent = `₹${revTotal.toLocaleString()}`;
+    if (kpiTodayRevenue) kpiTodayRevenue.textContent = `+₹${(revenue.todayRevenue || 0).toLocaleString()} Today`;
+    if (kpiTotalOrders) kpiTotalOrders.textContent = `${revenue.totalTransactions || 0} Orders`;
+    if (sidebarRevenueBadge) {
+      sidebarRevenueBadge.textContent = revTotal >= 1000 ? `₹${(revTotal / 1000).toFixed(1)}k` : `₹${revTotal}`;
+    }
+
+    // Render Recent Platform Activity
+    renderDashboardRecentActivity(recentActivity || []);
+
+    // Render Quick Instances List
+    loadDashboardInstancesList();
+  } catch (err) {
+    if (!isBackground) console.error('Error loading dashboard stats:', err);
+  }
+}
+
+async function loadDashboardInstancesList() {
+  const container = document.getElementById('dashboardInstancesList');
+  if (!container) return;
+
+  try {
+    const res = await apiFetch('/api/admin/instances');
+    const json = await res.json();
+    if (!res.ok || !json.success) return;
+
+    const list = json.data || [];
+    if (list.length === 0) {
+      container.innerHTML = `<p class="text-secondary" style="font-size: 0.85rem; padding: 1rem 0;">No active WhatsApp instances found.</p>`;
+      return;
+    }
+
+    container.innerHTML = list.slice(0, 5).map((inst) => {
+      const isConn = inst.isConnected;
+      const statusClass = isConn ? 'status-connected' : (inst.qrReady ? 'status-authenticating' : 'status-disconnected');
+      const statusLabel = isConn ? 'Connected' : (inst.qrReady ? 'QR Ready' : inst.status);
+
+      return `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0.85rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <div style="width: 32px; height: 32px; border-radius: 8px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1rem;">📱</div>
+            <div>
+              <div style="font-size: 0.85rem; font-weight: 700; color: #0f172a;">${escapeHtml(inst.name)}</div>
+              <div style="font-size: 0.75rem; color: #64748b;">${inst.phone ? '+' + inst.phone : 'Not Linked'} &bull; ${escapeHtml(inst.ownerName || 'Admin')}</div>
+            </div>
+          </div>
+          <span class="status-pill ${statusClass}" style="font-size: 0.72rem; padding: 0.15rem 0.55rem;">${statusLabel}</span>
+        </div>
+      `;
+    }).join('');
+  } catch (_) {}
+}
+
+function renderDashboardRecentActivity(activities) {
+  const container = document.getElementById('dashboardRecentActivity');
+  if (!container) return;
+
+  if (!activities || activities.length === 0) {
+    container.innerHTML = `<p class="text-secondary" style="font-size: 0.85rem; padding: 1rem 0;">No message dispatches recorded yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = activities.map((act) => {
+    const isSent = act.status === 'sent';
+    const pillClass = isSent ? 'dispatch-status-pill sent' : 'dispatch-status-pill failed';
+    const timeFormatted = formatTimeAgo(act.timestamp);
+
+    return `
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.85rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.82rem;">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+          <span class="dispatch-recipient-badge" style="font-size: 0.78rem;">+${act.recipient || '91XXXXXXXXXX'}</span>
+          <span style="color: #475569; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(act.preview || 'Dispatched WhatsApp alert')}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+          <span class="${pillClass}" style="font-size: 0.7rem; padding: 0.15rem 0.55rem;">${act.status.toUpperCase()}</span>
+          <span style="color: #94a3b8; font-size: 0.75rem;">${timeFormatted}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ==========================================================================
+// Tab 2: User Management & Subscription Control
+// ==========================================================================
+function setupUserManagement() {
+  const searchInput = document.getElementById('userSearchInput');
+  const statusFilter = document.getElementById('userStatusFilter');
+  const planFilter = document.getElementById('userPlanFilter');
+  const btnReload = document.getElementById('btnReloadUsers');
+
+  if (searchInput) searchInput.addEventListener('input', applyUserFilters);
+  if (statusFilter) statusFilter.addEventListener('change', applyUserFilters);
+  if (planFilter) planFilter.addEventListener('change', applyUserFilters);
+  if (btnReload) btnReload.addEventListener('click', () => { loadUsers(); showToast('Users refreshed.', 'success'); });
+
+  // Delegated user actions (Topup, Plan, Toggle status, Reset, Delete)
+  const usersTbody = document.getElementById('adminUsersTableBody');
+  if (usersTbody) {
+    usersTbody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-user-action]');
+      if (!btn) return;
+
+      const action = btn.dataset.userAction;
+      const userId = btn.dataset.userId;
+      const user = allUsersCache.find((u) => u.id === userId);
+      if (!user) return;
+
+      if (action === 'topup') {
+        openTopupModal(user);
+      } else if (action === 'plan') {
+        openChangePlanModal(user);
+      } else if (action === 'toggle-status') {
+        const nextStatus = user.status === 'active' ? 'inactive' : 'active';
+        const confirmMsg = nextStatus === 'inactive'
+          ? `Suspend account for '${user.fullName || user.username}'? User will not be able to log in.`
+          : `Re-activate account for '${user.fullName || user.username}'?`;
+        if (!confirm(confirmMsg)) return;
+
+        btn.disabled = true;
+        try {
+          const res = await apiFetch('/api/admin/users/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, status: nextStatus })
+          });
+          const json = await res.json();
+          if (!res.ok || !json.success) throw new Error(json.error || 'Failed to update status.');
+          showToast(json.message || `User status set to ${nextStatus}.`, 'success');
+          loadUsers();
+          loadDashboardStats();
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          btn.disabled = false;
+        }
+      } else if (action === 'reset-session') {
+        if (!confirm(`Force disconnect and reset WhatsApp session for '${user.fullName || user.username}'?`)) return;
+        btn.disabled = true;
+        try {
+          const res = await apiFetch('/api/admin/users/reset-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId })
+          });
+          const json = await res.json();
+          if (!res.ok || !json.success) throw new Error(json.error || 'Failed to reset session.');
+          showToast(json.message || 'Session reset successfully.', 'success');
+          loadUsers();
+          loadDashboardStats();
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          btn.disabled = false;
+        }
+      } else if (action === 'delete') {
+        if (!confirm(`Are you SURE you want to permanently delete user '${user.fullName || user.username}'? This cannot be undone.`)) return;
+        btn.disabled = true;
+        try {
+          const res = await apiFetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+          const json = await res.json();
+          if (!res.ok || !json.success) throw new Error(json.error || 'Failed to delete user.');
+          showToast(json.message || 'User deleted permanently.', 'success');
+          loadUsers();
+          loadDashboardStats();
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          btn.disabled = false;
+        }
+      }
+    });
+  }
+
+  // Modals setup
+  setupTopupModal();
+  setupPlanModal();
+}
+
+async function loadUsers() {
+  const tbody = document.getElementById('adminUsersTableBody');
+  if (!tbody) return;
+
+  try {
+    const res = await apiFetch('/api/admin/users');
+    const json = await res.json();
+    if (!res.ok || !json.success) throw new Error(json.error || 'Could not fetch users.');
+
+    allUsersCache = json.data || [];
+    applyUserFilters();
+  } catch (err) {
+    console.error('Failed to load users:', err);
+    tbody.innerHTML = `<tr><td colspan="7" class="text-danger" style="text-align: center; padding: 2rem;">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function applyUserFilters() {
+  const tbody = document.getElementById('adminUsersTableBody');
+  if (!tbody) return;
+
+  const searchTerm = (document.getElementById('userSearchInput')?.value || '').trim().toLowerCase();
+  const statusFilter = document.getElementById('userStatusFilter')?.value || 'all';
+  const planFilter = document.getElementById('userPlanFilter')?.value || 'all';
+
+  let filtered = allUsersCache.filter((u) => {
+    const matchesSearch = !searchTerm ||
+      (u.fullName && u.fullName.toLowerCase().includes(searchTerm)) ||
+      (u.username && u.username.toLowerCase().includes(searchTerm)) ||
+      (u.email && u.email.toLowerCase().includes(searchTerm));
+
+    const matchesStatus = statusFilter === 'all' || u.status === statusFilter;
+    const matchesPlan = planFilter === 'all' || (u.plan && u.plan.toLowerCase().includes(planFilter.toLowerCase()));
+
+    return matchesSearch && matchesStatus && matchesPlan;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-secondary" style="text-align: center; padding: 2rem;">No registered users match your filters.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((u) => {
+    const quota = u.messageQuota || 2500;
+    const used = u.messagesUsed || 0;
+    const remaining = Math.max(0, quota - used);
+    const percent = Math.min(100, Math.round((used / quota) * 100));
+    const isSuspended = u.status === 'inactive';
+
+    const inst = u.instance;
+    let instStatusHtml = `<span style="color: #94a3b8; font-size: 0.78rem;">No Instance</span>`;
+    if (inst) {
+      const isConn = inst.isConnected;
+      const dotColor = isConn ? '#22c55e' : (inst.status === 'QR_READY' ? '#f59e0b' : '#ef4444');
+      instStatusHtml = `
+        <div style="display: flex; align-items: center; gap: 0.45rem;">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${dotColor};"></span>
+          <div>
+            <div style="font-weight: 600; font-size: 0.82rem; color: #0f172a;">${inst.phone ? '+' + inst.phone : 'Scan QR Pending'}</div>
+            <div style="font-size: 0.72rem; color: #64748b; font-family: monospace;">ID: ${inst.id}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    const initial = (u.fullName || u.username || 'U')[0].toUpperCase();
+    const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-';
+
+    return `
+      <tr>
+        <td>
+          <div class="admin-user-cell">
+            <div class="admin-user-avatar">${initial}</div>
+            <div>
+              <div class="admin-user-name">${escapeHtml(u.fullName || u.username)}</div>
+              <div class="admin-user-sub">@${escapeHtml(u.username)} &bull; ${escapeHtml(u.email)}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="badge ${u.plan?.includes('Pro') ? 'badge-tag' : 'badge-idle'}" style="font-size: 0.75rem;">
+            ${escapeHtml(u.plan || 'Standard Plan')}
+          </span>
+        </td>
+        <td>
+          <div class="admin-quota-cell">
+            <div class="admin-quota-text">
+              <span>${used.toLocaleString()} / ${quota.toLocaleString()}</span>
+              <span style="color: #16a34a; font-weight: 700;">${remaining.toLocaleString()} left</span>
+            </div>
+            <div class="admin-quota-track">
+              <div class="admin-quota-fill" style="width: ${percent}%;"></div>
+            </div>
+          </div>
+        </td>
+        <td>${instStatusHtml}</td>
+        <td>
+          <span class="status-pill ${isSuspended ? 'status-disconnected' : 'status-connected'}" style="font-size: 0.72rem; padding: 0.15rem 0.55rem;">
+            ${isSuspended ? 'Suspended' : 'Active'}
+          </span>
+        </td>
+        <td style="font-size: 0.82rem; color: #64748b;">${joinedDate}</td>
+        <td style="text-align: right;">
+          <div class="admin-action-btn-group" style="justify-content: flex-end;">
+            <button class="btn-action-mini primary" type="button" data-user-action="topup" data-user-id="${u.id}" title="Grant message credits">
+              ⚡ Top-Up
+            </button>
+            <button class="btn-action-mini" type="button" data-user-action="plan" data-user-id="${u.id}" title="Switch subscription tier">
+              🏷️ Plan
+            </button>
+            <button class="btn-action-mini ${isSuspended ? 'primary' : 'danger'}" type="button" data-user-action="toggle-status" data-user-id="${u.id}" title="${isSuspended ? 'Activate' : 'Suspend'}">
+              ${isSuspended ? 'Activate' : 'Suspend'}
+            </button>
+            ${inst ? `
+            <button class="btn-action-mini" type="button" data-user-action="reset-session" data-user-id="${u.id}" title="Force reset WhatsApp session">
+              🔁 Reset
+            </button>` : ''}
+            <button class="btn-action-mini danger" type="button" data-user-action="delete" data-user-id="${u.id}" title="Delete account">
+              🗑️
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// --------------------------------------------------------------------------
+// Top-Up Credits Modal Handlers
+// --------------------------------------------------------------------------
+function setupTopupModal() {
+  const modal = document.getElementById('topupCreditsModal');
+  const btnClose = document.getElementById('btnCloseTopupModal');
+  const btnCancel = document.getElementById('btnCancelTopupModal');
+  const form = document.getElementById('topupCreditsForm');
+  const amountInput = document.getElementById('topupAmountInput');
+
+  const closeModal = () => modal?.classList.add('hidden');
+  if (btnClose) btnClose.addEventListener('click', closeModal);
+  if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+  // Quick preset pills
+  modal?.querySelectorAll('.preset-pill').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      if (amountInput) amountInput.value = pill.dataset.preset;
+    });
+  });
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const name = instanceNameInput.value.trim();
-      if (!name) return;
+      const userId = document.getElementById('topupUserId')?.value;
+      const amount = parseInt(amountInput.value, 10);
+      const mode = document.getElementById('topupModeSelect')?.value || 'add';
 
-      const submitBtn = document.getElementById('btnSubmitCreateInstance');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Creating...';
+      const btnSubmit = document.getElementById('btnSubmitTopup');
+      if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'Applying...'; }
+
+      try {
+        const res = await apiFetch('/api/admin/users/credits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, amount, mode })
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error || 'Failed to update credits.');
+
+        showToast(json.message || 'Credits granted successfully!', 'success');
+        closeModal();
+        loadUsers();
+        loadDashboardStats();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'Apply Credit Grant'; }
+      }
+    });
+  }
+}
+
+function openTopupModal(user) {
+  const modal = document.getElementById('topupCreditsModal');
+  const subtitle = document.getElementById('topupModalUserSubtitle');
+  const quotaDisplay = document.getElementById('topupCurrentQuotaDisplay');
+  const userIdInput = document.getElementById('topupUserId');
+  const amountInput = document.getElementById('topupAmountInput');
+
+  if (subtitle) subtitle.textContent = `User: ${user.fullName || user.username} (@${user.username})`;
+  if (quotaDisplay) quotaDisplay.textContent = `${(user.messageQuota || 2500).toLocaleString()} Credits`;
+  if (userIdInput) userIdInput.value = user.id;
+  if (amountInput) amountInput.value = '5000';
+
+  modal?.classList.remove('hidden');
+}
+
+// --------------------------------------------------------------------------
+// Change Plan Modal Handlers
+// --------------------------------------------------------------------------
+function setupPlanModal() {
+  const modal = document.getElementById('changePlanModal');
+  const btnClose = document.getElementById('btnClosePlanModal');
+  const btnCancel = document.getElementById('btnCancelPlanModal');
+  const form = document.getElementById('changePlanForm');
+  const planSelect = document.getElementById('planSelect');
+  const customFields = document.getElementById('customPlanFields');
+
+  const closeModal = () => modal?.classList.add('hidden');
+  if (btnClose) btnClose.addEventListener('click', closeModal);
+  if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+  if (planSelect && customFields) {
+    planSelect.addEventListener('change', () => {
+      customFields.classList.toggle('hidden', planSelect.value !== 'custom');
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const userId = document.getElementById('planUserId')?.value;
+      const planKey = planSelect?.value;
+      const customQuota = parseInt(document.getElementById('customQuotaInput')?.value || '5000', 10);
+      const customDays = parseInt(document.getElementById('customDaysInput')?.value || '30', 10);
+
+      const btnSubmit = document.getElementById('btnSubmitChangePlan');
+      if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'Updating...'; }
+
+      try {
+        const res = await apiFetch('/api/admin/users/plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, planKey, customQuota, customDays })
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error || 'Failed to update plan.');
+
+        showToast(json.message || 'Subscription plan updated successfully!', 'success');
+        closeModal();
+        loadUsers();
+        loadDashboardStats();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'Update Subscription'; }
+      }
+    });
+  }
+}
+
+function openChangePlanModal(user) {
+  const modal = document.getElementById('changePlanModal');
+  const subtitle = document.getElementById('planModalUserSubtitle');
+  const userIdInput = document.getElementById('planUserId');
+  const planSelect = document.getElementById('planSelect');
+
+  if (subtitle) subtitle.textContent = `User: ${user.fullName || user.username} (@${user.username}) &bull; Current: ${user.plan || 'Standard'}`;
+  if (userIdInput) userIdInput.value = user.id;
+
+  if (planSelect) {
+    if (user.plan?.toLowerCase().includes('starter')) planSelect.value = 'starter';
+    else if (user.plan?.toLowerCase().includes('agency')) planSelect.value = 'agency';
+    else planSelect.value = 'pro';
+  }
+
+  modal?.classList.remove('hidden');
+}
+
+// ==========================================================================
+// Tab 3: Razorpay Billing & Transactions
+// ==========================================================================
+function setupBillingManagement() {
+  const searchInput = document.getElementById('txSearchInput');
+  const btnReload = document.getElementById('btnReloadTransactions');
+  const btnExport = document.getElementById('btnExportTransactionsCsv');
+
+  if (searchInput) searchInput.addEventListener('input', applyTransactionFilters);
+  if (btnReload) btnReload.addEventListener('click', () => { loadTransactions(); showToast('Orders refreshed.', 'success'); });
+  if (btnExport) btnExport.addEventListener('click', exportTransactionsCsv);
+}
+
+async function loadTransactions() {
+  const tbody = document.getElementById('adminTransactionsTableBody');
+  if (!tbody) return;
+
+  try {
+    const res = await apiFetch('/api/admin/transactions');
+    const json = await res.json();
+    if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load billing history.');
+
+    allTransactionsCache = json.data || [];
+    applyTransactionFilters();
+
+    // Update billing summary strip
+    const grossRev = allTransactionsCache.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayRev = allTransactionsCache
+      .filter((t) => t.createdAt && t.createdAt.startsWith(todayStr))
+      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+
+    const grossEl = document.getElementById('billingGrossRevenue');
+    const totalOrdersEl = document.getElementById('billingTotalOrders');
+    const todayCollEl = document.getElementById('billingTodayCollections');
+
+    if (grossEl) grossEl.textContent = `₹${grossRev.toLocaleString()}`;
+    if (totalOrdersEl) totalOrdersEl.textContent = allTransactionsCache.length;
+    if (todayCollEl) todayCollEl.textContent = `₹${todayRev.toLocaleString()}`;
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-danger" style="text-align: center; padding: 2rem;">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function applyTransactionFilters() {
+  const tbody = document.getElementById('adminTransactionsTableBody');
+  if (!tbody) return;
+
+  const search = (document.getElementById('txSearchInput')?.value || '').trim().toLowerCase();
+
+  const filtered = allTransactionsCache.filter((t) => {
+    if (!search) return true;
+    return (t.userName && t.userName.toLowerCase().includes(search)) ||
+      (t.userEmail && t.userEmail.toLowerCase().includes(search)) ||
+      (t.orderId && t.orderId.toLowerCase().includes(search)) ||
+      (t.paymentId && t.paymentId.toLowerCase().includes(search)) ||
+      (t.planName && t.planName.toLowerCase().includes(search));
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-secondary" style="text-align: center; padding: 2rem;">No billing transactions found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((t) => {
+    const formattedDate = t.createdAt ? new Date(t.createdAt).toLocaleString() : '-';
+    return `
+      <tr>
+        <td>
+          <div style="font-weight: 700; font-family: monospace; font-size: 0.82rem; color: #0f172a;">${escapeHtml(t.orderId || t.id)}</div>
+          <div style="font-size: 0.72rem; color: #94a3b8;">${t.id}</div>
+        </td>
+        <td>
+          <div style="font-weight: 600; color: #0f172a;">${escapeHtml(t.userName || 'Customer')}</div>
+          <div style="font-size: 0.78rem; color: #64748b;">${escapeHtml(t.userEmail || '')}</div>
+        </td>
+        <td>
+          <span class="badge badge-tag" style="font-size: 0.75rem;">${escapeHtml(t.planName || 'Plan Purchase')}</span>
+          ${t.creditsAdded ? `<div style="font-size: 0.72rem; color: #16a34a; font-weight: 600; margin-top: 2px;">+${t.creditsAdded.toLocaleString()} credits</div>` : ''}
+        </td>
+        <td style="font-weight: 800; font-size: 1rem; color: #0f172a;">₹${(t.amount || 0).toLocaleString()}</td>
+        <td>
+          <code style="font-size: 0.8rem; background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px;">${escapeHtml(t.paymentId || 'N/A')}</code>
+        </td>
+        <td style="font-size: 0.82rem; color: #475569;">${escapeHtml(t.method || 'Razorpay UPI')}</td>
+        <td>
+          <span class="status-pill status-connected" style="font-size: 0.72rem; padding: 0.15rem 0.55rem;">
+            ✓ ${escapeHtml(t.status?.toUpperCase() || 'PAID')}
+          </span>
+        </td>
+        <td style="font-size: 0.82rem; color: #64748b;">${formattedDate}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function exportTransactionsCsv() {
+  if (!allTransactionsCache.length) {
+    showToast('No transaction data to export.', 'error');
+    return;
+  }
+
+  const headers = ['Transaction ID', 'Order ID', 'Payment Gateway ID', 'Customer Name', 'Customer Email', 'Plan Name', 'Amount (INR)', 'Credits Added', 'Method', 'Status', 'Date Time'];
+  const rows = allTransactionsCache.map((t) => [
+    t.id,
+    t.orderId || '',
+    t.paymentId || '',
+    `"${(t.userName || '').replace(/"/g, '""')}"`,
+    t.userEmail || '',
+    `"${(t.planName || '').replace(/"/g, '""')}"`,
+    t.amount || 0,
+    t.creditsAdded || 0,
+    `"${(t.method || '').replace(/"/g, '""')}"`,
+    t.status || 'captured',
+    t.createdAt || ''
+  ]);
+
+  const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `safevault_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('Transaction CSV exported successfully!', 'success');
+}
+
+// ==========================================================================
+// Tab 4: WhatsApp Instances Monitor & Management
+// ==========================================================================
+function setupInstancesManagement() {
+  const btnOpenCreate = document.getElementById('btnOpenCreateInstance');
+  const createModal = document.getElementById('createInstanceModal');
+  const btnCloseCreate = document.getElementById('btnCloseCreateModal');
+  const btnCancelCreate = document.getElementById('btnCancelCreateModal');
+  const createForm = document.getElementById('createInstanceForm');
+
+  const closeCreate = () => createModal?.classList.add('hidden');
+  if (btnOpenCreate) btnOpenCreate.addEventListener('click', () => createModal?.classList.remove('hidden'));
+  if (btnCloseCreate) btnCloseCreate.addEventListener('click', closeCreate);
+  if (btnCancelCreate) btnCancelCreate.addEventListener('click', closeCreate);
+
+  if (createForm) {
+    createForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nameInput = document.getElementById('instanceNameInput');
+      const name = nameInput.value.trim();
+      const btnSubmit = document.getElementById('btnSubmitCreateInstance');
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Creating...';
 
       try {
         const res = await apiFetch('/api/instances', {
@@ -1016,41 +935,41 @@ function setupInstanceManagement() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name })
         });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          showToast(`Instance '${name}' created!`, 'success');
-          closeCreate();
-          await fetchInstances();
-          if (data.data && data.data.id) {
-            openInstanceQrModal(data.data.id, data.data.name);
-          }
-        } else {
-          showToast(data.error || 'Failed to create instance', 'error');
-        }
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.error || 'Failed to create instance.');
+
+        showToast(`Instance '${name}' created successfully!`, 'success');
+        closeCreate();
+        nameInput.value = '';
+        loadInstances();
+        loadDashboardStats();
       } catch (err) {
         showToast(err.message, 'error');
       } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Create & Generate Token';
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Create & Generate Token';
       }
     });
   }
 
-  const closeQr = () => {
-    clearInterval(qrPollingTimer);
-    activeQrPollingId = null;
-    instanceQrModal.classList.add('hidden');
-    fetchInstances();
-  };
-  if (btnCloseQrModal) btnCloseQrModal.addEventListener('click', closeQr);
+  // QR Modal setup
+  const qrModal = document.getElementById('instanceQrModal');
+  const btnCloseQr = document.getElementById('btnCloseQrModal');
+  if (btnCloseQr) {
+    btnCloseQr.addEventListener('click', () => {
+      qrModal?.classList.add('hidden');
+      clearInterval(qrPollingTimer);
+      activeQrPollingId = null;
+    });
+  }
 
-  if (btnCopyPublicScanLink) {
-    btnCopyPublicScanLink.addEventListener('click', () => {
-      if (!activeQrPollingId) return;
-      const instance = instancesCache.find((item) => item.id === activeQrPollingId);
+  const btnCopyPublicScan = document.getElementById('btnCopyPublicScanLink');
+  if (btnCopyPublicScan) {
+    btnCopyPublicScan.addEventListener('click', () => {
+      const instance = instancesCache.find((i) => i.id === activeQrPollingId);
       const url = `${window.location.origin}${API_BASE_URL}/scan.html?instance_id=${encodeURIComponent(activeQrPollingId)}&access_token=${encodeURIComponent(instance?.accessToken || '')}`;
       navigator.clipboard.writeText(url).then(() => {
-        showToast('Public scan link copied to clipboard!', 'success');
+        showToast('Public client scan link copied to clipboard!', 'success');
       });
     });
   }
@@ -1077,7 +996,7 @@ function setupInstanceManagement() {
       } else if (action === 'copy-scan') {
         const url = `${window.location.origin}${API_BASE_URL}/scan.html?instance_id=${encodeURIComponent(id)}&access_token=${encodeURIComponent(token)}`;
         navigator.clipboard.writeText(url).then(() => {
-          showToast('Public scan URL copied to clipboard!', 'success');
+          showToast('Client scan link copied!', 'success');
         });
       } else if (action === 'copy-token') {
         navigator.clipboard.writeText(token).then(() => {
@@ -1088,7 +1007,7 @@ function setupInstanceManagement() {
           showToast('Instance ID copied!', 'success');
         });
       } else if (action === 'reset') {
-        if (!confirm(`Clear session and generate fresh QR for instance '${name}'?`)) return;
+        if (!confirm(`Clear session and generate fresh QR for '${name}'?`)) return;
         btn.disabled = true;
         try {
           const res = await apiFetch(`/api/instances/${id}/reset`, { method: 'POST' });
@@ -1101,13 +1020,14 @@ function setupInstanceManagement() {
           btn.disabled = false;
         }
       } else if (action === 'delete') {
-        if (!confirm(`Are you sure you want to permanently delete instance '${name}' (${id})?`)) return;
+        if (!confirm(`Permanently delete instance '${name}' (${id})?`)) return;
         btn.disabled = true;
         try {
           const res = await apiFetch(`/api/instances/${id}`, { method: 'DELETE' });
           const json = await res.json();
           showToast(json.message || 'Instance deleted.', 'success');
-          fetchInstances();
+          loadInstances();
+          loadDashboardStats();
         } catch (err) {
           showToast(err.message, 'error');
         } finally {
@@ -1116,69 +1036,35 @@ function setupInstanceManagement() {
       }
     });
   }
-
-  // Default Device Copy Buttons (in deviceTab)
-  const btnCopyDefaultId = document.getElementById('btnCopyDefaultId');
-  if (btnCopyDefaultId) {
-    btnCopyDefaultId.addEventListener('click', () => {
-      const id = document.getElementById('defaultInstanceId')?.textContent?.trim() || 'safevault-session';
-      navigator.clipboard.writeText(id).then(() => {
-        showToast('Default Instance ID copied!', 'success');
-      });
-    });
-  }
-
-  const btnCopyDefaultToken = document.getElementById('btnCopyDefaultToken');
-  if (btnCopyDefaultToken) {
-    btnCopyDefaultToken.addEventListener('click', () => {
-      const token = document.getElementById('defaultAccessToken')?.textContent?.trim() || 'safevault_default_token';
-      navigator.clipboard.writeText(token).then(() => {
-        showToast('Default Access Token copied!', 'success');
-      });
-    });
-  }
-
-  const btnCopyDefaultApiUrl = document.getElementById('btnCopyDefaultApiUrl');
-  if (btnCopyDefaultApiUrl) {
-    btnCopyDefaultApiUrl.addEventListener('click', () => {
-      const id = document.getElementById('defaultInstanceId')?.textContent?.trim() || 'safevault-session';
-      const token = document.getElementById('defaultAccessToken')?.textContent?.trim() || 'safevault_default_token';
-      const url = `${window.location.origin}${API_BASE_URL}/api/send?number=91XXXXXXXXXX&type=text&message=Hello&instance_id=${encodeURIComponent(id)}&access_token=${encodeURIComponent(token)}`;
-      navigator.clipboard.writeText(url).then(() => {
-        showToast('SendBuddy API URL for Default Device copied!', 'success');
-      });
-    });
-  }
 }
 
-async function fetchInstances() {
+async function loadInstances() {
   const instancesList = document.getElementById('instancesList');
   if (!instancesList) return;
 
   try {
-    const res = await apiFetch('/api/instances');
+    const res = await apiFetch('/api/admin/instances');
     const json = await res.json();
     if (!res.ok || !json.success) return;
 
     instancesCache = json.data || [];
-    renderInstances(instancesCache);
-    updateInstanceSelectors(instancesCache);
+    renderInstancesList(instancesCache);
   } catch (err) {
-    console.error('Failed to fetch instances:', err);
+    console.error('Failed to load instances:', err);
   }
 }
 
-function renderInstances(list) {
-  const instancesList = document.getElementById('instancesList');
-  if (!instancesList) return;
+function renderInstancesList(list) {
+  const container = document.getElementById('instancesList');
+  if (!container) return;
 
   if (!list || list.length === 0) {
-    instancesList.innerHTML = `
+    container.innerHTML = `
       <div class="card text-center" style="grid-column: 1 / -1; padding: 3rem 1rem;">
         <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📱</div>
         <h3 style="margin-bottom: 0.5rem;">No WhatsApp Instances Created Yet</h3>
         <p class="text-secondary" style="max-width: 440px; margin: 0 auto 1.25rem;">
-          Create your first instance to generate a SendBuddy-compatible Instance ID and Access Token for your desktop software.
+          Create your first instance to generate SendBuddy-compatible credentials for users or ERP software.
         </p>
         <button class="btn btn-primary" type="button" onclick="document.getElementById('btnOpenCreateInstance').click()">
           + Create First Instance
@@ -1188,7 +1074,7 @@ function renderInstances(list) {
     return;
   }
 
-  instancesList.innerHTML = list.map((inst) => {
+  container.innerHTML = list.map((inst) => {
     let badgeClass = 'badge-idle';
     let statusText = inst.status;
     if (inst.isConnected) {
@@ -1196,7 +1082,7 @@ function renderInstances(list) {
       statusText = 'Connected';
     } else if (inst.qrReady) {
       badgeClass = 'badge-loading';
-      statusText = 'Scan QR Ready';
+      statusText = 'QR Ready';
     } else if (inst.status === 'INITIALIZING') {
       badgeClass = 'badge-loading';
       statusText = 'Initializing';
@@ -1217,26 +1103,25 @@ function renderInstances(list) {
 
         <div class="credential-box">
           <div class="cred-row">
-            <span class="cred-lbl">Phone Number:</span>
+            <span class="cred-lbl">Assigned Tenant:</span>
+            <span class="cred-val" style="font-weight: 700; color: #0284c7;">${escapeHtml(inst.ownerName || 'Admin')}</span>
+          </div>
+          <div class="cred-row">
+            <span class="cred-lbl">Linked Phone:</span>
             <span class="cred-val">${inst.phone ? '+' + inst.phone : '<span class="text-muted">Not Linked</span>'}</span>
           </div>
           <div class="cred-row">
             <span class="cred-lbl">Access Token:</span>
             <span class="cred-val">
               <code>${(inst.accessToken || '').slice(0, 6)}...${(inst.accessToken || '').slice(-4)}</code>
-              <button class="btn-copy-mini" type="button" data-action="copy-token" data-token="${inst.accessToken || ''}" title="Copy Access Token">📋</button>
+              <button class="btn-copy-mini" type="button" data-action="copy-token" data-token="${inst.accessToken || ''}" title="Copy Token">📋</button>
             </span>
           </div>
-          ${inst.pushname ? `
-          <div class="cred-row">
-            <span class="cred-lbl">Device Name:</span>
-            <span class="cred-val">${escapeHtml(inst.pushname)}</span>
-          </div>` : ''}
         </div>
 
         <div class="instance-card-actions">
           <button class="btn btn-primary btn-sm" type="button" data-action="qr" data-id="${inst.id}" data-name="${escapeHtml(inst.name)}">
-            ${inst.isConnected ? '✓ Linked (View)' : '📷 Pair / QR'}
+            ${inst.isConnected ? '✓ Linked' : '📷 Pair / QR'}
           </button>
           <button class="btn btn-secondary btn-sm" type="button" data-action="copy-api" data-id="${inst.id}" data-token="${inst.accessToken || ''}" title="Copy SendBuddy API URL">
             API URL
@@ -1252,35 +1137,12 @@ function renderInstances(list) {
             🗑
           </button>
           ` : `
-          <button class="btn btn-secondary btn-sm" type="button" onclick="document.querySelector('[data-tab=deviceTab]').click()" title="Manage Default Primary Device">
-            ⚙️ Default Settings
-          </button>
+          <span style="font-size: 0.75rem; color: #64748b; padding: 0.25rem 0.5rem; background: #f1f5f9; border-radius: 4px;">Primary Session</span>
           `}
         </div>
       </div>
     `;
   }).join('');
-}
-
-function updateInstanceSelectors(list) {
-  const singleSel = document.getElementById('singleInstanceSelect');
-  const bulkSel = document.getElementById('bulkInstanceSelect');
-
-  if (!list || list.length === 0) {
-    const fallback = `<option value="safevault-session" data-token="safevault_default_token">Default Device (safevault-session)</option>`;
-    if (singleSel) singleSel.innerHTML = fallback;
-    if (bulkSel) bulkSel.innerHTML = fallback;
-    return;
-  }
-
-  const options = list.map(i => `
-    <option value="${i.id}" data-token="${i.accessToken || ''}">
-      ${escapeHtml(i.name)} (${i.id}) - ${i.isConnected ? 'Connected' : i.status}
-    </option>
-  `).join('');
-
-  if (singleSel) singleSel.innerHTML = options;
-  if (bulkSel) bulkSel.innerHTML = options;
 }
 
 function openInstanceQrModal(instanceId, name) {
@@ -1334,8 +1196,39 @@ function openInstanceQrModal(instanceId, name) {
   }
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+// ==========================================================================
+// Toast & Utility Helpers
+// ==========================================================================
+let toastTimer = null;
+function showToast(message, type = 'info') {
+  if (!toast) return;
+  clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.className = `toast ${type}`;
+  toast.classList.remove('hidden');
+
+  toastTimer = setTimeout(() => {
+    toast.classList.add('hidden');
+  }, 4000);
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatTimeAgo(dateString) {
+  if (!dateString) return 'Just now';
+  const diffMs = Date.now() - new Date(dateString).getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return `${Math.max(1, diffSec)}s ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${Math.floor(diffHours / 24)}d ago`;
+}

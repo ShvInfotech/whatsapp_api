@@ -40,7 +40,7 @@ function createApp() {
     res.sendFile(path.join(__dirname, '../public/user.html'));
   });
 
-  app.get('/API_DOCS.md', requireAdmin, (req, res) => {
+  app.get('/API_DOCS.md', (req, res) => {
     res.sendFile(path.join(__dirname, '../API_DOCS.md'));
   });
 
@@ -105,6 +105,8 @@ function createApp() {
 
   // Mount API routes
   app.use('/api', apiRoutes);
+
+
 
   // 404 & Global Error Handling
   app.use(notFoundHandler);

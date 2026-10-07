@@ -1,0 +1,156 @@
+[
+  {
+    "id": "log_a32025d765bc",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Dear Customer, this is a friendly reminder that your payment is due. Please review your ac...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-07T10:31:24.404Z"
+  },
+  {
+    "id": "log_db12f6a73370",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Dear Customer, this is a friendly reminder that your payment is due. Please review your ac...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-07T10:30:52.500Z"
+  },
+  {
+    "id": "log_ded0b5382b08",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Demo text for check image and messege send",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-07T09:11:21.905Z"
+  },
+  {
+    "id": "log_32a5ba1c9fb1",
+    "userId": "6abde37d07a0eab24a3d62ca",
+    "instanceId": "3726C2094FAD4",
+    "recipient": "919427758870",
+    "type": "bulk",
+    "preview": "Test bulk",
+    "status": "failed",
+    "error": "WhatsApp instance 'Yash Gajera's WhatsApp' is not connected. Current status: QR_READY",
+    "timestamp": "2026-10-02T09:36:21.440Z"
+  },
+  {
+    "id": "log_8e55420ac2a5",
+    "userId": "6abde37d07a0eab24a3d62ca",
+    "instanceId": "3726C2094FAD4",
+    "recipient": "919427758870",
+    "type": "single",
+    "preview": "Test message with number key",
+    "status": "failed",
+    "error": "WhatsApp instance 'Yash Gajera's WhatsApp' is not connected. Current status: QR_READY",
+    "timestamp": "2026-10-02T09:35:16.759Z"
+  },
+  {
+    "id": "log_f9071ff33053",
+    "userId": "6abde37d07a0eab24a3d62ca",
+    "instanceId": "3726C2094FAD4",
+    "recipient": "919427758870",
+    "type": "single",
+    "preview": "Test message with phoneNumber key",
+    "status": "failed",
+    "error": "WhatsApp instance 'Yash Gajera's WhatsApp' is not connected. Current status: QR_READY",
+    "timestamp": "2026-10-02T09:35:16.751Z"
+  },
+  {
+    "id": "log_e829c16d2b04",
+    "userId": "6abde37d07a0eab24a3d62ca",
+    "instanceId": "3726C2094FAD4",
+    "recipient": "919427758870",
+    "type": "single",
+    "preview": "Test message with recipient key",
+    "status": "failed",
+    "error": "WhatsApp instance 'Yash Gajera's WhatsApp' is not connected. Current status: QR_READY",
+    "timestamp": "2026-10-02T09:35:16.741Z"
+  },
+  {
+    "id": "log_5ec3d81984f3",
+    "userId": "6abde37d07a0eab24a3d62ca",
+    "instanceId": "3726C2094FAD4",
+    "recipient": "919427758870",
+    "type": "single",
+    "preview": "Test message with phoneNumber key",
+    "status": "failed",
+    "error": "WhatsApp instance 'Yash Gajera's WhatsApp' is not connected. Current status: DISCONNECTED",
+    "timestamp": "2026-10-02T09:12:12.181Z"
+  },
+  {
+    "id": "log_cbb019e3feab",
+    "userId": "6ab362bf89f5077435419198",
+    "instanceId": "B296CEB4188BC",
+    "recipient": "918140349408",
+    "type": "template",
+    "preview": "Hi {{customer_name}}, thank you for your order! Your order #{{order_id}} for {{amount}} ha...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-02T09:12:00.194Z"
+  },
+  {
+    "id": "log_2e05878e8af8",
+    "userId": "6ab362bf89f5077435419198",
+    "instanceId": "B296CEB4188BC",
+    "recipient": "918140349408",
+    "type": "single",
+    "preview": "Dear customer, your invoice has been generated. Total amount payable is ₹1,499. Click here...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-02T09:11:18.585Z"
+  },
+  {
+    "id": "log_d4cc2787be87",
+    "userId": "6abceb9415a04be4382f0fa8",
+    "instanceId": "A24DB15C670AE",
+    "recipient": "918140349408",
+    "type": "template",
+    "preview": "Hello Yash V gajera, great news! Your order ##1048 has been shipped via Ship Rocket. Track...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-09-30T12:16:12.567Z"
+  },
+  {
+    "id": "log_9f3c2ceac241",
+    "userId": "6abceb9415a04be4382f0fa8",
+    "instanceId": "A24DB15C670AE",
+    "recipient": "918140349108",
+    "type": "template",
+    "preview": "Hi Yash V gajera, thank you for your order! Your order ##1048 for ₹1,999 has been confirme...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-09-30T12:15:30.430Z"
+  },
+  {
+    "id": "log_cec011098e5b",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "919714920969",
+    "type": "single",
+    "preview": "Test Message For Delay Checking",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-09-30T12:10:27.472Z"
+  },
+  {
+    "id": "log_db73ab008424",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "918140349408",
+    "type": "single",
+    "preview": "Test Message For Delay Checking",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-09-30T12:10:15.522Z"
+  }
+]

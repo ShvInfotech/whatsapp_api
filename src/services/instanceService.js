@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode');
 const config = require('../config');
+const { buildMessageMedia } = require('./mediaService');
+const whatsappService = require('./whatsappService');
 
 class InstanceService {
   constructor() {
@@ -149,10 +151,17 @@ class InstanceService {
     const currentVersion = state.lifecycleVersion;
     const instanceId = state.id;
 
+    client.on('loading_screen', (percent, message) => {
+      if (state.lifecycleVersion !== currentVersion) return;
+      state.loadingPercent = percent;
+      console.log(`[InstanceService] [${instanceId}] Loading screen: ${percent}% - ${message}`);
+    });
+
     client.on('qr', async (qr) => {
       if (state.lifecycleVersion !== currentVersion) return;
       console.log(`[InstanceService] [${instanceId}] QR Code received.`);
       state.status = 'QR_READY';
+      state.loadingPercent = 0;
       state.qrCodeRaw = qr;
       try {
         state.qrCodeDataUrl = await QRCode.toDataURL(qr, {
@@ -173,12 +182,27 @@ class InstanceService {
       state.qrCodeRaw = null;
       state.qrCodeDataUrl = null;
       this.updateStoreRecord(instanceId, { status: state.status });
+
+      // Start active connection poller to detect WhatsApp ready state without hanging
+      let pollCount = 0;
+      const authPollInterval = setInterval(async () => {
+        pollCount += 1;
+        if (state.lifecycleVersion !== currentVersion || state.status === 'CONNECTED' || pollCount > 40) {
+          clearInterval(authPollInterval);
+          return;
+        }
+        const connected = await this.syncConnectionState(instanceId);
+        if (connected) {
+          clearInterval(authPollInterval);
+        }
+      }, 1500);
     });
 
     client.on('ready', async () => {
       if (state.lifecycleVersion !== currentVersion) return;
       console.log(`[InstanceService] [${instanceId}] WhatsApp is READY and connected!`);
       state.status = 'CONNECTED';
+      state.loadingPercent = 100;
       state.qrCodeRaw = null;
       state.qrCodeDataUrl = null;
       state.lastConnectedAt = new Date().toISOString();
@@ -188,7 +212,7 @@ class InstanceService {
         if (info) {
           state.clientInfo = {
             pushname: info.pushname || 'User',
-            phone: info.wid ? info.wid.user : 'Unknown',
+            phone: info.wid ? (info.wid.user || String(info.wid).replace(/\D/g, '')) : 'Unknown',
             platform: info.platform || 'Unknown'
           };
         }
@@ -202,6 +226,9 @@ class InstanceService {
         phone: state.clientInfo ? state.clientInfo.phone : null,
         pushname: state.clientInfo ? state.clientInfo.pushname : null
       });
+
+      // Pre-warm LID and memoize patches
+      whatsappService.primeContactLid(client, null).catch(() => {});
     });
 
     client.on('disconnected', (reason) => {
@@ -209,6 +236,7 @@ class InstanceService {
       console.warn(`[InstanceService] [${instanceId}] Disconnected:`, reason);
       state.status = 'DISCONNECTED';
       state.clientInfo = null;
+      state.loadingPercent = 0;
       state.qrCodeRaw = null;
       state.qrCodeDataUrl = null;
       state.lastDisconnectedAt = new Date().toISOString();
@@ -222,10 +250,88 @@ class InstanceService {
       if (state.lifecycleVersion !== currentVersion) return;
       console.error(`[InstanceService] [${instanceId}] Authentication failure:`, msg);
       state.status = 'AUTH_FAILURE';
+      state.loadingPercent = 0;
       state.qrCodeRaw = null;
       state.qrCodeDataUrl = null;
       this.updateStoreRecord(instanceId, { status: state.status });
     });
+  }
+
+  /**
+   * Actively check and sync connected state from client socket/page
+   */
+  async syncConnectionState(instanceId) {
+    const state = this.instances.get(instanceId);
+    if (!state || !state.client) return false;
+
+    if (state.status === 'CONNECTED' && state.clientInfo?.phone && state.clientInfo.phone !== 'Unknown') {
+      return true;
+    }
+
+    try {
+      const client = state.client;
+      let isConnected = false;
+
+      // 1. Check socket state
+      try {
+        const socketState = await client.getState();
+        if (socketState === 'CONNECTED') isConnected = true;
+      } catch (_) {}
+
+      // 2. Check client.info
+      let info = client.info;
+      let phone = info?.wid ? (info.wid.user || String(info.wid).replace(/\D/g, '')) : null;
+      let pushname = info?.pushname || null;
+      let platform = info?.platform || 'WhatsApp Web';
+
+      // 3. If phone is missing or client.info is empty, inspect page directly
+      if ((!phone || phone === 'Unknown') && client.pupPage) {
+        try {
+          const evalData = await client.pupPage.evaluate(() => {
+            try {
+              const me = window.require?.('WAWebUserPrefsMeUser')?.getMaybeMePnUser?.() ||
+                         window.require?.('WAWebUserPrefsMeUser')?.getMaybeMeLidUser?.() ||
+                         window.Store?.Conn?.wid?._serialized ||
+                         window.Store?.User?.getMaybeMeUser?.()?._serialized;
+              const name = window.Store?.Conn?.pushname ||
+                           window.require?.('WAWebConnModel')?.Conn?.pushname || '';
+              return { me: me ? String(me) : null, name };
+            } catch (e) {
+              return null;
+            }
+          }).catch(() => null);
+
+          if (evalData?.me) {
+            phone = evalData.me.replace(/\D/g, '');
+            pushname = evalData.name || pushname;
+            isConnected = true;
+          }
+        } catch (_) {}
+      }
+
+      if (isConnected || (phone && phone.length >= 7) || (state.status === 'AUTHENTICATING' && info?.wid)) {
+        state.status = 'CONNECTED';
+        state.qrCodeRaw = null;
+        state.qrCodeDataUrl = null;
+        state.lastConnectedAt = state.lastConnectedAt || new Date().toISOString();
+        state.clientInfo = {
+          pushname: pushname || state.clientInfo?.pushname || 'User',
+          phone: phone || state.clientInfo?.phone || 'Connected',
+          platform: platform
+        };
+
+        this.updateStoreRecord(instanceId, {
+          status: state.status,
+          lastConnectedAt: state.lastConnectedAt,
+          phone: state.clientInfo.phone,
+          pushname: state.clientInfo.pushname
+        });
+        return true;
+      }
+    } catch (err) {
+      console.warn(`[InstanceService] [${instanceId}] syncConnectionState warning:`, err.message);
+    }
+    return false;
   }
 
   /**
@@ -329,7 +435,13 @@ class InstanceService {
   async ensureUserInstance(user) {
     const ownerId = user._id.toString();
     const existing = this.getInstancesForUser(ownerId);
-    if (existing.length) return existing[0];
+    if (existing.length) {
+      const record = existing[0];
+      if (!this.instances.has(record.id)) {
+        await this.startClient(record.id, record.name, record.accessToken, record.createdAt);
+      }
+      return existing[0];
+    }
     return this.createInstance(`${user.fullName || user.username}'s WhatsApp`, ownerId);
   }
 
@@ -387,10 +499,12 @@ class InstanceService {
     if (instanceId === config.sessionId || instanceId === 'default' || instanceId === 'safevault-session') {
       const whatsappService = require('./whatsappService');
       const qrInfo = whatsappService.getQrCode();
+      const qrUrl = qrInfo.qrDataUrl || qrInfo.qrRaw;
       return {
         status: qrInfo.status,
         isConnected: qrInfo.isConnected,
         qrReady: qrInfo.qrReady,
+        qr: qrUrl,
         qrDataUrl: qrInfo.qrDataUrl,
         qrRaw: qrInfo.qrRaw,
         phone: qrInfo.clientInfo ? qrInfo.clientInfo.phone : null,
@@ -398,15 +512,18 @@ class InstanceService {
       };
     }
 
-    const state = this.instances.get(instanceId);
+    let state = this.instances.get(instanceId);
     if (!state) {
       // Check if exists in store, if so start it
       const record = this.getInstanceRecord(instanceId);
       if (record) {
         const restarted = await this.startClient(record.id, record.name, record.accessToken, record.createdAt);
+        const qrUrl = restarted.qrCodeDataUrl || restarted.qrCodeRaw;
         return {
           status: restarted.status,
-          qrReady: restarted.status === 'QR_READY',
+          isConnected: restarted.status === 'CONNECTED',
+          qrReady: restarted.status === 'QR_READY' || Boolean(qrUrl),
+          qr: qrUrl,
           qrDataUrl: restarted.qrCodeDataUrl,
           qrRaw: restarted.qrCodeRaw
         };
@@ -414,25 +531,43 @@ class InstanceService {
       return null;
     }
 
+    // Actively verify connection if authenticating or client is active
+    if (state.status === 'AUTHENTICATING' || (state.client && state.status !== 'CONNECTED')) {
+      await this.syncConnectionState(instanceId);
+    }
+
+    let dataUrl = state.qrCodeDataUrl;
+    if (!dataUrl && state.qrCodeRaw) {
+      try {
+        dataUrl = await QRCode.toDataURL(state.qrCodeRaw, {
+          width: 320,
+          margin: 2,
+          color: { dark: '#0f172a', light: '#ffffff' }
+        });
+        state.qrCodeDataUrl = dataUrl;
+      } catch (_) {}
+    }
+
     return {
       status: state.status,
       isConnected: state.status === 'CONNECTED',
-      qrReady: state.status === 'QR_READY',
-      qrDataUrl: state.qrCodeDataUrl,
+      qrReady: state.status === 'QR_READY' || Boolean(dataUrl),
+      qr: dataUrl || state.qrCodeRaw,
+      qrDataUrl: dataUrl,
       qrRaw: state.qrCodeRaw,
       phone: state.clientInfo ? state.clientInfo.phone : null,
-      pushname: state.clientInfo ? state.clientInfo.pushname : null
+      pushname: state.clientInfo ? state.clientInfo.pushname : null,
+      loadingPercent: state.loadingPercent || 0
     };
   }
 
   /**
    * Send WhatsApp message from a specific instance
    */
-  async sendMessage(instanceId, recipientPhone, message) {
+  async sendMessage(instanceId, recipientPhone, message, mediaOptions = null) {
     // Check if targeting default session
     if (instanceId === config.sessionId || instanceId === 'default' || instanceId === 'safevault-session') {
-      const whatsappService = require('./whatsappService');
-      const sent = await whatsappService.sendMessage(recipientPhone, message);
+      const sent = await whatsappService.sendMessage(recipientPhone, message, mediaOptions);
       return {
         messageId: sent.messageId,
         to: sent.recipient,
@@ -453,8 +588,12 @@ class InstanceService {
     if (!recipientPhone || !recipientPhone.toString().trim()) {
       throw new Error('Recipient phone number is required.');
     }
-    if (!message || !message.toString().trim()) {
-      throw new Error('Message content cannot be empty.');
+
+    const hasMedia = !!mediaOptions;
+    const msgText = message !== undefined && message !== null ? message.toString().trim() : '';
+
+    if (!msgText && !hasMedia) {
+      throw new Error('Message content or image attachment is required.');
     }
 
     // Sanitize phone number (strip all non-digits, e.g. +, spaces, dashes)
@@ -478,15 +617,96 @@ class InstanceService {
       console.warn(`[InstanceService] [${instanceId}] getNumberId check warning:`, checkErr.message);
     }
 
-    // Send Message
+    // Prime LID cache to prevent WhatsApp Web "No LID for user" errors
+    let lidInfo = null;
+    try {
+      lidInfo = await whatsappService.primeContactLid(state.client, targetJid);
+    } catch (lidErr) {
+      console.warn(`[InstanceService] [${instanceId}] LID priming warning:`, lidErr.message);
+    }
+
+    // Prepare payload (media or text)
+    let payload = msgText;
+    let sendOptions = {};
+    if (hasMedia) {
+      let media = await buildMessageMedia(mediaOptions);
+      if (!media) {
+        throw new Error('Could not parse image attachment.');
+      }
+
+      // Convert WebP to JPEG so WhatsApp Web sends it as a standard photo with caption (not a sticker without caption)
+      if (media.mimetype && media.mimetype.includes('webp') && state.client && state.client.pupPage) {
+        try {
+          const convertedJpeg = await state.client.pupPage.evaluate(async (base64Webp) => {
+            return new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                try {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = img.naturalWidth || 800;
+                  canvas.height = img.naturalHeight || 800;
+                  const ctx = canvas.getContext('2d');
+                  ctx.fillStyle = '#FFFFFF';
+                  ctx.fillRect(0, 0, canvas.width, canvas.height);
+                  ctx.drawImage(img, 0, 0);
+                  resolve(canvas.toDataURL('image/jpeg', 0.92));
+                } catch (e) {
+                  resolve(null);
+                }
+              };
+              img.onerror = () => resolve(null);
+              img.src = base64Webp.startsWith('data:') ? base64Webp : `data:image/webp;base64,${base64Webp}`;
+            });
+          }, media.data);
+
+          if (convertedJpeg && convertedJpeg.startsWith('data:image/jpeg;base64,')) {
+            media.data = convertedJpeg.replace(/^data:image\/jpeg;base64,/, '');
+            media.mimetype = 'image/jpeg';
+            media.filename = (media.filename || 'attachment').replace(/\.webp$/i, '') + '.jpg';
+            console.log(`[InstanceService] [${instanceId}] Converted WebP attachment to JPEG (${media.filename}) so caption is sent.`);
+          }
+        } catch (convErr) {
+          console.warn(`[InstanceService] [${instanceId}] WebP to JPEG conversion warning:`, convErr.message);
+        }
+      }
+
+      payload = media;
+      // Always attach the text as the image caption so the user's message is
+      // never lost when an image is sent alongside it.
+      const captionText = msgText || (mediaOptions && mediaOptions.caption ? mediaOptions.caption.toString().trim() : '');
+      if (captionText) {
+        sendOptions = { caption: captionText };
+      }
+    }
+
+    // Send Message with automatic LID fallback recovery
     let sent = null;
     try {
-      sent = await state.client.sendMessage(targetJid, message.toString().trim());
+      sent = await state.client.sendMessage(targetJid, payload, sendOptions);
     } catch (sendErr) {
-      console.warn(`[InstanceService] [${instanceId}] Failed sending to ${targetJid}, trying fallback ${chatId}:`, sendErr.message);
-      if (targetJid !== chatId) {
-        sent = await state.client.sendMessage(chatId, message.toString().trim());
-      } else {
+      console.warn(`[InstanceService] [${instanceId}] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
+
+      // 1. Try sending directly to LID if available and different from targetJid
+      if (lidInfo && lidInfo.lid && lidInfo.lid !== targetJid) {
+        try {
+          console.log(`[InstanceService] [${instanceId}] Retrying send directly to LID: ${lidInfo.lid}`);
+          sent = await state.client.sendMessage(lidInfo.lid, payload, sendOptions);
+        } catch (lidRetryErr) {
+          console.warn(`[InstanceService] [${instanceId}] Direct LID send failed:`, lidRetryErr.message);
+        }
+      }
+
+      // 2. Try sending to raw chatId if target was different
+      if (!sent && targetJid !== chatId) {
+        try {
+          console.log(`[InstanceService] [${instanceId}] Retrying send to standard chatId: ${chatId}`);
+          sent = await state.client.sendMessage(chatId, payload, sendOptions);
+        } catch (chatRetryErr) {
+          console.warn(`[InstanceService] [${instanceId}] Standard chatId send failed:`, chatRetryErr.message);
+        }
+      }
+
+      if (!sent) {
         throw sendErr;
       }
     }

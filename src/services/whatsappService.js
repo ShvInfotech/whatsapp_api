@@ -2,6 +2,7 @@ const path = require('path');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode');
 const config = require('../config');
+const { buildMessageMedia } = require('./mediaService');
 
 class WhatsAppService {
   constructor() {
@@ -146,6 +147,12 @@ class WhatsAppService {
       }
     });
 
+    client.on('loading_screen', (percent, message) => {
+      if (version !== this.lifecycleVersion || this.client !== client) return;
+      this.loadingPercent = percent;
+      console.log(`[WhatsAppService] Loading screen: ${percent}% - ${message}`);
+    });
+
     // Fired when session is successfully authenticated
     client.on('authenticated', () => {
       if (version !== this.lifecycleVersion || this.client !== client) return;
@@ -153,12 +160,27 @@ class WhatsAppService {
       this.qrCodeRaw = null;
       this.qrCodeDataUrl = null;
       console.log('[WhatsAppService] Client authenticated successfully. Loading session...');
+
+      // Actively poll to detect WhatsApp connected state without hanging
+      let pollCount = 0;
+      const authPollInterval = setInterval(async () => {
+        pollCount += 1;
+        if (version !== this.lifecycleVersion || this.client !== client || this.status === 'CONNECTED' || pollCount > 40) {
+          clearInterval(authPollInterval);
+          return;
+        }
+        const connected = await this.syncConnectionState();
+        if (connected) {
+          clearInterval(authPollInterval);
+        }
+      }, 1500);
     });
 
     // Fired when authentication fails (e.g., invalidated session)
     client.on('auth_failure', (msg) => {
       if (version !== this.lifecycleVersion || this.client !== client) return;
       this.status = 'AUTH_FAILURE';
+      this.loadingPercent = 0;
       console.error('[WhatsAppService] Authentication Failure:', msg);
     });
 
@@ -166,13 +188,16 @@ class WhatsAppService {
     client.on('ready', () => {
       if (version !== this.lifecycleVersion || this.client !== client) return;
       this.status = 'CONNECTED';
+      this.loadingPercent = 100;
       this.lastConnectedAt = new Date().toISOString();
       this.clientInfo = {
         pushname: client.info?.pushname || 'Safe Vault User',
-        phone: client.info?.wid?.user || 'Unknown',
+        phone: client.info?.wid ? (client.info.wid.user || String(client.info.wid).replace(/\D/g, '')) : 'Unknown',
         platform: client.info?.platform || 'Unknown'
       };
       console.log(`[WhatsAppService] WhatsApp Client is READY! Logged in as: ${this.clientInfo.pushname} (${this.clientInfo.phone})`);
+      // Pre-warm LID and memoize patches
+      this.primeContactLid(client, null).catch(() => {});
     });
 
     // Fired when client gets disconnected
@@ -181,8 +206,73 @@ class WhatsAppService {
       this.status = 'DISCONNECTED';
       this.lastDisconnectedAt = new Date().toISOString();
       this.clientInfo = null;
+      this.loadingPercent = 0;
       console.warn('[WhatsAppService] Client was disconnected. Reason:', reason);
     });
+  }
+
+  /**
+   * Actively check and sync connected state from client socket/page
+   */
+  async syncConnectionState() {
+    if (!this.client) return false;
+    if (this.status === 'CONNECTED' && this.clientInfo?.phone && this.clientInfo.phone !== 'Unknown') {
+      return true;
+    }
+
+    try {
+      let isConnected = false;
+      try {
+        const socketState = await this.client.getState();
+        if (socketState === 'CONNECTED') isConnected = true;
+      } catch (_) {}
+
+      let info = this.client.info;
+      let phone = info?.wid ? (info.wid.user || String(info.wid).replace(/\D/g, '')) : null;
+      let pushname = info?.pushname || null;
+      let platform = info?.platform || 'WhatsApp Web';
+
+      if ((!phone || phone === 'Unknown') && this.client.pupPage) {
+        try {
+          const evalData = await this.client.pupPage.evaluate(() => {
+            try {
+              const me = window.require?.('WAWebUserPrefsMeUser')?.getMaybeMePnUser?.() ||
+                         window.require?.('WAWebUserPrefsMeUser')?.getMaybeMeLidUser?.() ||
+                         window.Store?.Conn?.wid?._serialized ||
+                         window.Store?.User?.getMaybeMeUser?.()?._serialized;
+              const name = window.Store?.Conn?.pushname ||
+                           window.require?.('WAWebConnModel')?.Conn?.pushname || '';
+              return { me: me ? String(me) : null, name };
+            } catch (e) {
+              return null;
+            }
+          }).catch(() => null);
+
+          if (evalData?.me) {
+            phone = evalData.me.replace(/\D/g, '');
+            pushname = evalData.name || pushname;
+            isConnected = true;
+          }
+        } catch (_) {}
+      }
+
+      if (isConnected || (phone && phone.length >= 7) || (this.status === 'AUTHENTICATING' && info?.wid)) {
+        this.status = 'CONNECTED';
+        this.qrCodeRaw = null;
+        this.qrCodeDataUrl = null;
+        this.lastConnectedAt = this.lastConnectedAt || new Date().toISOString();
+        this.clientInfo = {
+          pushname: pushname || this.clientInfo?.pushname || 'Safe Vault User',
+          phone: phone || this.clientInfo?.phone || 'Connected',
+          platform: platform
+        };
+        console.log(`[WhatsAppService] Proactively detected connected state! Logged in as: ${this.clientInfo.pushname} (${this.clientInfo.phone})`);
+        return true;
+      }
+    } catch (err) {
+      console.warn('[WhatsAppService] syncConnectionState warning:', err.message);
+    }
+    return false;
   }
 
   /**
@@ -198,7 +288,8 @@ class WhatsAppService {
       lastConnectedAt: this.lastConnectedAt,
       lastDisconnectedAt: this.lastDisconnectedAt,
       instanceId: this.sessionId || config.sessionId || 'safevault-session',
-      accessToken: config.apiKey || 'safevault_default_token'
+      accessToken: config.apiKey || 'safevault_default_token',
+      loadingPercent: this.loadingPercent || 0
     };
   }
 
@@ -208,8 +299,12 @@ class WhatsAppService {
   getQrCode() {
     return {
       status: this.status,
+      isConnected: this.status === 'CONNECTED',
+      qrReady: this.status === 'QR_READY',
       qrRaw: this.qrCodeRaw,
-      qrDataUrl: this.qrCodeDataUrl
+      qrDataUrl: this.qrCodeDataUrl,
+      clientInfo: this.clientInfo,
+      loadingPercent: this.loadingPercent || 0
     };
   }
 
@@ -244,13 +339,163 @@ class WhatsAppService {
   /**
    * Sends a single WhatsApp message
    */
-  async sendMessage(phoneNumber, message) {
+  /**
+   * Prime WhatsApp Web's internal contact store and LID cache
+   * to prevent "No LID for user" exceptions on newer WhatsApp Web bundles.
+   */
+  async primeContactLid(client, targetJid) {
+    if (!client || !client.pupPage) return null;
+
+    try {
+      return await client.pupPage.evaluate(async (chatId) => {
+        // 1. Safe patch for LID migration gating to prevent unhandled throws
+        try {
+          if (window.WWebJS && typeof window.WWebJS.injectToFunction === 'function') {
+            window.WWebJS.injectToFunction(
+              { module: 'WAWebLid1X1MigrationGating', function: 'Lid1X1MigrationUtils.isLidMigrated' },
+              (module, func, ...args) => {
+                try {
+                  return func.apply(module, args);
+                } catch (_) {
+                  return false;
+                }
+              }
+            );
+          }
+        } catch (_) {}
+
+        // 2. Apply caption and memoize patches FIRST (before LID resolution which may return early)
+        try {
+          if (window.WWebJS) {
+            // Intercept sendMessage to safely hold the pending caption
+            if (typeof window.WWebJS.sendMessage === 'function' && !window.WWebJS.__sendMsgPatched) {
+              window.WWebJS.__sendMsgPatched = true;
+              const origSendMessage = window.WWebJS.sendMessage;
+              window.WWebJS.sendMessage = async function(chat, content, options = {}) {
+                if (options && options.caption) {
+                  window.WWebJS.__pendingCaption = String(options.caption).trim();
+                } else {
+                  window.WWebJS.__pendingCaption = null;
+                }
+                return origSendMessage.apply(this, arguments);
+              };
+            }
+
+            // Patch processMediaData so __x_id and undefined id never leak into outgoing message
+            if (typeof window.WWebJS.processMediaData === 'function' && !window.WWebJS.__mediaProcessPatched) {
+              window.WWebJS.__mediaProcessPatched = true;
+              const origProcessMedia = window.WWebJS.processMediaData;
+              window.WWebJS.processMediaData = async function(...args) {
+                const res = await origProcessMedia.apply(this, args);
+                if (res) {
+                  try {
+                    delete res.__x_id;
+                    delete res.id;
+                    if (typeof res.toJSON === 'function') {
+                      const origToJSON = res.toJSON.bind(res);
+                      res.toJSON = function() {
+                        const json = origToJSON();
+                        if (json) {
+                          delete json.__x_id;
+                          delete json.id;
+                          if (json.caption === undefined || json.caption === null) {
+                            delete json.caption;
+                          }
+                        }
+                        return json;
+                      };
+                    }
+                  } catch (_) {}
+                }
+                return res;
+              };
+            }
+
+            // Patch WAWebSendMsgChatAction.addAndSendMsgToChat
+            const sendMsgModule = window.require ? window.require('WAWebSendMsgChatAction') : null;
+            if (sendMsgModule && typeof sendMsgModule.addAndSendMsgToChat === 'function' && !sendMsgModule.__chatActionPatched) {
+              sendMsgModule.__chatActionPatched = true;
+              const origAddAndSend = sendMsgModule.addAndSendMsgToChat;
+              sendMsgModule.addAndSendMsgToChat = function(chat, message) {
+                if (message) {
+                  try {
+                    delete message.__x_id;
+                    // Restore and ensure genuine user caption
+                    const pendingCap = (window.WWebJS && window.WWebJS.__pendingCaption) || message.caption;
+                    if (pendingCap && typeof pendingCap === 'string' && !pendingCap.startsWith('data:')) {
+                      message.caption = pendingCap;
+                      message.isCaptionByUser = true;
+                      if (message.mediaData) {
+                        message.mediaData.caption = pendingCap;
+                        if (typeof message.mediaData.set === 'function') {
+                          message.mediaData.set('caption', pendingCap);
+                        }
+                      }
+                    } else if (message.caption && typeof message.caption === 'string' && message.caption.startsWith('data:')) {
+                      message.caption = '';
+                    }
+                    if (window.WWebJS) {
+                      window.WWebJS.__pendingCaption = null;
+                    }
+                  } catch (_) {}
+                }
+                return origAddAndSend.apply(this, arguments);
+              };
+            }
+          }
+        } catch (_) {}
+
+        // 3. Resolve & cache LID in WhatsApp Web contact store
+        try {
+          if (window.WWebJS && typeof window.WWebJS.enforceLidAndPnRetrieval === 'function') {
+            const res = await window.WWebJS.enforceLidAndPnRetrieval(chatId);
+            return {
+              lid: res?.lid?._serialized || null,
+              pn: res?.phone?._serialized || null
+            };
+          }
+
+          const widFactory = window.require ? window.require('WAWebWidFactory') : null;
+          const contactApi = window.require ? window.require('WAWebApiContact') : null;
+          const queryJob = window.require ? window.require('WAWebQueryExistsJob') : null;
+
+          if (widFactory && widFactory.createWid) {
+            const wid = widFactory.createWid(chatId);
+            const isLid = wid.server === 'lid';
+            let lid = isLid ? wid : (contactApi?.getCurrentLid ? contactApi.getCurrentLid(wid) : null);
+            let phone = isLid ? (contactApi?.getPhoneNumber ? contactApi.getPhoneNumber(wid) : null) : wid;
+
+            if (!isLid && !lid && queryJob?.queryWidExists) {
+              const queryRes = await queryJob.queryWidExists(wid);
+              if (queryRes?.wid && contactApi?.getCurrentLid) {
+                lid = contactApi.getCurrentLid(wid);
+              }
+            }
+
+            return {
+              lid: lid?._serialized || (typeof lid === 'string' ? lid : null),
+              pn: phone?._serialized || (typeof phone === 'string' ? phone : null)
+            };
+          }
+        } catch (_) {}
+
+        return null;
+      }, targetJid);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  async sendMessage(phoneNumber, message, mediaOptions = null) {
     if (this.status !== 'CONNECTED' || !this.client) {
       throw new Error(`WhatsApp client is not ready. Current status: ${this.status}. Please scan QR code first.`);
     }
 
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
-      throw new Error('Message text cannot be empty');
+    const hasMedia = !!mediaOptions;
+    const msgText = (typeof message === 'string') ? message.trim() : (message !== undefined && message !== null ? message.toString().trim() : '');
+
+    if (!msgText && !hasMedia) {
+      throw new Error('Message text or image attachment cannot be empty');
     }
 
     const { cleaned, jid } = this.formatPhoneNumber(phoneNumber);
@@ -274,10 +519,99 @@ class WhatsAppService {
       console.warn('[WhatsAppService] getNumberId fallback to jid:', checkErr.message);
     }
 
-    console.log(`[WhatsAppService] Sending message to ${targetJid}...`);
+    // Prime LID cache to prevent WhatsApp Web "No LID for user" errors
+    let lidInfo = null;
+    try {
+      lidInfo = await this.primeContactLid(this.client, targetJid);
+    } catch (lidErr) {
+      console.warn('[WhatsAppService] LID priming warning:', lidErr.message);
+    }
 
-    // Send the message
-    const response = await this.client.sendMessage(targetJid, message.trim());
+    console.log(`[WhatsAppService] Sending ${hasMedia ? 'media ' : ''}message to ${targetJid}...`);
+
+    let response = null;
+    let payload = msgText;
+    let sendOptions = {};
+
+    if (hasMedia) {
+      let media = await buildMessageMedia(mediaOptions);
+      if (!media) throw new Error('Could not parse image attachment.');
+
+      // Convert WebP to JPEG so WhatsApp Web sends it as a standard photo with caption (not a sticker without caption)
+      if (media.mimetype && media.mimetype.includes('webp') && this.client && this.client.pupPage) {
+        try {
+          const convertedJpeg = await this.client.pupPage.evaluate(async (base64Webp) => {
+            return new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                try {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = img.naturalWidth || 800;
+                  canvas.height = img.naturalHeight || 800;
+                  const ctx = canvas.getContext('2d');
+                  ctx.fillStyle = '#FFFFFF';
+                  ctx.fillRect(0, 0, canvas.width, canvas.height);
+                  ctx.drawImage(img, 0, 0);
+                  resolve(canvas.toDataURL('image/jpeg', 0.92));
+                } catch (e) {
+                  resolve(null);
+                }
+              };
+              img.onerror = () => resolve(null);
+              img.src = base64Webp.startsWith('data:') ? base64Webp : `data:image/webp;base64,${base64Webp}`;
+            });
+          }, media.data);
+
+          if (convertedJpeg && convertedJpeg.startsWith('data:image/jpeg;base64,')) {
+            media.data = convertedJpeg.replace(/^data:image\/jpeg;base64,/, '');
+            media.mimetype = 'image/jpeg';
+            media.filename = (media.filename || 'attachment').replace(/\.webp$/i, '') + '.jpg';
+            console.log(`[WhatsAppService] Converted WebP attachment to JPEG (${media.filename}) so caption is sent.`);
+          }
+        } catch (convErr) {
+          console.warn('[WhatsAppService] WebP to JPEG conversion warning:', convErr.message);
+        }
+      }
+
+      payload = media;
+      // Always attach the text as the image caption so the user's message is
+      // never lost when an image is sent alongside it.
+      const captionText = msgText || (mediaOptions && mediaOptions.caption ? mediaOptions.caption.toString().trim() : '');
+      if (captionText) {
+        sendOptions = { caption: captionText };
+      }
+    }
+
+    try {
+      response = await this.client.sendMessage(targetJid, payload, sendOptions);
+    } catch (sendErr) {
+      console.warn(`[WhatsAppService] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
+
+      // 1. Try sending directly to LID if available and different from targetJid
+      if (lidInfo && lidInfo.lid && lidInfo.lid !== targetJid) {
+        try {
+          console.log(`[WhatsAppService] Retrying send directly to LID: ${lidInfo.lid}`);
+          response = await this.client.sendMessage(lidInfo.lid, payload, sendOptions);
+        } catch (lidRetryErr) {
+          console.warn('[WhatsAppService] Direct LID send failed:', lidRetryErr.message);
+        }
+      }
+
+      // 2. Try sending to raw jid
+      if (!response && targetJid !== jid) {
+        try {
+          console.log(`[WhatsAppService] Retrying send to standard jid: ${jid}`);
+          response = await this.client.sendMessage(jid, payload, sendOptions);
+        } catch (jidRetryErr) {
+          console.warn('[WhatsAppService] Standard jid send failed:', jidRetryErr.message);
+        }
+      }
+
+      if (!response) {
+        throw sendErr;
+      }
+    }
+
     console.log('[WhatsAppService] Send response received:', response ? 'Success' : 'Empty');
 
     return {
@@ -290,9 +624,9 @@ class WhatsAppService {
 
   /**
    * Sends bulk messages with anti-ban rate limiting and jitter delay
-   * @param {Array<string|object>} recipients Array of phone numbers or objects [{ phoneNumber, message }]
+   * @param {Array<string|object>} recipients Array of phone numbers or objects [{ phoneNumber, message, media }]
    * @param {string} defaultMessage Fallback message if recipient object doesn't provide one
-   * @param {object} options Options including minDelayMs and maxDelayMs
+   * @param {object} options Options including minDelayMs, maxDelayMs, media, mediaUrl
    */
   async sendBulk(recipients, defaultMessage = '', options = {}) {
     if (this.status !== 'CONNECTED' || !this.client) {
@@ -305,6 +639,7 @@ class WhatsAppService {
 
     const minDelay = options.minDelayMs || config.rateLimitMinDelayMs;
     const maxDelay = options.maxDelayMs || config.rateLimitMaxDelayMs;
+    const globalMedia = options.media || options.mediaUrl || null;
 
     console.log(`[WhatsAppService] Starting bulk send to ${recipients.length} recipients with anti-ban delay (${minDelay}-${maxDelay}ms)...`);
 
@@ -315,10 +650,11 @@ class WhatsAppService {
     for (let i = 0; i < recipients.length; i++) {
       const item = recipients[i];
       const phoneNumber = typeof item === 'object' ? item.phoneNumber : item;
-      const messageText = (typeof item === 'object' && item.message) ? item.message : defaultMessage;
+      const messageText = (typeof item === 'object' && item.message !== undefined) ? item.message : defaultMessage;
+      const mediaOptions = (typeof item === 'object' && (item.media || item.mediaUrl)) ? (item.media || item.mediaUrl) : globalMedia;
 
       try {
-        const sendResult = await this.sendMessage(phoneNumber, messageText);
+        const sendResult = await this.sendMessage(phoneNumber, messageText, mediaOptions);
         results.push({
           phoneNumber,
           status: 'sent',

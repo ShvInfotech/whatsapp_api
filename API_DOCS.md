@@ -49,6 +49,7 @@ After verification, the password hash is updated dynamically in `data/admin.json
 | `POST` | `/api/auth/login` | Create administrator session | Public |
 | `POST` | `/api/auth/forgot-password` | Reset password after recovery verification | Public |
 | `GET`/`POST` | `/api/send` | **SendBuddy Compatible API** (Dispatch via `instance_id` & `access_token`) | Public / Token |
+| `POST` | `/api/send-template` | **E-Commerce & Dynamic Template API** (Variables replacement) | Public / Token |
 | `GET` | `/scan.html` | Public standalone QR scan page for client device pairing | Public |
 | `GET` | `/api/instances` | List all WhatsApp client instances | Admin |
 | `POST` | `/api/instances` | Create new client instance and generate credentials | Admin |

@@ -220,7 +220,8 @@ class WhatsAppController {
    */
   async sendMessage(req, res) {
     try {
-      const { phoneNumber, message } = req.body;
+      const { phoneNumber, message, media, mediaUrl, image } = req.body;
+      const mediaInput = media || mediaUrl || image || null;
 
       if (!phoneNumber) {
         return res.status(400).json({
@@ -229,14 +230,14 @@ class WhatsAppController {
         });
       }
 
-      if (!message) {
+      if (!message && !mediaInput) {
         return res.status(400).json({
           success: false,
-          error: 'Missing required field: "message"'
+          error: 'Missing required field: "message" or image attachment'
         });
       }
 
-      const result = await whatsappService.sendMessage(phoneNumber, message);
+      const result = await whatsappService.sendMessage(phoneNumber, message || '', mediaInput);
 
       return res.status(200).json({
         success: true,
@@ -258,15 +259,16 @@ class WhatsAppController {
 
   /**
    * POST /api/send-bulk
-   * Accepts JSON: { "phoneNumbers": ["919876543210", ...], "message": "..." }
+   * Accepts JSON: { "phoneNumbers": ["919876543210", ...], "message": "...", "media": "..." }
    * or: { "recipients": [{ "phoneNumber": "...", "message": "..." }], "defaultMessage": "..." }
    */
   async sendBulk(req, res) {
     try {
-      const { phoneNumbers, recipients, message, defaultMessage, options } = req.body;
+      const { phoneNumbers, recipients, message, defaultMessage, media, mediaUrl, image, options } = req.body;
 
       const recipientList = recipients || phoneNumbers;
       const msgText = message || defaultMessage;
+      const mediaInput = media || mediaUrl || image || null;
 
       if (!recipientList || !Array.isArray(recipientList) || recipientList.length === 0) {
         return res.status(400).json({
@@ -275,15 +277,18 @@ class WhatsAppController {
         });
       }
 
-      // If recipients is an array of strings, message is required
-      if (typeof recipientList[0] === 'string' && !msgText) {
+      // If recipients is an array of strings, message or media is required
+      if (typeof recipientList[0] === 'string' && !msgText && !mediaInput) {
         return res.status(400).json({
           success: false,
-          error: 'A default "message" is required when providing a list of phone numbers.'
+          error: 'A default "message" or image attachment is required when providing a list of phone numbers.'
         });
       }
 
-      const result = await whatsappService.sendBulk(recipientList, msgText, options || {});
+      const bulkOpts = { ...(options || {}) };
+      if (mediaInput) bulkOpts.media = mediaInput;
+
+      const result = await whatsappService.sendBulk(recipientList, msgText, bulkOpts);
 
       return res.status(200).json({
         success: true,

@@ -18,18 +18,50 @@ const userController = require('../controllers/userController');
 router.get('/send', (req, res) => sendBuddyController.handleSend(req, res));
 router.post('/send', (req, res) => sendBuddyController.handleSend(req, res));
 
+// Public Template Dispatch API for E-Commerce / Webhooks
+router.post('/send-template', (req, res) => sendBuddyController.handleSendTemplate(req, res));
+router.get('/send-template', (req, res) => sendBuddyController.handleSendTemplate(req, res));
+
 // Public client QR scan endpoint (used by /scan.html)
 router.get('/public/instance-qr', (req, res) => instanceController.publicQr(req, res));
 
-// Registered user endpoints. They are intentionally separate from admin routes.
+/**
+ * ====================================================================
+ * REGISTERED USER WORKSPACE ENDPOINTS (Requires User Session)
+ * ====================================================================
+ */
+
+// Instances
 router.get('/user/instances', requireUser, (req, res) => userController.instances(req, res));
 router.get('/user/instances/:id/qr', requireUser, (req, res) => userController.qr(req, res));
 router.post('/user/instances/:id/reset', requireUser, (req, res) => userController.reset(req, res));
 router.post('/user/instances/:id/send-message', requireUser, (req, res) => userController.sendMessage(req, res));
 router.post('/user/instances/:id/send-bulk', requireUser, (req, res) => userController.sendBulk(req, res));
-router.post('/user/instances/:id/send-message', requireUser, (req, res) => userController.sendMessage(req, res));
-router.post('/user/instances/:id/send-bulk', requireUser, (req, res) => userController.sendBulk(req, res));
+router.post('/user/instances/:id/send-template', requireUser, (req, res) => userController.sendTemplateMessage(req, res));
 
+// Message Templates
+router.get('/user/templates', requireUser, (req, res) => userController.getTemplates(req, res));
+router.post('/user/templates', requireUser, (req, res) => userController.createTemplate(req, res));
+router.put('/user/templates/:id', requireUser, (req, res) => userController.updateTemplate(req, res));
+router.delete('/user/templates/:id', requireUser, (req, res) => userController.deleteTemplate(req, res));
+
+// Delivery Logs & Statistics
+router.get('/user/logs', requireUser, (req, res) => userController.getLogs(req, res));
+router.delete('/user/logs', requireUser, (req, res) => userController.clearLogs(req, res));
+router.get('/user/stats', requireUser, (req, res) => userController.getStats(req, res));
+
+// Plan Upgrade & Credit Recharge (Razorpay Integrated)
+router.get('/user/plans', requireUser, (req, res) => userController.getPlans(req, res));
+router.post('/user/upgrade-plan', requireUser, (req, res) => userController.upgradePlan(req, res));
+router.post('/user/create-payment-order', requireUser, (req, res) => userController.createPaymentOrder(req, res));
+router.post('/user/verify-payment', requireUser, (req, res) => userController.verifyPayment(req, res));
+
+// User Profile & Account Settings
+router.post('/user/profile', requireUser, (req, res) => userController.updateProfile(req, res));
+router.post('/user/change-password', requireUser, (req, res) => userController.changePassword(req, res));
+
+
+const adminController = require('../controllers/adminController');
 
 /**
  * ====================================================================
@@ -38,8 +70,17 @@ router.post('/user/instances/:id/send-bulk', requireUser, (req, res) => userCont
  */
 router.use(requireAdmin);
 
-router.get('/admin/users', (req, res) => userController.adminList(req, res));
-router.patch('/admin/users/:id/status', (req, res) => userController.adminUpdateStatus(req, res));
+// Master SaaS Dashboard & Management
+router.get('/admin/dashboard-stats', (req, res) => adminController.getDashboardStats(req, res));
+router.get('/admin/users', (req, res) => adminController.getUsers(req, res));
+router.post('/admin/users/credits', (req, res) => adminController.updateUserCredits(req, res));
+router.post('/admin/users/plan', (req, res) => adminController.updateUserPlan(req, res));
+router.post('/admin/users/status', (req, res) => adminController.toggleUserStatus(req, res));
+router.post('/admin/users/reset-session', (req, res) => adminController.resetUserSession(req, res));
+router.delete('/admin/users/:id', (req, res) => adminController.deleteUser(req, res));
+router.get('/admin/transactions', (req, res) => adminController.getTransactions(req, res));
+router.get('/admin/instances', (req, res) => adminController.getInstances(req, res));
+router.get('/admin/plans-config', (req, res) => adminController.getPlansConfig(req, res));
 
 // Multi-Instance Management Routes
 router.get('/instances', (req, res) => instanceController.list(req, res));
@@ -54,7 +95,6 @@ router.get('/qr', (req, res) => whatsappController.getQrCode(req, res));
 router.get('/reset-session', (req, res) => whatsappController.resetSession(req, res));
 router.post('/reset-session', (req, res) => whatsappController.resetSession(req, res));
 router.post('/send-message', (req, res) => whatsappController.sendMessage(req, res));
-router.post('/send-bulk', (req, res) => whatsappController.sendBulk(req, res));
 router.post('/logout', (req, res) => whatsappController.logout(req, res));
 
 module.exports = router;
