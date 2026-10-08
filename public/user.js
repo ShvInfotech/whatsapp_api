@@ -18,7 +18,6 @@ const userAuthError = document.getElementById('userAuthError');
 const registerError = document.getElementById('registerError');
 let myInstance;
 let pollTimer;
-<<<<<<< HEAD
 let isRedirectingToDashboard = false;
 
 function showScreen(screen) {
@@ -26,17 +25,6 @@ function showScreen(screen) {
   if (connectScreen) connectScreen.classList.toggle('hidden', screen !== 'connect');
   if (dashboard) dashboard.classList.toggle('hidden', screen !== 'dashboard');
 }
-=======
-document.addEventListener('click', (e) => {
-  const tabBtn = e.target.closest('[data-user-tab]');
-  if (!tabBtn) return;
-  const targetId = tabBtn.dataset.userTab;
-  document.querySelectorAll('[data-user-tab]').forEach((btn) => btn.classList.remove('active'));
-  document.querySelectorAll('.user-tab-panel').forEach((panel) => panel.classList.remove('active'));
-  tabBtn.classList.add('active');
-  document.getElementById(targetId)?.classList.add('active');
-});
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
 
 const getApiBaseUrl = () => {
   if (window.API_BASE_URL !== undefined) return window.API_BASE_URL;
@@ -64,7 +52,6 @@ function showError(element, message) {
   element.classList.remove('hidden');
 }
 
-<<<<<<< HEAD
 function showLogin() {
   if (loginForm) loginForm.classList.remove('hidden');
   if (registerForm) registerForm.classList.add('hidden');
@@ -330,35 +317,6 @@ function enterDashboardDirectly(info) {
   showScreen('dashboard');
   loadTemplates();
   loadStats();
-=======
-loginForm.addEventListener('submit', async (event) => {
-  event.preventDefault(); userAuthError.classList.add('hidden');
-  const response = await api('/api/user-auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: userLoginUsername.value, password: userLoginPassword.value }) });
-  const data = await response.safeJson();
-  if (!response.ok) return showError(userAuthError, data.error || 'Login failed.');
-  openDashboard(data.data);
-});
-
-registerForm.addEventListener('submit', async (event) => {
-  event.preventDefault(); registerError.classList.add('hidden');
-  const response = await api('/api/user-auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: registerFullName.value, username: registerUsername.value, email: registerEmail.value, password: registerPassword.value }) });
-  const data = await response.safeJson();
-  if (!response.ok) return showError(registerError, data.error || 'Registration failed.');
-  showLogin(); userLoginUsername.value = registerUsername.value; userLoginPassword.value = ''; showError(userAuthError, 'Registration complete. Please login.');
-});
-
-async function openDashboard(user) {
-  auth.classList.add('hidden'); dashboard.classList.remove('hidden');
-  document.getElementById('welcomeUser').textContent = `Signed in as ${user.fullName} (@${user.username})`;
-  const response = await api('/api/user/instances'); const data = await response.safeJson();
-  if (!response.ok || !data.data || !data.data.length) {
-    document.getElementById('instanceStatus').textContent = data.error || 'Your WhatsApp instance is unavailable.';
-    document.getElementById('userNavStatus').textContent = 'Instance unavailable';
-    return;
-  }
-  myInstance = data.data[0]; document.getElementById('instanceName').textContent = myInstance.name;
-  initApiDocsTab(myInstance);
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
   refreshQr();
 }
 
@@ -373,7 +331,6 @@ async function refreshQr() {
     const isConnected = !!info.isConnected;
     updateApiDocsStatus(isConnected, info);
 
-<<<<<<< HEAD
     // Update Dashboard indicators
     const instStatusEl = document.getElementById('instanceStatus');
     if (instStatusEl) {
@@ -400,23 +357,12 @@ async function refreshQr() {
     }
 
     // Update Dashboard tab items
-=======
-    document.getElementById('instanceStatus').textContent = isConnected
-      ? 'Status: CONNECTED'
-      : (isAuthenticating ? 'Status: AUTHENTICATING (Syncing...)' : `Status: ${info.status}`);
-
-    document.getElementById('userNavStatus').textContent = isConnected
-      ? 'WhatsApp Connected'
-      : (isAuthenticating ? 'Syncing WhatsApp...' : (info.qrReady ? 'Scan QR to Connect' : 'Preparing WhatsApp'));
-
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
     const image = document.getElementById('userQrImage');
     const loader = document.getElementById('userQrLoader');
     const loaderText = document.getElementById('userQrLoaderText');
     const connected = document.getElementById('connectedInfo');
     const appLink = `${window.location.origin}${API_BASE_URL}/api/send?number=91XXXXXXXXXX&type=text&message=Hello&instance_id=${encodeURIComponent(myInstance.id)}&access_token=${encodeURIComponent(myInstance.accessToken)}`;
 
-<<<<<<< HEAD
     if (document.getElementById('userAppLinkText')) document.getElementById('userAppLinkText').textContent = appLink;
     document.getElementById('copyUserAppLink')?.classList.toggle('hidden', !isConnected);
     document.getElementById('userAppLinkBox')?.classList.toggle('hidden', !isConnected);
@@ -523,51 +469,6 @@ async function refreshQr() {
     }
   }
   clearTimeout(pollTimer);
-=======
-    document.getElementById('userAppLinkText').textContent = appLink;
-    document.getElementById('copyUserAppLink').classList.toggle('hidden', !isConnected);
-    document.getElementById('userAppLinkBox').classList.toggle('hidden', !isConnected);
-    document.getElementById('userQrSteps').classList.toggle('hidden', isConnected);
-    document.getElementById('userConnectedVisual').classList.toggle('hidden', !isConnected);
-    document.getElementById('userQrAutoRefresh').classList.toggle('hidden', isConnected);
-    document.getElementById('userQrFrame').classList.toggle('user-connected-frame', isConnected);
-
-    document.getElementById('userHeroDescription').textContent = isConnected
-      ? 'Your WhatsApp account is securely connected. You can now send single or bulk messages from this workspace.'
-      : (isAuthenticating
-          ? 'Mobile scanned! Logging in and synchronizing WhatsApp session, please wait a moment...'
-          : 'Connect your personal WhatsApp account securely. This workspace never displays or uses another user\'s WhatsApp session.');
-
-    if (isConnected) {
-      image.classList.add('hidden');
-      loader.classList.add('hidden');
-      connected.textContent = `✓ Connected as ${info.pushname || 'WhatsApp user'} ${info.phone ? `(+${info.phone})` : ''}`;
-      connected.classList.remove('hidden');
-    } else if (info.qrDataUrl && !isAuthenticating) {
-      image.src = info.qrDataUrl;
-      image.classList.remove('hidden');
-      loader.classList.add('hidden');
-      connected.classList.add('hidden');
-    } else {
-      image.classList.add('hidden');
-      loader.classList.remove('hidden');
-      connected.classList.add('hidden');
-      if (loaderText) {
-        loaderText.textContent = isAuthenticating
-          ? (info.loadingPercent ? `Syncing chats (${info.loadingPercent}%)...` : 'Phone connected! Finalizing login & sync...')
-          : 'Loading QR Code...';
-      }
-    }
-  } catch (error) {
-    document.getElementById('instanceStatus').textContent = error.message || 'Unable to load your QR code.';
-    document.getElementById('copyUserAppLink').classList.add('hidden');
-    document.getElementById('userAppLinkBox').classList.add('hidden');
-    document.getElementById('userConnectedVisual').classList.add('hidden');
-    document.getElementById('userQrSteps').classList.remove('hidden');
-    document.getElementById('userQrAutoRefresh').classList.remove('hidden');
-    document.getElementById('userQrFrame').classList.remove('user-connected-frame');
-  }
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
   pollTimer = setTimeout(refreshQr, 2500);
 }
 
@@ -638,7 +539,6 @@ function formatFileSize(bytes) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
-<<<<<<< HEAD
 /**
  * Standardizes phone numbers to WhatsApp format:
  * - Strips all non-digit characters (+, -, spaces, brackets)
@@ -675,8 +575,6 @@ function formatToIndianWhatsAppNumber(raw) {
   return digits;
 }
 
-=======
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
 const userSingleForm = document.getElementById('userSingleForm');
 const userSingleMsgInput = document.getElementById('userSingleMessage');
 const userSinglePhoneInput = document.getElementById('userSinglePhone');
@@ -703,7 +601,6 @@ function clearSingleAttachment() {
   if (phoneWaImg) phoneWaImg.src = '';
 }
 
-<<<<<<< HEAD
 function processUploadedImageFile(file, callback) {
   if (!file) return;
   const isWebp = (file.type && file.type.includes('webp')) || /\.webp$/i.test(file.name);
@@ -785,37 +682,6 @@ function handleSingleFile(file) {
     if (phoneWaImgWrap) phoneWaImgWrap.classList.remove('hidden');
     updateSinglePreview();
   });
-=======
-function handleSingleFile(file) {
-  if (!file) return;
-  if (!file.type.startsWith('image/')) {
-    alert('Please select an image file (PNG, JPG, JPEG, WEBP).');
-    return;
-  }
-  if (file.size > 10 * 1024 * 1024) {
-    alert('Image size exceeds 10MB limit. Please choose a smaller image.');
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const dataUrl = e.target.result;
-    attachedSingleMedia = {
-      data: dataUrl,
-      name: file.name,
-      size: file.size,
-      mime: file.type
-    };
-    if (userSingleThumb) userSingleThumb.src = dataUrl;
-    if (userSingleAttachName) userSingleAttachName.textContent = file.name;
-    if (userSingleAttachSize) userSingleAttachSize.textContent = formatFileSize(file.size);
-    if (userSingleDropPrompt) userSingleDropPrompt.classList.add('hidden');
-    if (userSingleAttachPreview) userSingleAttachPreview.classList.remove('hidden');
-
-    if (phoneWaImg) phoneWaImg.src = dataUrl;
-    if (phoneWaImgWrap) phoneWaImgWrap.classList.remove('hidden');
-  };
-  reader.readAsDataURL(file);
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
 }
 
 if (userSingleDropzone && userSingleImageFile) {
@@ -936,7 +802,6 @@ document.getElementById('clearSingleMsg')?.addEventListener('click', () => {
   }
 });
 
-<<<<<<< HEAD
 // Single Message Phone Number Auto-Prefix 91
 const userSinglePhoneEl = document.getElementById('userSinglePhone');
 userSinglePhoneEl?.addEventListener('blur', () => {
@@ -962,12 +827,6 @@ if (userSingleForm) {
     if (document.getElementById('userSinglePhone') && phone) {
       document.getElementById('userSinglePhone').value = phone;
     }
-=======
-if (userSingleForm) {
-  userSingleForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const phone = document.getElementById('userSinglePhone').value.trim();
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
     const message = document.getElementById('userSingleMessage').value.trim();
 
     if (!phone) {
@@ -988,10 +847,7 @@ if (userSingleForm) {
         payload.media = attachedSingleMedia.data;
         payload.filename = attachedSingleMedia.name;
         payload.mimetype = attachedSingleMedia.mime;
-<<<<<<< HEAD
         payload.caption = message;
-=======
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
       }
 
       const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/send-message`, {
@@ -1002,11 +858,8 @@ if (userSingleForm) {
       const data = await response.safeJson();
       if (!response.ok) throw new Error(data.error || 'Message could not be sent.');
       setResult('userSingleResult', attachedSingleMedia ? 'Image and message sent successfully.' : 'Message sent successfully.');
-<<<<<<< HEAD
       showToast('WhatsApp message sent successfully!');
       refreshUserMe();
-=======
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
       event.target.reset();
       clearSingleAttachment();
       updateSinglePreview();
@@ -1049,7 +902,6 @@ function clearBulkAttachment() {
 
 function handleBulkFile(file) {
   if (!file) return;
-<<<<<<< HEAD
   if (!file.type.startsWith('image/') && !/\.(png|jpe?g|webp)$/i.test(file.name)) {
     alert('Please select an image file (PNG, JPG, JPEG, WEBP).');
     return;
@@ -1070,35 +922,6 @@ function handleBulkFile(file) {
     if (userBulkPreviewImgWrap) userBulkPreviewImgWrap.classList.remove('hidden');
     updateUserBulkCounts();
   });
-=======
-  if (!file.type.startsWith('image/')) {
-    alert('Please select an image file (PNG, JPG, JPEG, WEBP).');
-    return;
-  }
-  if (file.size > 10 * 1024 * 1024) {
-    alert('Image size exceeds 10MB limit. Please choose a smaller image.');
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const dataUrl = e.target.result;
-    attachedBulkMedia = {
-      data: dataUrl,
-      name: file.name,
-      size: file.size,
-      mime: file.type
-    };
-    if (userBulkThumb) userBulkThumb.src = dataUrl;
-    if (userBulkAttachName) userBulkAttachName.textContent = file.name;
-    if (userBulkAttachSize) userBulkAttachSize.textContent = formatFileSize(file.size);
-    if (userBulkDropPrompt) userBulkDropPrompt.classList.add('hidden');
-    if (userBulkAttachPreview) userBulkAttachPreview.classList.remove('hidden');
-
-    if (userBulkPreviewImg) userBulkPreviewImg.src = dataUrl;
-    if (userBulkPreviewImgWrap) userBulkPreviewImgWrap.classList.remove('hidden');
-  };
-  reader.readAsDataURL(file);
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
 }
 
 if (userBulkDropzone && userBulkImageFile) {
@@ -1145,7 +968,6 @@ let shouldStopUserBulk = false;
 
 if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
   function parseUserNumbers() {
-<<<<<<< HEAD
     return userBulkNumbers.value
       .split(/[\r\n,\s;]+/)
       .map(formatToIndianWhatsAppNumber)
@@ -1281,11 +1103,6 @@ if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
     }
   });
 
-=======
-    return userBulkNumbers.value.split(/[\r\n,\s]+/).map((value) => value.replace(/\D/g, '')).filter((value, index, list) => value.length >= 10 && list.indexOf(value) === index).slice(0, 100);
-  }
-
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
   function updateUserBulkCounts() {
     const numbers = parseUserNumbers();
     document.getElementById('userNumberCountBadge').textContent = `${numbers.length} Number${numbers.length === 1 ? '' : 's'}`;
@@ -1456,10 +1273,7 @@ if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
           payload.media = attachedBulkMedia.data;
           payload.filename = attachedBulkMedia.name;
           payload.mimetype = attachedBulkMedia.mime;
-<<<<<<< HEAD
           payload.caption = message;
-=======
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
         }
 
         const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/send-message`, {
@@ -1535,11 +1349,8 @@ if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
       state.className = 'badge badge-completed';
       state.textContent = 'Completed';
       setResult('userBulkResult', `Bulk dispatch completed: ${sentCount}/${total} delivered successfully!`);
-<<<<<<< HEAD
       showToast(`Bulk broadcast completed: ${sentCount}/${total} delivered!`);
       refreshUserMe();
-=======
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
     }
   });
 
@@ -1769,7 +1580,6 @@ document.getElementById('docCodeTabs')?.addEventListener('click', (e) => {
     const response = await api('/api/user-auth/me');
     if (response.ok) {
       const data = await response.safeJson();
-<<<<<<< HEAD
       if (data && data.data) handleUserSession(data.data);
     }
   } catch (_) {}
@@ -2969,9 +2779,3 @@ document.getElementById('headerDropdownLogout')?.addEventListener('click', () =>
   headerProfileContainer?.classList.remove('open');
   document.getElementById('userLogout')?.click();
 });
-=======
-      if (data && data.data) openDashboard(data.data);
-    }
-  } catch (_) {}
-})();
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1

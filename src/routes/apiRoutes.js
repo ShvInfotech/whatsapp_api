@@ -37,10 +37,7 @@ router.get('/user/instances/:id/qr', requireUser, (req, res) => userController.q
 router.post('/user/instances/:id/reset', requireUser, (req, res) => userController.reset(req, res));
 router.post('/user/instances/:id/send-message', requireUser, (req, res) => userController.sendMessage(req, res));
 router.post('/user/instances/:id/send-bulk', requireUser, (req, res) => userController.sendBulk(req, res));
-<<<<<<< HEAD
 router.post('/user/instances/:id/send-template', requireUser, (req, res) => userController.sendTemplateMessage(req, res));
-=======
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
 
 // Message Templates
 router.get('/user/templates', requireUser, (req, res) => userController.getTemplates(req, res));

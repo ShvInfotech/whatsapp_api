@@ -56,12 +56,7 @@ class SendBuddyController {
         });
       }
 
-<<<<<<< HEAD
       const ownerId = auth.record && auth.record.ownerUserId;
-=======
-      // 3. Dispatch message through instance
-      const result = await instanceService.sendMessage(instanceId, number, message, media);
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
 
       // 3. Check quota if tied to an owner
       if (ownerId) {

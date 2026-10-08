@@ -339,7 +339,6 @@ class WhatsAppService {
   /**
    * Sends a single WhatsApp message
    */
-<<<<<<< HEAD
   /**
    * Prime WhatsApp Web's internal contact store and LID cache
    * to prevent "No LID for user" exceptions on newer WhatsApp Web bundles.
@@ -487,8 +486,6 @@ class WhatsAppService {
     }
   }
 
-=======
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
   async sendMessage(phoneNumber, message, mediaOptions = null) {
     if (this.status !== 'CONNECTED' || !this.client) {
       throw new Error(`WhatsApp client is not ready. Current status: ${this.status}. Please scan QR code first.`);
@@ -522,7 +519,6 @@ class WhatsAppService {
       console.warn('[WhatsAppService] getNumberId fallback to jid:', checkErr.message);
     }
 
-<<<<<<< HEAD
     // Prime LID cache to prevent WhatsApp Web "No LID for user" errors
     let lidInfo = null;
     try {
@@ -614,18 +610,6 @@ class WhatsAppService {
       if (!response) {
         throw sendErr;
       }
-=======
-    console.log(`[WhatsAppService] Sending ${hasMedia ? 'media ' : ''}message to ${targetJid}...`);
-
-    let response;
-    if (hasMedia) {
-      const media = await buildMessageMedia(mediaOptions);
-      if (!media) throw new Error('Could not parse image attachment.');
-      const sendOptions = msgText ? { caption: msgText } : {};
-      response = await this.client.sendMessage(targetJid, media, sendOptions);
-    } else {
-      response = await this.client.sendMessage(targetJid, msgText);
->>>>>>> 48c6ca5121ffd90265c7fc88b6993d1e2da27cd1
     }
 
     console.log('[WhatsAppService] Send response received:', response ? 'Success' : 'Empty');
