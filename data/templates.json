@@ -355,5 +355,70 @@
     ],
     "isDefault": true,
     "createdAt": "2026-10-02T08:54:56.442Z"
+  },
+  {
+    "id": "tpl_ord_c698218f",
+    "userId": "6ab11fb4efa3c9a73a9013a1",
+    "name": "E-Commerce Order Confirmation",
+    "code": "order_confirmation",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, thank you for your order! Your order #{{order_id}} for {{amount}} has been confirmed. Track status here: {{tracking_link}}",
+    "variables": [
+      "customer_name",
+      "order_id",
+      "amount",
+      "tracking_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-08T05:34:34.081Z"
+  },
+  {
+    "id": "tpl_shp_0d2a9978",
+    "userId": "6ab11fb4efa3c9a73a9013a1",
+    "name": "Order Dispatched & Tracking",
+    "code": "order_dispatched",
+    "category": "ecommerce",
+    "content": "Hello {{customer_name}}, great news! Your order #{{order_id}} has been shipped via {{courier}}. Tracking No: {{tracking_number}}. Live tracking: {{tracking_link}}",
+    "variables": [
+      "customer_name",
+      "order_id",
+      "courier",
+      "tracking_number",
+      "tracking_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-08T05:34:34.081Z"
+  },
+  {
+    "id": "tpl_crt_ec674b7c",
+    "userId": "6ab11fb4efa3c9a73a9013a1",
+    "name": "Abandoned Cart Reminder",
+    "code": "cart_reminder",
+    "category": "ecommerce",
+    "content": "Hi {{customer_name}}, you left {{item_name}} in your shopping cart! Complete your order now and enjoy {{discount}} off: {{checkout_link}}",
+    "variables": [
+      "customer_name",
+      "item_name",
+      "discount",
+      "checkout_link"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-08T05:34:34.081Z"
+  },
+  {
+    "id": "tpl_vlt_c882c0ca",
+    "userId": "6ab11fb4efa3c9a73a9013a1",
+    "name": "Safe Vault Access Alert",
+    "code": "vault_access_alert",
+    "category": "alerts",
+    "content": "Security Alert: User {{person_name}} has accessed Locker/Vault #{{locker_id}} at {{datetime}}. Security Token: {{auth_token}}",
+    "variables": [
+      "person_name",
+      "locker_id",
+      "datetime",
+      "auth_token"
+    ],
+    "isDefault": true,
+    "createdAt": "2026-10-08T05:34:34.081Z"
   }
 ]
