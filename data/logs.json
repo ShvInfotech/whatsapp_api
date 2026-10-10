@@ -1,5 +1,93 @@
 [
   {
+    "id": "log_bf547507d7b3",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "918140349408",
+    "type": "single",
+    "preview": "Dear {{customer_name}}, your {{service_name}} verification OTP code is {{otp_code}}. Valid...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-10T07:15:51.199Z"
+  },
+  {
+    "id": "log_ff666f9f2e2f",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "918140349408",
+    "type": "template",
+    "preview": "Hi Yash V Gajera, thank you for your order! Your order ##1048 for ₹1,999 has been confirme...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-10T06:28:33.485Z"
+  },
+  {
+    "id": "log_cf065273e026",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Dear Customer, this is a test caption with image.",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-08T10:25:36.487Z"
+  },
+  {
+    "id": "log_3690d1f7810d",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Dear Customer, this is a friendly reminder that your payment is due. Please review your ac...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-08T10:14:48.992Z"
+  },
+  {
+    "id": "log_e8c50f03d43f",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Dear Customer, this is a friendly reminder that your payment is due.",
+    "status": "failed",
+    "error": "WhatsApp instance 'Yash V Gajera's WhatsApp' is not connected. Current status: DISCONNECTED",
+    "timestamp": "2026-10-08T09:52:39.370Z"
+  },
+  {
+    "id": "log_4c1e96450dc3",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Dear Customer, this is a friendly reminder...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-08T09:46:17.982Z"
+  },
+  {
+    "id": "log_02c02bb8900e",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Dear Customer, this is a friendly reminder that your payment is due. Please review your ac...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-08T09:09:06.412Z"
+  },
+  {
+    "id": "log_45f170867b61",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "487CF5A803F19",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Dear Customer, this is a friendly reminder that your payment is due. Please review your ac...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-08T07:32:58.026Z"
+  },
+  {
     "id": "log_a32025d765bc",
     "userId": "6ab20d1a57d571d629bc6b5d",
     "instanceId": "487CF5A803F19",

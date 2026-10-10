@@ -215,13 +215,21 @@ class WhatsAppController {
   }
 
   /**
-   * POST /api/send-message
-   * Accepts JSON: { "phoneNumber": "919876543210", "message": "Hello from Safe Vault" }
+   * POST /api/send-message & POST /api/send-media
+   * Accepts JSON: { "phoneNumber": "91...", "message": "...", "caption": "...", "media": "..." }
    */
   async sendMessage(req, res) {
+    console.log("=== BACKEND DEBUG START ===");
+    console.log("req.body keys:", Object.keys(req.body || {}));
+    console.log("req.body.caption:", req.body?.caption);
+    console.log("req.body.message:", req.body?.message);
+    console.log("req.body.media length:", req.body?.media?.length);
+    console.log("=== BACKEND DEBUG END ===");
     try {
-      const { phoneNumber, message, media, mediaUrl, image } = req.body;
-      const mediaInput = media || mediaUrl || image || null;
+      const phoneNumber = req.body.phoneNumber || req.body.recipient || req.body.number || req.body.to || req.body.phone;
+      const { message, caption, text, media, mediaUrl, image, file, filename, mimetype, data } = req.body;
+      const messageText = (caption || message || text || '').toString().trim();
+      const mediaInput = media || mediaUrl || image || file || (filename && (data || media) ? { filename, mimetype, data: data || media } : null);
 
       if (!phoneNumber) {
         return res.status(400).json({
@@ -230,14 +238,14 @@ class WhatsAppController {
         });
       }
 
-      if (!message && !mediaInput) {
+      if (!messageText && !mediaInput) {
         return res.status(400).json({
           success: false,
           error: 'Missing required field: "message" or image attachment'
         });
       }
 
-      const result = await whatsappService.sendMessage(phoneNumber, message || '', mediaInput);
+      const result = await whatsappService.sendMessage(phoneNumber, messageText, mediaInput);
 
       return res.status(200).json({
         success: true,
@@ -246,7 +254,7 @@ class WhatsAppController {
       });
     } catch (err) {
       console.error('[WhatsAppController] Send message failed:', err);
-      const isClientNotReady = err.message.includes('not ready');
+      const isClientNotReady = err.message.includes('not ready') || err.message.includes('not connected');
       const isUnregistered = err.message.includes('not registered');
       const statusCode = isClientNotReady ? 503 : (isUnregistered ? 400 : 500);
 
@@ -255,6 +263,10 @@ class WhatsAppController {
         error: err.message
       });
     }
+  }
+
+  async sendMedia(req, res) {
+    return this.sendMessage(req, res);
   }
 
   /**

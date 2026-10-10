@@ -3,6 +3,7 @@
  * Entry Point
  */
 
+require('./patch-caption');
 const { startServer } = require('./src/server');
 
 startServer().catch((err) => {

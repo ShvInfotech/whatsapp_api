@@ -17,6 +17,12 @@ const userController = require('../controllers/userController');
 // SendBuddy API: GET & POST /api/send?number=...&type=text&message=...&instance_id=...&access_token=...
 router.get('/send', (req, res) => sendBuddyController.handleSend(req, res));
 router.post('/send', (req, res) => sendBuddyController.handleSend(req, res));
+router.post('/send-media', (req, res) => {
+  if (req.body?.instance_id || req.query?.instance_id) {
+    return sendBuddyController.handleSend(req, res);
+  }
+  return whatsappController.sendMedia(req, res);
+});
 
 // Public Template Dispatch API for E-Commerce / Webhooks
 router.post('/send-template', (req, res) => sendBuddyController.handleSendTemplate(req, res));
@@ -36,6 +42,7 @@ router.get('/user/instances', requireUser, (req, res) => userController.instance
 router.get('/user/instances/:id/qr', requireUser, (req, res) => userController.qr(req, res));
 router.post('/user/instances/:id/reset', requireUser, (req, res) => userController.reset(req, res));
 router.post('/user/instances/:id/send-message', requireUser, (req, res) => userController.sendMessage(req, res));
+router.post('/user/instances/:id/send-media', requireUser, (req, res) => userController.sendMedia(req, res));
 router.post('/user/instances/:id/send-bulk', requireUser, (req, res) => userController.sendBulk(req, res));
 router.post('/user/instances/:id/send-template', requireUser, (req, res) => userController.sendTemplateMessage(req, res));
 
@@ -95,6 +102,7 @@ router.get('/qr', (req, res) => whatsappController.getQrCode(req, res));
 router.get('/reset-session', (req, res) => whatsappController.resetSession(req, res));
 router.post('/reset-session', (req, res) => whatsappController.resetSession(req, res));
 router.post('/send-message', (req, res) => whatsappController.sendMessage(req, res));
+router.post('/send-media', (req, res) => whatsappController.sendMedia(req, res));
 router.post('/logout', (req, res) => whatsappController.logout(req, res));
 
 module.exports = router;

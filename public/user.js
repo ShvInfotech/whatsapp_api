@@ -779,6 +779,18 @@ document.querySelectorAll('[data-tpl]').forEach((chip) => {
   });
 });
 
+// Single Message Template Dropdown selection
+document.getElementById('userSingleTemplateSelect')?.addEventListener('change', (e) => {
+  const tplId = e.target.value;
+  if (!tplId) return;
+  const found = allTemplates.find((t) => t.id === tplId);
+  if (found && userSingleMsgInput) {
+    userSingleMsgInput.value = found.content;
+    updateSinglePreview();
+    userSingleMsgInput.focus();
+  }
+});
+
 // Single Message Formatting Toolbar
 document.querySelectorAll('[data-single-fmt]').forEach((button) => {
   button.addEventListener('click', () => {
@@ -1126,6 +1138,18 @@ if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
       previewTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
   }
+
+  // Bulk Message Template Dropdown selection
+  document.getElementById('userBulkTemplateSelect')?.addEventListener('change', (e) => {
+    const tplId = e.target.value;
+    if (!tplId) return;
+    const found = allTemplates.find((t) => t.id === tplId);
+    if (found && userBulkMessage) {
+      userBulkMessage.value = found.content;
+      updateUserBulkCounts();
+      userBulkMessage.focus();
+    }
+  });
 
   function updateUserDelay() {
     const delay = parseFloat(userDelayRange.value) || 4.5;
@@ -2111,7 +2135,6 @@ let currentCategoryFilter = 'all';
 
 async function loadTemplates() {
   const container = document.getElementById('templatesContainer');
-  if (!container) return;
 
   try {
     const res = await api('/api/user/templates');
@@ -2119,12 +2142,44 @@ async function loadTemplates() {
     if (!res.ok) throw new Error(data.error || 'Failed to load templates.');
 
     allTemplates = data.data || [];
-    renderTemplatesList();
+    if (container) renderTemplatesList();
+    populateTemplateDropdowns(allTemplates);
 
     const countBadge = document.getElementById('navTplCount');
     if (countBadge) countBadge.textContent = allTemplates.length;
   } catch (err) {
-    container.innerHTML = `<div class="card p-4 text-danger">Unable to load templates: ${err.message}</div>`;
+    if (container) {
+      container.innerHTML = `<div class="card p-4 text-danger">Unable to load templates: ${err.message}</div>`;
+    }
+  }
+}
+
+function populateTemplateDropdowns(templates = []) {
+  const singleSelect = document.getElementById('userSingleTemplateSelect');
+  const bulkSelect = document.getElementById('userBulkTemplateSelect');
+
+  const optionsHtml = [
+    '<option value="">✍️ Custom Message (Type Directly)</option>',
+    ...templates.map((tpl) => {
+      const catEmoji = tpl.category === 'ecommerce' ? '📦' : tpl.category === 'alerts' ? '🚨' : tpl.category === 'marketing' ? '📣' : '💬';
+      return `<option value="${escapeHtml(tpl.id)}" data-code="${escapeHtml(tpl.code)}">${catEmoji} ${escapeHtml(tpl.name)} (${escapeHtml(tpl.code)})</option>`;
+    })
+  ].join('');
+
+  if (singleSelect) {
+    const prev = singleSelect.value;
+    singleSelect.innerHTML = optionsHtml;
+    if (prev && templates.some((t) => t.id === prev)) {
+      singleSelect.value = prev;
+    }
+  }
+
+  if (bulkSelect) {
+    const prev = bulkSelect.value;
+    bulkSelect.innerHTML = optionsHtml;
+    if (prev && templates.some((t) => t.id === prev)) {
+      bulkSelect.value = prev;
+    }
   }
 }
 
@@ -2300,6 +2355,8 @@ const TPL_CATEGORIES = {
   }
 };
 
+const customTplVariables = new Set();
+
 function renderTplCategoryVariables(catKey, isUserSwitching = false) {
   const cat = TPL_CATEGORIES[catKey] || TPL_CATEGORIES.ecommerce;
   const badgeEl = document.getElementById('tplCategoryBadge');
@@ -2307,9 +2364,13 @@ function renderTplCategoryVariables(catKey, isUserSwitching = false) {
 
   const chipsContainer = document.getElementById('tplVarChips');
   if (chipsContainer) {
-    chipsContainer.innerHTML = cat.variables.map(v => 
+    const categoryChips = cat.variables.map(v => 
       `<button type="button" class="var-chip" data-var="${v.name}" title="Click to insert {{${v.name}}}">+ {{${v.name}}}</button>`
-    ).join('');
+    );
+    const customChips = Array.from(customTplVariables).map(name => 
+      `<button type="button" class="var-chip custom-chip" data-var="${name}" title="Custom variable: click to insert {{${name}}}">⭐ + {{${name}}}</button>`
+    );
+    chipsContainer.innerHTML = [...categoryChips, ...customChips].join('');
   }
 
   if (isUserSwitching) {
@@ -2327,6 +2388,40 @@ function renderTplCategoryVariables(catKey, isUserSwitching = false) {
 
   updateTplModalLivePreview();
 }
+
+function handleAddCustomVariable() {
+  const input = document.getElementById('tplCustomVarInput');
+  if (!input) return;
+  const raw = input.value.trim().toLowerCase();
+  const clean = raw.replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+  if (!clean) return;
+
+  customTplVariables.add(clean);
+  const catSelect = document.getElementById('tplCategorySelect');
+  renderTplCategoryVariables(catSelect ? catSelect.value : 'ecommerce', false);
+
+  // Automatically insert {{variable_name}} into textarea at cursor position
+  const textarea = document.getElementById('tplContentInput');
+  if (textarea) {
+    const start = (typeof textarea.selectionStart === 'number') ? textarea.selectionStart : textarea.value.length;
+    const end = (typeof textarea.selectionEnd === 'number') ? textarea.selectionEnd : textarea.value.length;
+    const insertText = `{{${clean}}}`;
+    textarea.value = textarea.value.substring(0, start) + insertText + textarea.value.substring(end);
+    textarea.focus();
+    textarea.selectionStart = textarea.selectionEnd = start + insertText.length;
+  }
+
+  input.value = '';
+  updateTplModalLivePreview();
+}
+
+document.getElementById('btnAddCustomVar')?.addEventListener('click', handleAddCustomVariable);
+document.getElementById('tplCustomVarInput')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    handleAddCustomVariable();
+  }
+});
 
 // Modal: Create New Template
 const modalNewTpl = document.getElementById('modalNewTemplate');
@@ -2405,6 +2500,26 @@ function updateTplModalLivePreview() {
     return;
   }
 
+  // Scan content for any dynamically written variables {{var_name}}
+  const matches = content.match(/\{\{([a-zA-Z0-9_-]+)\}\}/g) || [];
+  let addedNew = false;
+  matches.forEach(m => {
+    const vName = m.replace(/[{}]/g, '').trim().toLowerCase();
+    if (vName && !customTplVariables.has(vName)) {
+      const currentCat = document.getElementById('tplCategorySelect')?.value || 'ecommerce';
+      const cat = TPL_CATEGORIES[currentCat] || TPL_CATEGORIES.ecommerce;
+      if (!cat.variables.some(v => v.name === vName)) {
+        customTplVariables.add(vName);
+        addedNew = true;
+      }
+    }
+  });
+
+  if (addedNew) {
+    const catSelect = document.getElementById('tplCategorySelect');
+    renderTplCategoryVariables(catSelect ? catSelect.value : 'ecommerce', false);
+  }
+
   let rendered = content;
   // Replace each known variable across all categories with realistic sample data
   Object.values(TPL_CATEGORIES).forEach(cat => {
@@ -2412,6 +2527,12 @@ function updateTplModalLivePreview() {
       const reg = new RegExp(`\\{\\{${v.name}\\}\\}`, 'g');
       rendered = rendered.replace(reg, v.preview);
     });
+  });
+
+  // Replace custom variables:
+  customTplVariables.forEach(vName => {
+    const reg = new RegExp(`\\{\\{${vName}\\}\\}`, 'g');
+    rendered = rendered.replace(reg, `[${vName}]`);
   });
 
   // Any other custom variable fallback e.g. {{anything}} -> [anything]

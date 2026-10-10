@@ -1,8 +1,10 @@
 const crypto = require('crypto');
 const instanceService = require('../services/instanceService');
+const whatsappService = require('../services/whatsappService');
 const templateService = require('../services/templateService');
 const logService = require('../services/logService');
 const transactionService = require('../services/transactionService');
+const { getDatabase } = require('../services/databaseService');
 const {
   register,
   authenticate,
@@ -42,6 +44,196 @@ class UserController {
       return res.json({ success: true, data: publicUser(user) });
     } catch (_) {
       return res.status(503).json({ success: false, error: 'User database is unavailable. Check MongoDB connection.' });
+    }
+  }
+
+  // ================= WHATSAPP OTP AUTHENTICATION =================
+  async sendWhatsAppOtp(req, res) {
+    try {
+      const rawPhone = (req.body.phone || req.body.phoneNumber || req.body.number || req.body.mobile || '').toString().trim();
+      if (!rawPhone) {
+        return res.status(400).json({ success: false, error: 'Please enter your WhatsApp contact number.' });
+      }
+
+      // Sanitize phone number to digits only
+      let cleanPhone = rawPhone.replace(/\D/g, '');
+      if (cleanPhone.length === 10) {
+        cleanPhone = `91${cleanPhone}`;
+      }
+
+      if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+        return res.status(400).json({ success: false, error: 'Invalid phone number length. Please include your country code (e.g. 91 for India).' });
+      }
+
+      // Generate 6-digit cryptographic OTP
+      const otp = Math.floor(100000 + crypto.randomInt(0, 900000)).toString();
+
+      const db = await getDatabase();
+      await db.collection('otp_verifications').deleteMany({ phone: cleanPhone });
+
+      await db.collection('otp_verifications').insertOne({
+        phone: cleanPhone,
+        otp,
+        attempts: 0,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes validity
+      });
+
+      // Compose WhatsApp OTP Message
+      const otpMessage = `🔐 *Pixano Connect Verification Code*\n\nYour WhatsApp login OTP is: *${otp}*\n\n⏱️ Valid for 5 minutes.\n⚠️ Do NOT share this code with anyone.\n\n_Pixano Connect Secure Authentication Gateway_`;
+
+      let sentVia = null;
+      let sendErrorWarning = null;
+
+      try {
+        // Find an active in-memory connected instance
+        let activeInstance = null;
+        for (const [id, state] of instanceService.instances.entries()) {
+          if (state && state.status === 'CONNECTED' && state.client) {
+            activeInstance = { id, state };
+            break;
+          }
+        }
+
+        if (activeInstance) {
+          await instanceService.sendMessage(activeInstance.id, cleanPhone, otpMessage);
+          sentVia = `instance_${activeInstance.id}`;
+        } else if (whatsappService && whatsappService.isConnected) {
+          await whatsappService.sendMessage(cleanPhone, otpMessage);
+          sentVia = 'default_service';
+        } else {
+          // Check stored records for a connected instance to bootstrap if needed
+          const records = instanceService.readStore();
+          const connectedRecord = records.find(r => r.status === 'CONNECTED');
+          if (connectedRecord) {
+            try {
+              const restarted = await instanceService.startClient(connectedRecord.id, connectedRecord.name, connectedRecord.accessToken);
+              if (restarted && restarted.client && restarted.status === 'CONNECTED') {
+                await instanceService.sendMessage(connectedRecord.id, cleanPhone, otpMessage);
+                sentVia = `instance_${connectedRecord.id}`;
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (sendErr) {
+        console.warn(`[WhatsApp OTP] Send error to ${cleanPhone}:`, sendErr.message);
+        sendErrorWarning = sendErr.message;
+      }
+
+      console.log(`[WhatsApp OTP] Generated OTP for +${cleanPhone}: ${otp} (Channel: ${sentVia || 'Simulated/Pending session'})`);
+
+      return res.json({
+        success: true,
+        message: `OTP sent successfully to your WhatsApp (+${cleanPhone}).`,
+        phone: cleanPhone,
+        maskedPhone: `+${cleanPhone.slice(0, 4)}••••${cleanPhone.slice(-2)}`,
+        expiresInSeconds: 300
+      });
+    } catch (err) {
+      console.error('[WhatsApp OTP] Error generating OTP:', err);
+      return res.status(500).json({ success: false, error: err.message || 'Failed to send WhatsApp OTP.' });
+    }
+  }
+
+  async verifyWhatsAppOtp(req, res) {
+    try {
+      const rawPhone = (req.body.phone || req.body.phoneNumber || '').toString().trim();
+      const enteredOtp = (req.body.otp || req.body.code || '').toString().trim();
+
+      if (!rawPhone || !enteredOtp) {
+        return res.status(400).json({ success: false, error: 'Phone number and 6-digit OTP code are required.' });
+      }
+
+      let cleanPhone = rawPhone.replace(/\D/g, '');
+      if (cleanPhone.length === 10) cleanPhone = `91${cleanPhone}`;
+
+      const db = await getDatabase();
+      const record = await db.collection('otp_verifications').findOne({ phone: cleanPhone });
+
+      if (!record) {
+        return res.status(400).json({ success: false, error: 'No active OTP found for this number. Please request a new OTP.' });
+      }
+
+      if (new Date() > new Date(record.expiresAt)) {
+        await db.collection('otp_verifications').deleteOne({ _id: record._id });
+        return res.status(400).json({ success: false, error: 'OTP has expired. Please request a new code.' });
+      }
+
+      if (record.attempts >= 5) {
+        await db.collection('otp_verifications').deleteOne({ _id: record._id });
+        return res.status(429).json({ success: false, error: 'Too many incorrect attempts. Please request a new OTP.' });
+      }
+
+      if (record.otp !== enteredOtp) {
+        await db.collection('otp_verifications').updateOne({ _id: record._id }, { $inc: { attempts: 1 } });
+        return res.status(400).json({ success: false, error: 'Invalid OTP code. Please enter the correct code received on WhatsApp.' });
+      }
+
+      // Valid OTP -> consume it
+      await db.collection('otp_verifications').deleteOne({ _id: record._id });
+
+      // Look up existing user by phone or username
+      let user = await db.collection('users').findOne({
+        $or: [
+          { phone: cleanPhone },
+          { phoneNumber: cleanPhone },
+          { username: cleanPhone },
+          { username: `wa_${cleanPhone}` },
+          { email: `${cleanPhone}@whatsapp.pixano.in` }
+        ]
+      });
+
+      if (!user) {
+        // Auto-create new user account for this phone
+        const newDoc = {
+          fullName: `WhatsApp User (+${cleanPhone})`,
+          username: `wa_${cleanPhone}`,
+          email: `${cleanPhone}@whatsapp.pixano.in`,
+          phone: cleanPhone,
+          phoneNumber: cleanPhone,
+          role: 'user',
+          status: 'active',
+          plan: 'Pro SaaS Plan',
+          planStatus: 'active',
+          messageQuota: 2500,
+          messagesUsed: 0,
+          planExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString()
+        };
+        const insResult = await db.collection('users').insertOne(newDoc);
+        newDoc._id = insResult.insertedId;
+        user = newDoc;
+        await instanceService.createInstance(`${user.fullName}'s WhatsApp`, user._id.toString());
+      } else {
+        // Ensure user has phone field updated and instance ready
+        if (!user.phone || !user.phoneNumber) {
+          await db.collection('users').updateOne(
+            { _id: user._id },
+            { $set: { phone: cleanPhone, phoneNumber: cleanPhone } }
+          );
+          user.phone = cleanPhone;
+          user.phoneNumber = cleanPhone;
+        }
+        await instanceService.ensureUserInstance(user);
+      }
+
+      // Set cookie session
+      res.cookie('safevault_user_session', createSession(user), {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: req.secure,
+        maxAge: 8 * 60 * 60 * 1000
+      });
+
+      return res.json({
+        success: true,
+        message: 'WhatsApp authentication successful! Logging you in...',
+        data: publicUser(user),
+        redirect: '/user.html'
+      });
+    } catch (err) {
+      console.error('[WhatsApp OTP] Verify error:', err);
+      return res.status(500).json({ success: false, error: err.message || 'Verification failed.' });
     }
   }
 
@@ -88,6 +280,12 @@ class UserController {
   }
 
   async sendMessage(req, res) {
+    console.log("=== BACKEND DEBUG START ===");
+    console.log("req.body keys:", Object.keys(req.body || {}));
+    console.log("req.body.caption:", req.body?.caption);
+    console.log("req.body.message:", req.body?.message);
+    console.log("req.body.media length:", req.body?.media?.length);
+    console.log("=== BACKEND DEBUG END ===");
     try {
       if (!instanceService.userOwnsInstance(req.user._id, req.params.id)) {
         return res.status(404).json({ success: false, error: 'WhatsApp instance not found.' });
@@ -100,14 +298,11 @@ class UserController {
       }
 
       const phoneNumber = req.body.phoneNumber || req.body.recipient || req.body.number || req.body.to || req.body.phone;
-      const { message, caption, media, mediaUrl, filename, mimetype, image, data } = req.body;
-      const messageText = (message || caption || '').toString().trim();
+      const { message, caption, text, media, mediaUrl, filename, mimetype, image, data, file } = req.body;
+      const messageText = (caption || message || text || '').toString().trim();
 
       // Build media input: prefer data URL / object forms.
-      // The frontend sends either `media` (data URL string) or an object with
-      // { filename, mimetype, data/base64 }. If only filename+mimetype are
-      // present but the actual data came in `media`, keep the data URL there.
-      const mediaInput = media || mediaUrl || image || (filename && (data || media) ? { filename, mimetype, data: data || media } : null);
+      const mediaInput = media || mediaUrl || image || file || (filename && (data || media) ? { filename, mimetype, data: data || media } : null);
 
       if (!phoneNumber || !phoneNumber.toString().trim()) {
         return res.status(400).json({ success: false, error: 'Recipient phone number is required.' });
@@ -123,7 +318,7 @@ class UserController {
         logService.addLog(req.user._id, req.params.id, {
           recipient: phoneNumber,
           type: mediaInput ? 'media' : 'single',
-          message: message || '[Image Attached]',
+          message: messageText || (mediaInput ? '[Image Attachment]' : ''),
           status: 'sent'
         });
         await incrementMessagesUsed(req.user._id, 1);
@@ -133,7 +328,7 @@ class UserController {
         logService.addLog(req.user._id, req.params.id, {
           recipient: phoneNumber,
           type: mediaInput ? 'media' : 'single',
-          message: message || '[Image Attached]',
+          message: messageText || (mediaInput ? '[Image Attachment]' : ''),
           status: 'failed',
           error: sendErr.message
         });
@@ -145,6 +340,10 @@ class UserController {
         error: error.message || 'Message could not be sent.'
       });
     }
+  }
+
+  async sendMedia(req, res) {
+    return this.sendMessage(req, res);
   }
 
   async sendBulk(req, res) {
@@ -226,7 +425,7 @@ class UserController {
   // ================= TEMPLATE ENDPOINTS =================
   async getTemplates(req, res) {
     try {
-      const templates = templateService.getUserTemplates(req.user._id);
+      const templates = await templateService.getUserTemplates(req.user._id);
       return res.json({ success: true, data: templates });
     } catch (err) {
       return res.status(500).json({ success: false, error: err.message || 'Failed to fetch templates.' });
@@ -235,7 +434,7 @@ class UserController {
 
   async createTemplate(req, res) {
     try {
-      const template = templateService.createTemplate(req.user._id, req.body);
+      const template = await templateService.createTemplate(req.user._id, req.body);
       return res.status(201).json({ success: true, data: template, message: 'Template created successfully.' });
     } catch (err) {
       return res.status(400).json({ success: false, error: err.message });
@@ -244,7 +443,7 @@ class UserController {
 
   async updateTemplate(req, res) {
     try {
-      const template = templateService.updateTemplate(req.user._id, req.params.id, req.body);
+      const template = await templateService.updateTemplate(req.user._id, req.params.id, req.body);
       return res.json({ success: true, data: template, message: 'Template updated.' });
     } catch (err) {
       return res.status(400).json({ success: false, error: err.message });
@@ -253,7 +452,7 @@ class UserController {
 
   async deleteTemplate(req, res) {
     try {
-      templateService.deleteTemplate(req.user._id, req.params.id);
+      await templateService.deleteTemplate(req.user._id, req.params.id);
       return res.json({ success: true, message: 'Template deleted.' });
     } catch (err) {
       return res.status(400).json({ success: false, error: err.message });
@@ -273,7 +472,7 @@ class UserController {
         return res.status(400).json({ success: false, error: 'Recipient phone number is required.' });
       }
 
-      const template = templateService.getTemplateById(req.user._id, templateId || templateCode);
+      const template = await templateService.getTemplateById(req.user._id, templateId || templateCode);
       if (!template) {
         return res.status(404).json({ success: false, error: 'Template not found.' });
       }

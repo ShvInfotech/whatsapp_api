@@ -1,24 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { getDatabase } = require('./databaseService');
 
 const TEMPLATES_FILE = path.resolve(__dirname, '../../data/templates.json');
 
 class TemplateService {
   constructor() {
-    this.ensureStore();
-  }
-
-  ensureStore() {
-    try {
-      const dir = path.dirname(TEMPLATES_FILE);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      if (!fs.existsSync(TEMPLATES_FILE)) {
-        fs.writeFileSync(TEMPLATES_FILE, '[]', 'utf8');
-      }
-    } catch (err) {
-      console.error('[TemplateService] Error ensuring store:', err);
-    }
+    this.migrated = false;
   }
 
   readStore() {
@@ -27,18 +16,42 @@ class TemplateService {
       const raw = fs.readFileSync(TEMPLATES_FILE, 'utf8');
       return JSON.parse(raw || '[]');
     } catch (err) {
-      console.error('[TemplateService] Error reading templates.json:', err);
+      console.error('[TemplateService] Error reading fallback templates.json:', err.message);
       return [];
     }
   }
 
-  writeStore(data) {
+  async migrateFromStore(db) {
+    if (this.migrated) return;
     try {
-      const dir = path.dirname(TEMPLATES_FILE);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(TEMPLATES_FILE, JSON.stringify(data, null, 2), 'utf8');
+      const all = this.readStore();
+      if (Array.isArray(all) && all.length > 0) {
+        for (const item of all) {
+          if (!item.userId || !item.code) continue;
+          const uid = item.userId.toString();
+          await db.collection('templates').updateOne(
+            { userId: uid, code: item.code },
+            {
+              $setOnInsert: {
+                id: item.id || `tpl_${crypto.randomBytes(6).toString('hex')}`,
+                userId: uid,
+                name: item.name || 'Unnamed Template',
+                code: item.code,
+                category: (item.category || 'general').toLowerCase(),
+                content: item.content || '',
+                variables: Array.isArray(item.variables) ? item.variables : this.extractVariables(item.content),
+                isDefault: Boolean(item.isDefault),
+                createdAt: item.createdAt || new Date().toISOString(),
+                updatedAt: item.updatedAt || new Date().toISOString()
+              }
+            },
+            { upsert: true }
+          );
+        }
+      }
+      this.migrated = true;
     } catch (err) {
-      console.error('[TemplateService] Error writing templates.json:', err);
+      console.error('[TemplateService] Migration error:', err.message);
     }
   }
 
@@ -49,76 +62,97 @@ class TemplateService {
   }
 
   getDefaultTemplates(userId) {
+    const uid = userId.toString();
     return [
       {
         id: `tpl_ord_${crypto.randomBytes(4).toString('hex')}`,
-        userId: userId.toString(),
+        userId: uid,
         name: 'E-Commerce Order Confirmation',
         code: 'order_confirmation',
         category: 'ecommerce',
         content: 'Hi {{customer_name}}, thank you for your order! Your order #{{order_id}} for {{amount}} has been confirmed. Track status here: {{tracking_link}}',
         variables: ['customer_name', 'order_id', 'amount', 'tracking_link'],
         isDefault: true,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       },
       {
         id: `tpl_shp_${crypto.randomBytes(4).toString('hex')}`,
-        userId: userId.toString(),
+        userId: uid,
         name: 'Order Dispatched & Tracking',
         code: 'order_dispatched',
         category: 'ecommerce',
         content: 'Hello {{customer_name}}, great news! Your order #{{order_id}} has been shipped via {{courier}}. Tracking No: {{tracking_number}}. Live tracking: {{tracking_link}}',
         variables: ['customer_name', 'order_id', 'courier', 'tracking_number', 'tracking_link'],
         isDefault: true,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       },
       {
         id: `tpl_crt_${crypto.randomBytes(4).toString('hex')}`,
-        userId: userId.toString(),
+        userId: uid,
         name: 'Abandoned Cart Reminder',
         code: 'cart_reminder',
         category: 'ecommerce',
         content: 'Hi {{customer_name}}, you left {{item_name}} in your shopping cart! Complete your order now and enjoy {{discount}} off: {{checkout_link}}',
         variables: ['customer_name', 'item_name', 'discount', 'checkout_link'],
         isDefault: true,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       },
       {
         id: `tpl_vlt_${crypto.randomBytes(4).toString('hex')}`,
-        userId: userId.toString(),
+        userId: uid,
         name: 'Safe Vault Access Alert',
         code: 'vault_access_alert',
         category: 'alerts',
         content: 'Security Alert: User {{person_name}} has accessed Locker/Vault #{{locker_id}} at {{datetime}}. Security Token: {{auth_token}}',
         variables: ['person_name', 'locker_id', 'datetime', 'auth_token'],
         isDefault: true,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
     ];
   }
 
-  getUserTemplates(userId) {
+  async getUserTemplates(userId) {
     const uid = userId.toString();
-    const all = this.readStore();
-    const userTemplates = all.filter((t) => t.userId === uid);
+    const db = await getDatabase();
+    await this.migrateFromStore(db);
 
-    if (userTemplates.length === 0) {
-      // Seed default templates for this user
+    const templates = await db.collection('templates')
+      .find({ userId: uid }, { projection: { _id: 0 } })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    if (templates.length === 0) {
+      // Seed default starter templates specifically for this user
       const defaults = this.getDefaultTemplates(uid);
-      const updated = all.concat(defaults);
-      this.writeStore(updated);
+      await db.collection('templates').insertMany(defaults.map((t) => ({ ...t })));
       return defaults;
     }
 
-    return userTemplates;
+    return templates;
   }
 
-  getTemplateById(userId, templateId) {
-    const templates = this.getUserTemplates(userId);
-    return templates.find((t) => t.id === templateId || t.code === templateId) || null;
+  async getTemplateById(userId, templateIdOrCode) {
+    if (!userId || !templateIdOrCode) return null;
+    const uid = userId.toString();
+    const db = await getDatabase();
+    await this.migrateFromStore(db);
+
+    const template = await db.collection('templates').findOne(
+      {
+        userId: uid,
+        $or: [{ id: templateIdOrCode }, { code: templateIdOrCode }]
+      },
+      { projection: { _id: 0 } }
+    );
+
+    return template || null;
   }
 
-  createTemplate(userId, { name, code, category, content }) {
+  async createTemplate(userId, { name, code, category, content }) {
     if (!name || !name.trim()) throw new Error('Template name is required.');
     if (!content || !content.trim()) throw new Error('Template message content is required.');
 
@@ -128,22 +162,27 @@ class TemplateService {
       .replace(/[^a-z0-9_]/g, '_')
       .replace(/_+/g, '_');
 
-    const variables = this.extractVariables(content);
-    const all = this.readStore();
-    const uid = userId.toString();
-
-    // Check duplicate code for user
-    const existing = all.find((t) => t.userId === uid && t.code === cleanCode);
-    if (existing) {
-      throw new Error(`A template with code '${cleanCode}' already exists.`);
+    if (!cleanCode) {
+      throw new Error('A valid alphanumeric template code is required.');
     }
 
+    const uid = userId.toString();
+    const db = await getDatabase();
+    await this.migrateFromStore(db);
+
+    // Strictly check duplicate code within this user's account only
+    const existing = await db.collection('templates').findOne({ userId: uid, code: cleanCode });
+    if (existing) {
+      throw new Error(`A template with code '${cleanCode}' already exists in your account.`);
+    }
+
+    const variables = this.extractVariables(content);
     const newTemplate = {
       id: `tpl_${crypto.randomBytes(6).toString('hex')}`,
       userId: uid,
       name: name.trim(),
       code: cleanCode,
-      category: (category || 'general').toLowerCase(),
+      category: (category || 'general').toLowerCase().trim(),
       content: content.trim(),
       variables,
       isDefault: false,
@@ -151,44 +190,53 @@ class TemplateService {
       updatedAt: new Date().toISOString()
     };
 
-    all.push(newTemplate);
-    this.writeStore(all);
+    await db.collection('templates').insertOne({ ...newTemplate });
     return newTemplate;
   }
 
-  updateTemplate(userId, templateId, { name, category, content }) {
-    const all = this.readStore();
+  async updateTemplate(userId, templateId, { name, category, content }) {
+    if (!templateId) throw new Error('Template ID is required.');
     const uid = userId.toString();
-    const index = all.findIndex((t) => t.userId === uid && t.id === templateId);
+    const db = await getDatabase();
+    await this.migrateFromStore(db);
 
-    if (index === -1) {
+    const existing = await db.collection('templates').findOne({ userId: uid, id: templateId });
+    if (!existing) {
       throw new Error('Template not found or unauthorized.');
     }
 
-    const target = all[index];
-    if (name && name.trim()) target.name = name.trim();
-    if (category) target.category = category.toLowerCase().trim();
+    const updateFields = { updatedAt: new Date().toISOString() };
+    if (name && name.trim()) updateFields.name = name.trim();
+    if (category) updateFields.category = category.toLowerCase().trim();
     if (content && content.trim()) {
-      target.content = content.trim();
-      target.variables = this.extractVariables(content);
+      updateFields.content = content.trim();
+      updateFields.variables = this.extractVariables(content);
     }
-    target.updatedAt = new Date().toISOString();
 
-    all[index] = target;
-    this.writeStore(all);
-    return target;
+    await db.collection('templates').updateOne(
+      { userId: uid, id: templateId },
+      { $set: updateFields }
+    );
+
+    const updated = await db.collection('templates').findOne(
+      { userId: uid, id: templateId },
+      { projection: { _id: 0 } }
+    );
+
+    return updated;
   }
 
-  deleteTemplate(userId, templateId) {
-    const all = this.readStore();
+  async deleteTemplate(userId, templateId) {
+    if (!templateId) throw new Error('Template ID is required.');
     const uid = userId.toString();
-    const filtered = all.filter((t) => !(t.userId === uid && t.id === templateId));
+    const db = await getDatabase();
+    await this.migrateFromStore(db);
 
-    if (filtered.length === all.length) {
-      throw new Error('Template not found.');
+    const result = await db.collection('templates').deleteOne({ userId: uid, id: templateId });
+    if (result.deletedCount === 0) {
+      throw new Error('Template not found or unauthorized.');
     }
 
-    this.writeStore(filtered);
     return true;
   }
 

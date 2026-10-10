@@ -9,6 +9,12 @@ const { incrementMessagesUsed, checkQuotaAvailable } = require('../services/user
  */
 class SendBuddyController {
   async handleSend(req, res) {
+    console.log("=== BACKEND DEBUG START ===");
+    console.log("req.body keys:", Object.keys(req.body || {}));
+    console.log("req.body.caption:", req.body?.caption);
+    console.log("req.body.message:", req.body?.message);
+    console.log("req.body.media length:", req.body?.media?.length);
+    console.log("=== BACKEND DEBUG END ===");
     try {
       // Extract from Query (for GET or URL-encoded params) or Body (for POST JSON/form)
       const number = req.query.number || req.body.number || req.query.phone || req.body.phone;
@@ -165,7 +171,7 @@ class SendBuddyController {
       }
 
       // Retrieve template
-      const template = templateService.getTemplateById(ownerId, templateCode);
+      const template = await templateService.getTemplateById(ownerId, templateCode);
       if (!template) {
         return res.status(404).json({
           status: 'error',

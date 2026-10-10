@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhatsApp OTP Login - Pixano Connect</title>
+  <meta name="description" content="Secure instant login via WhatsApp one-time password (OTP). Fast, passwordless, and end-to-end encrypted verification." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=3.1.0" />
+  <style>
+    /* Dedicated WhatsApp OTP Login Aesthetics */
+    body.wa-login-body {
+      min-height: 100vh;
+      margin: 0;
+      background: radial-gradient(circle at 15% 20%, rgba(37, 211, 102, 0.08) 0%, transparent 40%),
+                  radial-gradient(circle at 85% 80%, rgba(0, 168, 132, 0.08) 0%, transparent 40%),
+                  #0b141a;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #e9edef;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      box-sizing: border-box;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Ambient Background Glow */
+    .wa-ambient-glow {
+      position: fixed;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(0, 168, 132, 0.18) 0%, rgba(18, 140, 126, 0) 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(50px);
+    }
+
+    .wa-auth-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .wa-auth-card {
+      background: rgba(17, 27, 33, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(134, 150, 160, 0.18);
+      border-radius: 20px;
+      padding: 2.25rem 2rem;
+      box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.6),
+                  0 0 0 1px rgba(255, 255, 255, 0.04);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .wa-auth-card:hover {
+      border-color: rgba(0, 168, 132, 0.35);
+      box-shadow: 0 24px 50px -8px rgba(0, 0, 0, 0.7),
+                  0 0 30px rgba(0, 168, 132, 0.12);
+    }
+
+    .wa-brand-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .wa-icon-badge {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);
+      margin-bottom: 1.15rem;
+      position: relative;
+      animation: waFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes waFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .wa-icon-badge .pulse-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 18px;
+      border: 2px solid #25d366;
+      animation: waPulseRing 2.5s infinite;
+      opacity: 0;
+    }
+
+    @keyframes waPulseRing {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+
+    .wa-brand-header h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      margin: 0 0 0.4rem 0;
+      color: #e9edef;
+      letter-spacing: -0.02em;
+    }
+
+    .wa-brand-header p {
+      font-size: 0.86rem;
+      color: #8696a0;
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    /* Step Container Smooth Transitions */
+    .auth-step {
+      display: block;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .auth-step.step-hidden {
+      display: none;
+      opacity: 0;
+      transform: scale(0.97);
+    }
+
+    /* Input Controls */
+    .wa-form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .wa-form-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #d1d7db;
+      margin-bottom: 0.45rem;
+    }
+
+    .wa-phone-input-box {
+      display: flex;
+      align-items: center;
+      background: #202c33;
+      border: 1px solid #2a3942;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .wa-phone-input-box:focus-within {
+      border-color: #00a884;
+      background: #202c33;
+      box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.22);
+    }
+
+    .wa-country-flag {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.75rem 0.9rem;
+      background: #182229;
+      border-right: 1px solid #2a3942;
+      color: #e9edef;
+      font-size: 0.88rem;
+      font-weight: 600;
+      user-select: none;
+    }
+
+    .wa-phone-input-box input {
+      flex: 1;
+      border: none !important;
+      background: transparent !important;
+      padding: 0.75rem 0.9rem;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      font-size: 0.96rem;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.03em;
+      outline: none !important;
+      box-shadow: none !important;
+      width: 100%;
+    }
+
+    .wa-phone-input-box input:focus {
+      background: transparent !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    .wa-phone-input-box input::placeholder {
+      color: #667781;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: normal;
+    }
+
+    .wa-input-hint {
+      display: block;
+      font-size: 0.74rem;
+      color: #8696a0;
+      margin-top: 0.4rem;
+      line-height: 1.35;
+    }
+
+    /* OTP Inputs Grid */
+    .otp-inputs-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.45rem;
+      margin: 1.25rem 0 0.75rem 0;
+    }
+
+    .otp-inputs-grid input.otp-digit-input,
+    input[type="text"].otp-digit-input,
+    .otp-digit-input {
+      width: 100% !important;
+      height: 52px !important;
+      background: #202c33 !important;
+      border: 1.5px solid #2a3942 !important;
+      border-radius: 10px !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      caret-color: #25d366 !important;
+      font-size: 1.4rem !important;
+      font-weight: 700 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      text-align: center !important;
+      outline: none !important;
+      transition: all 0.2s ease;
+      box-sizing: border-box !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+    }
+
+    .otp-inputs-grid input.otp-digit-input:focus,
+    input[type="text"].otp-digit-input:focus,
+    .otp-digit-input:focus {
+      border-color: #00a884 !important;
+      background: #111b21 !important;
+      box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.35) !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      transform: translateY(-2px);
+    }
+
+    .otp-inputs-grid input.otp-digit-input.filled,
+    input[type="text"].otp-digit-input.filled,
+    .otp-digit-input.filled {
+      border-color: #00a884 !important;
+      background: #202c33 !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+    }
+
+    /* Masked Info Box */
+    .wa-target-pill {
+      background: rgba(0, 168, 132, 0.09);
+      border: 1px solid rgba(0, 168, 132, 0.25);
+      border-radius: 10px;
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .wa-target-text {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.84rem;
+      color: #e9edef;
+    }
+
+    .wa-target-text strong {
+      color: #25d366;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .btn-edit-target {
+      background: none;
+      border: none;
+      color: #00a884;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-edit-target:hover {
+      color: #25d366;
+      text-decoration: underline;
+    }
+
+    /* Buttons */
+    .btn-wa-primary {
+      width: 100%;
+      background: linear-gradient(135deg, #00a884 0%, #008069 100%);
+      color: #ffffff;
+      border: none;
+      padding: 0.85rem 1.2rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 15px rgba(0, 168, 132, 0.35);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-wa-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #02b68f 0%, #008c73 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 168, 132, 0.45);
+    }
+
+    .btn-wa-primary:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .btn-wa-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      filter: grayscale(0.2);
+    }
+
+    /* Timer & Resend */
+    .resend-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1rem;
+      font-size: 0.82rem;
+      color: #8696a0;
+    }
+
+    .btn-resend-otp {
+      background: none;
+      border: none;
+      color: #00a884;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.15s ease;
+    }
+
+    .btn-resend-otp:disabled {
+      color: #667781;
+      cursor: not-allowed;
+      text-decoration: none;
+    }
+
+    .btn-resend-otp:not(:disabled):hover {
+      color: #25d366;
+      text-decoration: underline;
+    }
+
+    /* Footer & Security Note */
+    .wa-auth-footer {
+      margin-top: 1.75rem;
+      text-align: center;
+      border-top: 1px solid #202c33;
+      padding-top: 1.25rem;
+    }
+
+    .wa-switch-link {
+      color: #8696a0;
+      font-size: 0.84rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: color 0.15s ease;
+    }
+
+    .wa-switch-link strong {
+      color: #00a884;
+    }
+
+    .wa-switch-link:hover {
+      color: #e9edef;
+    }
+
+    .wa-switch-link:hover strong {
+      color: #25d366;
+      text-decoration: underline;
+    }
+
+    .wa-security-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      margin-top: 1.5rem;
+      font-size: 0.74rem;
+      color: #667781;
+    }
+
+    .wa-security-badge svg {
+      color: #00a884;
+    }
+
+    /* Error Banner */
+    .wa-alert-banner {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      padding: 0.65rem 0.9rem;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      margin-bottom: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .wa-alert-banner.alert-info {
+      background: rgba(0, 168, 132, 0.1);
+      border-color: rgba(0, 168, 132, 0.3);
+      color: #5eead4;
+    }
+
+    /* Toast Notification */
+    #waToast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #111b21;
+      border: 1px solid #00a884;
+      color: #e9edef;
+      padding: 0.75rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 9999;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
+
+    #waToast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Spinner */
+    .btn-spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="wa-login-body">
+  <div class="wa-ambient-glow"></div>
+
+  <div class="wa-auth-wrapper">
+    <div class="wa-auth-card">
+      <!-- Brand Logo & Header -->
+      <div class="wa-brand-header">
+        <div class="wa-icon-badge">
+          <div class="pulse-ring"></div>
+          <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor">
+            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.03-1.25-.75-.67-1.26-1.5-1.41-1.75-.15-.25-.02-.39.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.17-.48-.29z"/>
+          </svg>
+        </div>
+        <h1 id="screenTitle">WhatsApp Login</h1>
+        <p id="screenSubtitle">તમારો મોબાઇલ નંબર નાખીને WhatsApp પર સુરક્ષિત OTP મેળવો</p>
+      </div>
+
+      <!-- Alert Box -->
+      <div id="authAlert" class="wa-alert-banner hidden"></div>
+
+      <!-- ============================================== -->
+      <!-- STEP 1: PHONE NUMBER INPUT FORM               -->
+      <!-- ============================================== -->
+      <form id="stepPhoneForm" class="auth-step">
+        <div class="wa-form-group">
+          <label class="wa-form-label" for="phoneInput">WhatsApp Mobile Number</label>
+          <div class="wa-phone-input-box">
+            <div class="wa-country-flag" title="Country code">
+              <span>🇮🇳</span>
+              <span>+91</span>
+            </div>
+            <input type="tel" id="phoneInput" placeholder="98765 43210" autocomplete="tel" autofocus required maxlength="15" />
+          </div>
+          <span class="wa-input-hint">Enter your 10-digit number. We will send an OTP directly to your WhatsApp.</span>
+        </div>
+
+        <button type="submit" id="btnSendOtp" class="btn-wa-primary">
+          <span id="btnSendOtpIcon">💬</span>
+          <span id="btnSendOtpText">Send WhatsApp OTP</span>
+        </button>
+
+        <div class="wa-auth-footer">
+          <a href="user.html" class="wa-switch-link">
+            <span>🔑 Prefer password?</span>
+            <strong>Sign in with Username &amp; Password &rarr;</strong>
+          </a>
+        </div>
+      </form>
+
+      <!-- ============================================== -->
+      <!-- STEP 2: OTP VERIFICATION FORM                 -->
+      <!-- ============================================== -->
+      <form id="stepOtpForm" class="auth-step step-hidden">
+        <!-- Target phone pill with edit button -->
+        <div class="wa-target-pill">
+          <div class="wa-target-text">
+            <span>📱 OTP sent to:</span>
+            <strong id="targetDisplayNumber">+91 98765 ••••0</strong>
+          </div>
+          <button type="button" id="btnChangeNumber" class="btn-edit-target" title="Change phone number">Change</button>
+        </div>
+
+        <div class="wa-form-group">
+          <label class="wa-form-label" style="text-align:center;">Enter 6-Digit WhatsApp Code</label>
+          <div class="otp-inputs-grid" id="otpInputsWrap">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit-input" data-index="0" autocomplete="one-time-code" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit-input" data-index="1" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit-input" data-index="2" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit-input" data-index="3" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit-input" data-index="4" />
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit-input" data-index="5" />
+          </div>
+          <span class="wa-input-hint" style="text-align:center;">Check your WhatsApp app for the 6-digit verification code.</span>
+        </div>
+
+        <button type="submit" id="btnVerifyOtp" class="btn-wa-primary">
+          <span id="btnVerifyIcon">✓</span>
+          <span id="btnVerifyText">Verify &amp; Sign In</span>
+        </button>
+
+        <div class="resend-box">
+          <span id="timerText">Resend in <strong id="countdownSeconds">60</strong>s</span>
+          <button type="button" id="btnResendOtp" class="btn-resend-otp" disabled>Resend Code</button>
+        </div>
+
+        <div class="wa-auth-footer">
+          <a href="user.html" class="wa-switch-link">
+            <span>Cancel and return to</span>
+            <strong>Standard Login &rarr;</strong>
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Security Guarantee Badge -->
+    <div class="wa-security-badge">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <span>256-Bit Encrypted WhatsApp Verification Gateway</span>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="waToast">
+    <span id="toastIcon">💬</span>
+    <span id="toastMsg">OTP Sent!</span>
+  </div>
+
+  <script>
+    (function () {
+      let currentPhone = '';
+      let timerInterval = null;
+      let countdown = 60;
+
+      const stepPhoneForm = document.getElementById('stepPhoneForm');
+      const stepOtpForm = document.getElementById('stepOtpForm');
+      const phoneInput = document.getElementById('phoneInput');
+      const btnSendOtp = document.getElementById('btnSendOtp');
+      const btnSendOtpText = document.getElementById('btnSendOtpText');
+      const btnSendOtpIcon = document.getElementById('btnSendOtpIcon');
+      const btnVerifyOtp = document.getElementById('btnVerifyOtp');
+      const btnVerifyText = document.getElementById('btnVerifyText');
+      const btnVerifyIcon = document.getElementById('btnVerifyIcon');
+      const authAlert = document.getElementById('authAlert');
+      const targetDisplayNumber = document.getElementById('targetDisplayNumber');
+      const btnChangeNumber = document.getElementById('btnChangeNumber');
+      const btnResendOtp = document.getElementById('btnResendOtp');
+      const timerText = document.getElementById('timerText');
+      const countdownSeconds = document.getElementById('countdownSeconds');
+      const otpInputs = Array.from(document.querySelectorAll('.otp-digit-input'));
+
+      // Helper: Show Alert
+      function showAlert(msg, isInfo = false) {
+        authAlert.textContent = msg;
+        authAlert.classList.remove('hidden');
+        if (isInfo) {
+          authAlert.classList.add('alert-info');
+        } else {
+          authAlert.classList.remove('alert-info');
+        }
+      }
+
+      function hideAlert() {
+        authAlert.classList.add('hidden');
+        authAlert.textContent = '';
+      }
+
+      // Helper: Toast
+      function showToast(msg, icon = '💬') {
+        const toast = document.getElementById('waToast');
+        document.getElementById('toastIcon').textContent = icon;
+        document.getElementById('toastMsg').textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3500);
+      }
+
+      // Format Indian phone number automatically
+      phoneInput.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        // If user typed 12 digits starting with 91, keep digits
+        e.target.value = val;
+      });
+
+      // ==========================================
+      // STEP 1: SEND OTP HANDLER
+      // ==========================================
+      stepPhoneForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideAlert();
+
+        let raw = phoneInput.value.trim().replace(/\D/g, '');
+        if (!raw) {
+          showAlert('Please enter your WhatsApp mobile number.');
+          phoneInput.focus();
+          return;
+        }
+
+        // Auto prefix 91 if 10-digit number
+        if (raw.length === 10) {
+          raw = '91' + raw;
+        } else if (raw.length === 11 && raw.startsWith('0')) {
+          raw = '91' + raw.slice(1);
+        }
+
+        if (raw.length < 10 || raw.length > 15) {
+          showAlert('Invalid phone number length. Please check and try again.');
+          return;
+        }
+
+        currentPhone = raw;
+
+        // Button Loading State
+        btnSendOtp.disabled = true;
+        btnSendOtpIcon.innerHTML = '<div class="btn-spinner"></div>';
+        btnSendOtpText.textContent = 'Sending OTP...';
+
+        try {
+          const res = await fetch('/api/user-auth/whatsapp/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: currentPhone })
+          });
+          const data = await res.json();
+
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Failed to send OTP via WhatsApp.');
+          }
+
+          // Transition to Step 2
+          showToast('OTP sent to your WhatsApp!', '📲');
+          targetDisplayNumber.textContent = data.maskedPhone || ('+' + currentPhone);
+
+          switchToStepOtp();
+          startCountdown();
+        } catch (err) {
+          showAlert(err.message);
+        } finally {
+          btnSendOtp.disabled = false;
+          btnSendOtpIcon.textContent = '💬';
+          btnSendOtpText.textContent = 'Send WhatsApp OTP';
+        }
+      });
+
+      function switchToStepOtp() {
+        hideAlert();
+        stepPhoneForm.classList.add('step-hidden');
+        stepOtpForm.classList.remove('step-hidden');
+        document.getElementById('screenTitle').textContent = 'Enter Verification Code';
+        document.getElementById('screenSubtitle').textContent = 'We sent a 6-digit code to your WhatsApp app.';
+        
+        // Reset OTP inputs & focus on first box
+        otpInputs.forEach(input => {
+          input.value = '';
+          input.classList.remove('filled');
+        });
+        setTimeout(() => otpInputs[0]?.focus(), 150);
+      }
+
+      function switchToStepPhone() {
+        clearInterval(timerInterval);
+        stepOtpForm.classList.add('step-hidden');
+        stepPhoneForm.classList.remove('step-hidden');
+        document.getElementById('screenTitle').textContent = 'WhatsApp Login';
+        document.getElementById('screenSubtitle').textContent = 'તમારો મોબાઇલ નંબર નાખીને WhatsApp પર સુરક્ષિત OTP મેળવો';
+        hideAlert();
+        phoneInput.focus();
+      }
+
+      btnChangeNumber.addEventListener('click', switchToStepPhone);
+
+      // Countdown Timer Logic
+      function startCountdown() {
+        clearInterval(timerInterval);
+        countdown = 60;
+        btnResendOtp.disabled = true;
+        timerText.style.display = 'inline';
+        countdownSeconds.textContent = countdown;
+
+        timerInterval = setInterval(() => {
+          countdown -= 1;
+          countdownSeconds.textContent = countdown;
+          if (countdown <= 0) {
+            clearInterval(timerInterval);
+            timerText.style.display = 'none';
+            btnResendOtp.disabled = false;
+          }
+        }, 1000);
+      }
+
+      // Resend OTP
+      btnResendOtp.addEventListener('click', async () => {
+        if (!currentPhone) return;
+        btnResendOtp.disabled = true;
+        hideAlert();
+
+        try {
+          const res = await fetch('/api/user-auth/whatsapp/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: currentPhone })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.error || 'Failed to resend OTP.');
+
+          showToast('New OTP dispatched to WhatsApp!', '🔄');
+          startCountdown();
+          otpInputs[0]?.focus();
+        } catch (err) {
+          showAlert(err.message);
+          btnResendOtp.disabled = false;
+        }
+      });
+
+      // ==========================================
+      // OTP DIGIT INPUTS BEHAVIOR
+      // ==========================================
+      otpInputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+          const val = e.target.value.replace(/\D/g, '');
+          e.target.value = val ? val[0] : '';
+          
+          if (val) {
+            input.classList.add('filled');
+            if (index < otpInputs.length - 1) {
+              otpInputs[index + 1].focus();
+            } else {
+              // Auto-submit if all 6 boxes are filled!
+              checkAndAutoSubmit();
+            }
+          } else {
+            input.classList.remove('filled');
+          }
+        });
+
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !input.value && index > 0) {
+            otpInputs[index - 1].focus();
+            otpInputs[index - 1].value = '';
+            otpInputs[index - 1].classList.remove('filled');
+          }
+        });
+
+        // Paste event handling: User pastes full 6-digit code
+        input.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+          if (!pasted) return;
+
+          const digits = pasted.slice(0, 6).split('');
+          digits.forEach((digit, i) => {
+            if (otpInputs[i]) {
+              otpInputs[i].value = digit;
+              otpInputs[i].classList.add('filled');
+            }
+          });
+
+          if (digits.length >= 6) {
+            otpInputs[5].focus();
+            checkAndAutoSubmit();
+          } else if (otpInputs[digits.length]) {
+            otpInputs[digits.length].focus();
+          }
+        });
+      });
+
+      function getEnteredOtp() {
+        return otpInputs.map(input => input.value).join('');
+      }
+
+      function checkAndAutoSubmit() {
+        const fullOtp = getEnteredOtp();
+        if (fullOtp.length === 6) {
+          stepOtpForm.dispatchEvent(new Event('submit'));
+        }
+      }
+
+      // ==========================================
+      // STEP 2: VERIFY OTP HANDLER
+      // ==========================================
+      stepOtpForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideAlert();
+
+        const otp = getEnteredOtp();
+        if (otp.length !== 6) {
+          showAlert('Please enter all 6 digits of the verification code.');
+          return;
+        }
+
+        // Loading state
+        btnVerifyOtp.disabled = true;
+        btnVerifyIcon.innerHTML = '<div class="btn-spinner"></div>';
+        btnVerifyText.textContent = 'Verifying Code...';
+
+        try {
+          const res = await fetch('/api/user-auth/whatsapp/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: currentPhone, otp })
+          });
+          const data = await res.json();
+
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Invalid verification code.');
+          }
+
+          // Success!
+          btnVerifyIcon.textContent = '✓';
+          btnVerifyText.textContent = 'Success! Redirecting...';
+          btnVerifyOtp.style.background = '#25d366';
+          showToast('Login successful! Welcome to Pixano Connect.', '🎉');
+
+          setTimeout(() => {
+            window.location.href = data.redirect || '/user.html';
+          }, 800);
+        } catch (err) {
+          showAlert(err.message);
+          btnVerifyOtp.disabled = false;
+          btnVerifyIcon.textContent = '✓';
+          btnVerifyText.textContent = 'Verify & Sign In';
+          otpInputs.forEach(i => i.classList.remove('filled'));
+          otpInputs[0]?.focus();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

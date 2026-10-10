@@ -1,3 +1,4 @@
+require('../../patch-caption');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -54,11 +55,29 @@ class InstanceService {
     const saved = this.readStore();
 
     for (const record of saved) {
-      try {
-        console.log(`[InstanceService] Restoring instance ${record.name || ''} (${record.id})...`);
-        await this.startClient(record.id, record.name, record.accessToken, record.createdAt);
-      } catch (err) {
-        console.error(`[InstanceService] Failed to restore instance ${record.id}:`, err);
+      if (record.status === 'CONNECTED') {
+        try {
+          console.log(`[InstanceService] Restoring active instance ${record.name || ''} (${record.id})...`);
+          await this.startClient(record.id, record.name, record.accessToken, record.createdAt);
+        } catch (err) {
+          console.error(`[InstanceService] Failed to restore instance ${record.id}:`, err);
+        }
+      } else {
+        this.instances.set(record.id, {
+          id: record.id,
+          name: record.name,
+          accessToken: record.accessToken,
+          createdAt: record.createdAt,
+          status: 'QR_READY',
+          qrCodeRaw: null,
+          qrCodeDataUrl: null,
+          clientInfo: null,
+          lastConnectedAt: record.lastConnectedAt,
+          lastDisconnectedAt: record.lastDisconnectedAt,
+          lifecycleVersion: Date.now(),
+          client: null,
+          initPromise: null
+        });
       }
     }
     console.log(`[InstanceService] Multi-Instance Manager loaded ${saved.length} instance(s).`);
@@ -79,13 +98,50 @@ class InstanceService {
   }
 
   /**
+   * Terminate any orphaned Chrome processes and clean stale lockfiles for an instance
+   */
+  cleanOrphanedBrowser(instanceId) {
+    if (process.platform === 'win32') {
+      try {
+        const { execSync } = require('child_process');
+        execSync(
+          `powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name = 'chrome.exe'\\" | Where-Object { $_.CommandLine -like '*session-${instanceId}*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`,
+          { stdio: 'ignore', timeout: 5000 }
+        );
+      } catch (_) {}
+    } else {
+      try {
+        const { execSync } = require('child_process');
+        execSync(`pkill -9 -f "session-${instanceId}"`, { stdio: 'ignore' });
+      } catch (_) {}
+    }
+
+    try {
+      const sessionDir = path.join(config.authDataPath, `session-${instanceId}`);
+      if (fs.existsSync(sessionDir)) {
+        const lockfile = path.join(sessionDir, 'lockfile');
+        const singletonLock = path.join(sessionDir, 'SingletonLock');
+        if (fs.existsSync(lockfile)) {
+          try { fs.unlinkSync(lockfile); } catch (_) {}
+        }
+        if (fs.existsSync(singletonLock)) {
+          try { fs.unlinkSync(singletonLock); } catch (_) {}
+        }
+      }
+    } catch (_) {}
+  }
+
+  /**
    * Start a single WhatsApp Client instance
    */
   async startClient(instanceId, name, accessToken, createdAt) {
     const existing = this.instances.get(instanceId);
-    if (existing && existing.client) {
+    if (existing && existing.client && existing.status !== 'DISCONNECTED') {
       return existing;
     }
+
+    // Terminate any stale Chrome instances and remove stale locks
+    this.cleanOrphanedBrowser(instanceId);
 
     const state = {
       id: instanceId,
@@ -513,19 +569,23 @@ class InstanceService {
     }
 
     let state = this.instances.get(instanceId);
-    if (!state) {
-      // Check if exists in store, if so start it
+    if (!state || state.status === 'DISCONNECTED' || !state.client) {
+      // Check if exists in store, if so start/restart it
       const record = this.getInstanceRecord(instanceId);
       if (record) {
-        const restarted = await this.startClient(record.id, record.name, record.accessToken, record.createdAt);
-        const qrUrl = restarted.qrCodeDataUrl || restarted.qrCodeRaw;
+        if (state && state.client) {
+          try { await state.client.destroy().catch(() => {}); } catch (_) {}
+        }
+        this.instances.delete(instanceId);
+        state = await this.startClient(record.id, record.name, record.accessToken, record.createdAt);
+        const qrUrl = state.qrCodeDataUrl || state.qrCodeRaw;
         return {
-          status: restarted.status,
-          isConnected: restarted.status === 'CONNECTED',
-          qrReady: restarted.status === 'QR_READY' || Boolean(qrUrl),
+          status: state.status,
+          isConnected: state.status === 'CONNECTED',
+          qrReady: state.status === 'QR_READY' || Boolean(qrUrl),
           qr: qrUrl,
-          qrDataUrl: restarted.qrCodeDataUrl,
-          qrRaw: restarted.qrCodeRaw
+          qrDataUrl: state.qrCodeDataUrl,
+          qrRaw: state.qrCodeRaw
         };
       }
       return null;
@@ -679,10 +739,22 @@ class InstanceService {
       }
     }
 
-    // Send Message with automatic LID fallback recovery
+    // Send Message with automatic LID fallback recovery:
+    // - Image + Text -> client.sendMessage(targetJid, media, { caption: captionText })
+    // - Only Image   -> client.sendMessage(targetJid, media)
+    // - Only Text    -> client.sendMessage(targetJid, msgText)
+    const hasOptions = sendOptions && Object.keys(sendOptions).length > 0;
+    console.log("=== SEND MESSAGE DEBUG ===");
+    console.log("Media object type:", typeof payload);
+    console.log("Media mimetype:", payload?.mimetype);
+    console.log("Options object:", JSON.stringify(sendOptions));
+    console.log("Options.caption:", sendOptions?.caption);
+    console.log("=== SEND MESSAGE DEBUG END ===");
     let sent = null;
     try {
-      sent = await state.client.sendMessage(targetJid, payload, sendOptions);
+      sent = hasOptions
+        ? await state.client.sendMessage(targetJid, payload, sendOptions)
+        : await state.client.sendMessage(targetJid, payload);
     } catch (sendErr) {
       console.warn(`[InstanceService] [${instanceId}] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
 
@@ -690,7 +762,9 @@ class InstanceService {
       if (lidInfo && lidInfo.lid && lidInfo.lid !== targetJid) {
         try {
           console.log(`[InstanceService] [${instanceId}] Retrying send directly to LID: ${lidInfo.lid}`);
-          sent = await state.client.sendMessage(lidInfo.lid, payload, sendOptions);
+          sent = hasOptions
+            ? await state.client.sendMessage(lidInfo.lid, payload, sendOptions)
+            : await state.client.sendMessage(lidInfo.lid, payload);
         } catch (lidRetryErr) {
           console.warn(`[InstanceService] [${instanceId}] Direct LID send failed:`, lidRetryErr.message);
         }
@@ -700,7 +774,9 @@ class InstanceService {
       if (!sent && targetJid !== chatId) {
         try {
           console.log(`[InstanceService] [${instanceId}] Retrying send to standard chatId: ${chatId}`);
-          sent = await state.client.sendMessage(chatId, payload, sendOptions);
+          sent = hasOptions
+            ? await state.client.sendMessage(chatId, payload, sendOptions)
+            : await state.client.sendMessage(chatId, payload);
         } catch (chatRetryErr) {
           console.warn(`[InstanceService] [${instanceId}] Standard chatId send failed:`, chatRetryErr.message);
         }
@@ -742,6 +818,9 @@ class InstanceService {
         } catch (_) {}
       }
     }
+
+    // Ensure Chrome processes are killed so Windows unlocks the directory
+    this.cleanOrphanedBrowser(instanceId);
 
     // Remove session directory on disk
     const sessionDir = path.join(config.authDataPath, `session-${instanceId}`);

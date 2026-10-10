@@ -1,3 +1,4 @@
+require('../../patch-caption');
 const path = require('path');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode');
@@ -346,6 +347,16 @@ class WhatsAppService {
   async primeContactLid(client, targetJid) {
     if (!client || !client.pupPage) return null;
 
+    if (!client.pupPage.__patchConsoleAttached) {
+      client.pupPage.__patchConsoleAttached = true;
+      client.pupPage.on('console', msg => {
+        const txt = msg.text();
+        if (txt.includes('[PATCH')) {
+          console.log(txt);
+        }
+      });
+    }
+
     try {
       return await client.pupPage.evaluate(async (chatId) => {
         // 1. Safe patch for LID migration gating to prevent unhandled throws
@@ -417,29 +428,63 @@ class WhatsAppService {
               sendMsgModule.__chatActionPatched = true;
               const origAddAndSend = sendMsgModule.addAndSendMsgToChat;
               sendMsgModule.addAndSendMsgToChat = function(chat, message) {
+                console.log("[PATCH addAndSendMsgToChat CALLED]");
+                let pendingCap = (window.WWebJS && window.WWebJS.__pendingCaption) || (message ? message.caption : undefined);
+                if (pendingCap && typeof pendingCap === 'string' && !pendingCap.startsWith('data:')) {
+                  pendingCap = pendingCap.trim();
+                } else {
+                  pendingCap = null;
+                }
+                console.log("[PATCH] resolved caption to apply:", pendingCap);
+
                 if (message) {
                   try {
                     delete message.__x_id;
-                    // Restore and ensure genuine user caption
-                    const pendingCap = (window.WWebJS && window.WWebJS.__pendingCaption) || message.caption;
-                    if (pendingCap && typeof pendingCap === 'string' && !pendingCap.startsWith('data:')) {
+                    if (pendingCap) {
                       message.caption = pendingCap;
                       message.isCaptionByUser = true;
-                      if (message.mediaData) {
-                        message.mediaData.caption = pendingCap;
-                        if (typeof message.mediaData.set === 'function') {
-                          message.mediaData.set('caption', pendingCap);
-                        }
+                      if (!message.mediaData) {
+                        message.mediaData = {};
+                      }
+                      message.mediaData.caption = pendingCap;
+                      if (typeof message.mediaData.set === 'function') {
+                        message.mediaData.set('caption', pendingCap);
                       }
                     } else if (message.caption && typeof message.caption === 'string' && message.caption.startsWith('data:')) {
                       message.caption = '';
                     }
-                    if (window.WWebJS) {
-                      window.WWebJS.__pendingCaption = null;
-                    }
+                    console.log("[PATCH] message.caption after patch:", message.caption);
                   } catch (_) {}
                 }
-                return origAddAndSend.apply(this, arguments);
+
+                const result = origAddAndSend.apply(this, arguments);
+
+                // Ensure newly instantiated MsgModel also preserves caption in attributes and mediaData
+                if (result && Array.isArray(result) && result[0] && typeof result[0].then === 'function' && pendingCap) {
+                  result[0].then((msgModel) => {
+                    if (msgModel) {
+                      try {
+                        msgModel.caption = pendingCap;
+                        msgModel.isCaptionByUser = true;
+                        if (typeof msgModel.set === 'function') {
+                          msgModel.set('caption', pendingCap);
+                          msgModel.set('isCaptionByUser', true);
+                        }
+                        if (msgModel.mediaData) {
+                          msgModel.mediaData.caption = pendingCap;
+                          if (typeof msgModel.mediaData.set === 'function') {
+                            msgModel.mediaData.set('caption', pendingCap);
+                          }
+                        }
+                      } catch (_) {}
+                    }
+                  }).catch(() => {});
+                }
+
+                if (window.WWebJS) {
+                  window.WWebJS.__pendingCaption = null;
+                }
+                return result;
               };
             }
           }
@@ -582,8 +627,17 @@ class WhatsAppService {
       }
     }
 
+    const hasOptions = sendOptions && Object.keys(sendOptions).length > 0;
+    console.log("=== SEND MESSAGE DEBUG ===");
+    console.log("Media object type:", typeof payload);
+    console.log("Media mimetype:", payload?.mimetype);
+    console.log("Options object:", JSON.stringify(sendOptions));
+    console.log("Options.caption:", sendOptions?.caption);
+    console.log("=== SEND MESSAGE DEBUG END ===");
     try {
-      response = await this.client.sendMessage(targetJid, payload, sendOptions);
+      response = hasOptions
+        ? await this.client.sendMessage(targetJid, payload, sendOptions)
+        : await this.client.sendMessage(targetJid, payload);
     } catch (sendErr) {
       console.warn(`[WhatsAppService] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
 
@@ -591,7 +645,9 @@ class WhatsAppService {
       if (lidInfo && lidInfo.lid && lidInfo.lid !== targetJid) {
         try {
           console.log(`[WhatsAppService] Retrying send directly to LID: ${lidInfo.lid}`);
-          response = await this.client.sendMessage(lidInfo.lid, payload, sendOptions);
+          response = hasOptions
+            ? await this.client.sendMessage(lidInfo.lid, payload, sendOptions)
+            : await this.client.sendMessage(lidInfo.lid, payload);
         } catch (lidRetryErr) {
           console.warn('[WhatsAppService] Direct LID send failed:', lidRetryErr.message);
         }
@@ -601,7 +657,9 @@ class WhatsAppService {
       if (!response && targetJid !== jid) {
         try {
           console.log(`[WhatsAppService] Retrying send to standard jid: ${jid}`);
-          response = await this.client.sendMessage(jid, payload, sendOptions);
+          response = hasOptions
+            ? await this.client.sendMessage(jid, payload, sendOptions)
+            : await this.client.sendMessage(jid, payload);
         } catch (jidRetryErr) {
           console.warn('[WhatsAppService] Standard jid send failed:', jidRetryErr.message);
         }

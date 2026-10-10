@@ -10,11 +10,16 @@ async function getDatabase() {
   if (!connectPromise) {
     client = new MongoClient(config.mongoUri);
     connectPromise = client.connect()
-      .then(() => {
+      .then(async () => {
         database = client.db(config.mongoDbName);
-        return database.collection('users').createIndex({ username: 1 }, { unique: true });
+        await database.collection('users').createIndex({ username: 1 }, { unique: true });
+        await database.collection('users').createIndex({ email: 1 }, { unique: true });
+        await database.collection('templates').createIndex({ userId: 1, code: 1 }, { unique: true });
+        await database.collection('templates').createIndex({ userId: 1, id: 1 });
+        await database.collection('otp_verifications').createIndex({ phone: 1 });
+        await database.collection('otp_verifications').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+        return database;
       })
-      .then(() => database.collection('users').createIndex({ email: 1 }, { unique: true }))
       .then(() => database)
       .catch((error) => {
         connectPromise = null;

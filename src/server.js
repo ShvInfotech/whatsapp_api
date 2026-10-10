@@ -1,3 +1,4 @@
+require('../patch-caption');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
@@ -40,6 +41,10 @@ function createApp() {
     res.sendFile(path.join(__dirname, '../public/user.html'));
   });
 
+  app.get(['/whatsapp-login', '/whatsapp-login.html', '/login-otp'], (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/whatsapp-login.html'));
+  });
+
   app.get('/API_DOCS.md', (req, res) => {
     res.sendFile(path.join(__dirname, '../API_DOCS.md'));
   });
@@ -65,6 +70,8 @@ function createApp() {
 
   app.post('/api/user-auth/register', (req, res) => userController.register(req, res));
   app.post('/api/user-auth/login', (req, res) => userController.login(req, res));
+  app.post('/api/user-auth/whatsapp/send-otp', (req, res) => userController.sendWhatsAppOtp(req, res));
+  app.post('/api/user-auth/whatsapp/verify-otp', (req, res) => userController.verifyWhatsAppOtp(req, res));
   app.post('/api/user-auth/logout', (req, res) => userController.logout(req, res));
   app.get('/api/user-auth/me', requireUser, (req, res) => userController.me(req, res));
 
