@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.3.2" />
+  <link rel="stylesheet" href="style.css?v=3.3.3" />
 </head>
 <body class="auth-required admin-console">
 
@@ -175,7 +175,7 @@
   <!-- ============================================== -->
   <!-- 2-COLUMN WORKSPACE: LEFT SIDEBAR + MAIN PANEL  -->
   <!-- ============================================== -->
-  <div class="admin-workspace-layout main-content">
+  <div class="admin-workspace-layout">
     <!-- LEFT SIDEBAR -->
     <aside class="admin-sidebar-left" id="adminSidebar">
       <div class="admin-sidebar-nav">
@@ -449,13 +449,13 @@
             <table class="admin-table users-admin-table">
               <thead>
                 <tr>
-                  <th style="width: 4%; padding-left: 1.25rem;">#</th>
-                  <th style="width: 28%;">USER</th>
+                  <th style="width: 5%; padding-left: 1.75rem;">#</th>
+                  <th style="width: 26%;">USER</th>
                   <th style="width: 14%;">PLAN</th>
                   <th style="width: 18%;">CREDITS &amp; QUOTA</th>
-                  <th style="width: 16%;">WHATSAPP DEVICE</th>
+                  <th style="width: 15%;">WHATSAPP DEVICE</th>
                   <th style="width: 10%;">STATUS</th>
-                  <th style="width: 10%; text-align: right; padding-right: 1.25rem;">ACTIONS</th>
+                  <th style="width: 12%; text-align: right; padding-right: 1.75rem;">ACTIONS</th>
                 </tr>
               </thead>
               <tbody id="adminUsersTableBody">
@@ -1484,12 +1484,12 @@ Content-Type: application/json
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      padding: 0.85rem 0.75rem !important;
+      padding: 0.95rem 1rem !important;
       border-bottom: 1px solid #e2e8f0;
       white-space: nowrap;
     }
     .users-admin-table td {
-      padding: 0.85rem 0.75rem !important;
+      padding: 0.95rem 1rem !important;
       border-bottom: 1px solid #f1f5f9;
       vertical-align: middle;
       font-size: 0.82rem;
@@ -1501,9 +1501,13 @@ Content-Type: application/json
     .users-admin-table tbody tr:hover {
       background: #f8fafc;
     }
+    .users-admin-table th:first-child,
+    .users-admin-table td:first-child {
+      padding-left: 1.75rem !important;
+    }
     .users-admin-table th:last-child,
     .users-admin-table td:last-child {
-      padding-right: 1.25rem !important;
+      padding-right: 1.75rem !important;
       text-align: right;
     }
 
@@ -1785,6 +1789,6 @@ Content-Type: application/json
   <div id="toast" class="toast hidden"></div>
 
   <!-- Admin Controller Script -->
-  <script src="app.js?v=3.3.2"></script>
+  <script src="app.js?v=3.3.3"></script>
 </body>
 </html>

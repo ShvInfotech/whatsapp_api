@@ -695,11 +695,14 @@ class InstanceService {
       console.warn(`[InstanceService] [${instanceId}] LID priming warning:`, lidErr.message);
     }
 
-    // Prepare payload (media or text)
-    let payload = msgText;
-    let sendOptions = {};
+    const captionText = msgText || (mediaOptions && mediaOptions.caption ? mediaOptions.caption.toString().trim() : '');
+
+    console.log(`[InstanceService] [${instanceId}] Send request -> recipient: ${sanitized}, message length: ${msgText.length}, hasImage: ${hasMedia}, caption length: ${captionText.length}`);
+
+    // Build media attachment if provided
+    let media = null;
     if (hasMedia) {
-      let media = await buildMessageMedia(mediaOptions);
+      media = await buildMessageMedia(mediaOptions);
       if (!media) {
         throw new Error('Could not parse image attachment.');
       }
@@ -739,62 +742,75 @@ class InstanceService {
           console.warn(`[InstanceService] [${instanceId}] WebP to JPEG conversion warning:`, convErr.message);
         }
       }
-
-      payload = media;
-      // Always attach the text as the image caption so the user's message is
-      // never lost when an image is sent alongside it.
-      const captionText = msgText || (mediaOptions && mediaOptions.caption ? mediaOptions.caption.toString().trim() : '');
-      if (captionText) {
-        sendOptions = { caption: captionText };
-      }
     }
 
-    // Send Message with automatic LID fallback recovery:
-    // - Image + Text -> client.sendMessage(targetJid, media, { caption: captionText })
-    // - Only Image   -> client.sendMessage(targetJid, media)
-    // - Only Text    -> client.sendMessage(targetJid, msgText)
-    const hasOptions = sendOptions && Object.keys(sendOptions).length > 0;
-    console.log("=== SEND MESSAGE DEBUG ===");
-    console.log("Media object type:", typeof payload);
-    console.log("Media mimetype:", payload?.mimetype);
-    console.log("Options object:", JSON.stringify(sendOptions));
-    console.log("Options.caption:", sendOptions?.caption);
-    console.log("=== SEND MESSAGE DEBUG END ===");
+    // Helper to send content with LID & standard chatId recovery
+    const sendToTarget = async (content, options = null) => {
+      let result = null;
+      const hasOpts = options && Object.keys(options).length > 0;
+      try {
+        result = hasOpts
+          ? await state.client.sendMessage(targetJid, content, options)
+          : await state.client.sendMessage(targetJid, content);
+      } catch (sendErr) {
+        console.warn(`[InstanceService] [${instanceId}] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
+
+        // 1. Try sending directly to LID if available and different from targetJid
+        if (lidInfo && lidInfo.lid && lidInfo.lid !== targetJid) {
+          try {
+            console.log(`[InstanceService] [${instanceId}] Retrying send directly to LID: ${lidInfo.lid}`);
+            result = hasOpts
+              ? await state.client.sendMessage(lidInfo.lid, content, options)
+              : await state.client.sendMessage(lidInfo.lid, content);
+          } catch (lidRetryErr) {
+            console.warn(`[InstanceService] [${instanceId}] Direct LID send failed:`, lidRetryErr.message);
+          }
+        }
+
+        // 2. Try sending to raw chatId if target was different
+        if (!result && targetJid !== chatId) {
+          try {
+            console.log(`[InstanceService] [${instanceId}] Retrying send to standard chatId: ${chatId}`);
+            result = hasOpts
+              ? await state.client.sendMessage(chatId, content, options)
+              : await state.client.sendMessage(chatId, content);
+          } catch (chatRetryErr) {
+            console.warn(`[InstanceService] [${instanceId}] Standard chatId send failed:`, chatRetryErr.message);
+          }
+        }
+
+        if (!result) {
+          throw sendErr;
+        }
+      }
+      return result;
+    };
+
+    // Send Message:
+    // 1. Image + Text (<= 1024 chars): client.sendMessage(targetJid, media, { caption: message })
+    // 2. Image + Text (> 1024 chars): fallback: send image first, 2s delay, then send text separately
+    // 3. Only Image: client.sendMessage(targetJid, media)
+    // 4. Only Text: client.sendMessage(targetJid, msgText)
     let sent = null;
-    try {
-      sent = hasOptions
-        ? await state.client.sendMessage(targetJid, payload, sendOptions)
-        : await state.client.sendMessage(targetJid, payload);
-    } catch (sendErr) {
-      console.warn(`[InstanceService] [${instanceId}] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
-
-      // 1. Try sending directly to LID if available and different from targetJid
-      if (lidInfo && lidInfo.lid && lidInfo.lid !== targetJid) {
-        try {
-          console.log(`[InstanceService] [${instanceId}] Retrying send directly to LID: ${lidInfo.lid}`);
-          sent = hasOptions
-            ? await state.client.sendMessage(lidInfo.lid, payload, sendOptions)
-            : await state.client.sendMessage(lidInfo.lid, payload);
-        } catch (lidRetryErr) {
-          console.warn(`[InstanceService] [${instanceId}] Direct LID send failed:`, lidRetryErr.message);
+    if (hasMedia) {
+      if (captionText) {
+        if (captionText.length <= 1024) {
+          console.log(`[InstanceService] [${instanceId}] Sending combined photo + caption (${captionText.length} chars) to ${targetJid}`);
+          sent = await sendToTarget(media, { caption: captionText });
+        } else {
+          console.log(`[InstanceService] [${instanceId}] Caption exceeds 1024 chars (${captionText.length} chars). Fallback: sending image first, then text after 2s delay.`);
+          sent = await sendToTarget(media);
+          await new Promise((r) => setTimeout(r, 2000));
+          const textSent = await sendToTarget(captionText);
+          if (textSent) sent = textSent;
         }
+      } else {
+        console.log(`[InstanceService] [${instanceId}] Sending photo only to ${targetJid}`);
+        sent = await sendToTarget(media);
       }
-
-      // 2. Try sending to raw chatId if target was different
-      if (!sent && targetJid !== chatId) {
-        try {
-          console.log(`[InstanceService] [${instanceId}] Retrying send to standard chatId: ${chatId}`);
-          sent = hasOptions
-            ? await state.client.sendMessage(chatId, payload, sendOptions)
-            : await state.client.sendMessage(chatId, payload);
-        } catch (chatRetryErr) {
-          console.warn(`[InstanceService] [${instanceId}] Standard chatId send failed:`, chatRetryErr.message);
-        }
-      }
-
-      if (!sent) {
-        throw sendErr;
-      }
+    } else {
+      console.log(`[InstanceService] [${instanceId}] Sending text message only (${msgText.length} chars) to ${targetJid}`);
+      sent = await sendToTarget(msgText);
     }
 
     const messageId = (sent && sent.id && sent.id._serialized)

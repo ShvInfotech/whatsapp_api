@@ -36,7 +36,7 @@ async function buildMessageMedia(input) {
   if (input instanceof MessageMedia) return input;
 
   try {
-    // 1. Buffer input
+    // 1. Buffer input (direct Buffer or multer file.buffer)
     if (Buffer.isBuffer(input)) {
       const b64 = input.toString('base64');
       const mime = detectMimeType(b64) || 'image/jpeg';
@@ -51,10 +51,12 @@ async function buildMessageMedia(input) {
 
       // Data URL (e.g. data:image/png;base64,iVBOR...)
       if (trimmed.startsWith('data:')) {
-        const match = trimmed.match(/^data:([^;]+);base64,(.+)$/s);
-        if (match) {
-          const mime = match[1] || 'image/jpeg';
-          const base64Data = match[2].trim().replace(/\s+/g, '');
+        const commaIdx = trimmed.indexOf(',');
+        if (commaIdx !== -1) {
+          const header = trimmed.slice(0, commaIdx);
+          const base64Data = trimmed.slice(commaIdx + 1).trim().replace(/\s+/g, '');
+          const mimeMatch = header.match(/^data:([^;,]+)/i);
+          const mime = (mimeMatch ? mimeMatch[1] : null) || detectMimeType(base64Data) || 'image/jpeg';
           const ext = getExtension(mime);
           return new MessageMedia(mime, base64Data, `attachment.${ext}`);
         }
@@ -72,8 +74,17 @@ async function buildMessageMedia(input) {
       return new MessageMedia(mime, cleanBase64, `image.${ext}`);
     }
 
-    // 3. Object input
+    // 3. Object input (e.g. multer file object or { data, mimetype, filename, ... })
     if (typeof input === 'object') {
+      // Check for multer file object with buffer
+      if (input.buffer && Buffer.isBuffer(input.buffer)) {
+        const b64 = input.buffer.toString('base64');
+        const mime = input.mimetype || detectMimeType(b64) || 'image/jpeg';
+        const ext = getExtension(mime);
+        const filename = input.originalname || input.filename || `attachment.${ext}`;
+        return new MessageMedia(mime, b64, filename);
+      }
+
       const url = input.mediaUrl || input.url || input.imageUrl;
       if (url && typeof url === 'string' && /^https?:\/\//i.test(url.trim())) {
         return await MessageMedia.fromUrl(url.trim(), { unsafeMime: true });
@@ -90,10 +101,12 @@ async function buildMessageMedia(input) {
       if (typeof data === 'string') {
         const trimmed = data.trim();
         if (trimmed.startsWith('data:')) {
-          const match = trimmed.match(/^data:([^;]+);base64,(.+)$/s);
-          if (match) {
-            mime = mime || match[1] || 'image/jpeg';
-            data = match[2].trim().replace(/\s+/g, '');
+          const commaIdx = trimmed.indexOf(',');
+          if (commaIdx !== -1) {
+            const header = trimmed.slice(0, commaIdx);
+            data = trimmed.slice(commaIdx + 1).trim().replace(/\s+/g, '');
+            const mimeMatch = header.match(/^data:([^;,]+)/i);
+            mime = mime || (mimeMatch ? mimeMatch[1] : null);
           }
         } else if (/^https?:\/\//i.test(trimmed)) {
           return await MessageMedia.fromUrl(trimmed, { unsafeMime: true });
@@ -103,6 +116,7 @@ async function buildMessageMedia(input) {
       }
 
       if (data && typeof data === 'string') {
+        data = data.replace(/\s+/g, '');
         mime = mime || detectMimeType(data) || 'image/jpeg';
         const ext = getExtension(mime);
         filename = filename || `attachment.${ext}`;

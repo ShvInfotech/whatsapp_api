@@ -838,6 +838,21 @@ userSinglePhoneEl?.addEventListener('paste', () => {
   }, 30);
 });
 
+// Variable substitution helper for templates ({name}, {{name}}, {phone}, {{phone}}, etc.)
+function replaceMessageVariables(template, contact = {}) {
+  if (!template) return '';
+  let text = String(template);
+  const name = contact.name || '';
+  const phone = contact.phone || '';
+  // Replace {name}, {{name}}, {customer_name}, {{customer_name}}
+  text = text.replace(/\{\{\s*name\s*\}\}|\{\s*name\s*\}|\{\{\s*customer_name\s*\}\}|\{\s*customer_name\s*\}/gi, name || phone);
+  // Replace {phone}, {{phone}}, {number}, {{number}}, {mobile}, {{mobile}}
+  text = text.replace(/\{\{\s*phone\s*\}\}|\{\s*phone\s*\}|\{\{\s*number\s*\}\}|\{\s*number\s*\}|\{\{\s*mobile\s*\}\}|\{\s*mobile\s*\}/gi, phone);
+  return text;
+}
+
+const bulkContactsMap = new Map();
+
 if (userSingleForm) {
   userSingleForm.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -858,15 +873,16 @@ if (userSingleForm) {
     const button = document.getElementById('userSendSingle');
     button.disabled = true;
     try {
+      const finalMessage = replaceMessageVariables(message, { phone, name: '' });
       const payload = {
         phoneNumber: phone,
-        message: message
+        message: finalMessage
       };
       if (attachedSingleMedia) {
         payload.media = attachedSingleMedia.data;
         payload.filename = attachedSingleMedia.name;
         payload.mimetype = attachedSingleMedia.mime;
-        payload.caption = message;
+        payload.caption = finalMessage;
       }
 
       const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/send-message`, {
@@ -1067,11 +1083,22 @@ if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
           const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
           for (const row of rows) {
             if (!Array.isArray(row)) continue;
+            let phoneFound = null;
+            let nameFound = null;
             for (const cell of row) {
               const formatted = formatToIndianWhatsAppNumber(cell);
               if (formatted && formatted.length >= 10 && formatted.length <= 15) {
-                extractedNumbers.push(formatted);
+                if (!phoneFound) phoneFound = formatted;
+              } else if (typeof cell === 'string' && cell.trim() && !nameFound) {
+                const trimmedCell = cell.trim();
+                if (!/^\d+$/.test(trimmedCell)) {
+                  nameFound = trimmedCell;
+                }
               }
+            }
+            if (phoneFound) {
+              extractedNumbers.push(phoneFound);
+              if (nameFound) bulkContactsMap.set(phoneFound, nameFound);
             }
           }
         }
@@ -1081,11 +1108,22 @@ if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
         const lines = text.split(/[\r\n]+/);
         for (const line of lines) {
           const cells = line.split(/[,;\t]+/);
+          let phoneFound = null;
+          let nameFound = null;
           for (const cell of cells) {
             const formatted = formatToIndianWhatsAppNumber(cell);
             if (formatted && formatted.length >= 10 && formatted.length <= 15) {
-              extractedNumbers.push(formatted);
+              if (!phoneFound) phoneFound = formatted;
+            } else if (typeof cell === 'string' && cell.trim() && !nameFound) {
+              const trimmedCell = cell.trim();
+              if (!/^\d+$/.test(trimmedCell)) {
+                nameFound = trimmedCell;
+              }
             }
+          }
+          if (phoneFound) {
+            extractedNumbers.push(phoneFound);
+            if (nameFound) bulkContactsMap.set(phoneFound, nameFound);
           }
         }
       }
@@ -1201,7 +1239,7 @@ if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
   userBulkNumbers.addEventListener('input', updateUserBulkCounts);
   userBulkMessage.addEventListener('input', updateUserBulkCounts);
   userDelayRange.addEventListener('input', updateUserDelay);
-  document.getElementById('userClearNumbers')?.addEventListener('click', () => { userBulkNumbers.value = ''; updateUserBulkCounts(); });
+  document.getElementById('userClearNumbers')?.addEventListener('click', () => { userBulkNumbers.value = ''; bulkContactsMap.clear(); updateUserBulkCounts(); });
   document.getElementById('userClearLog')?.addEventListener('click', () => {
     document.getElementById('userLogTableBody').innerHTML = '<tr class="empty-row"><td colspan="4">No messages sent yet. Add numbers and click Start Sending.</td></tr>';
     updateUserBulkProgress(0, 0, 0, 0);
@@ -1296,15 +1334,17 @@ if (userBulkForm && userBulkNumbers && userBulkMessage && userDelayRange) {
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
       try {
+        const contactName = bulkContactsMap.get(phone) || '';
+        const finalMessage = replaceMessageVariables(message, { phone, name: contactName });
         const payload = {
           phoneNumber: phone,
-          message: message
+          message: finalMessage
         };
         if (attachedBulkMedia) {
           payload.media = attachedBulkMedia.data;
           payload.filename = attachedBulkMedia.name;
           payload.mimetype = attachedBulkMedia.mime;
-          payload.caption = message;
+          payload.caption = finalMessage;
         }
 
         const response = await api(`/api/user/instances/${encodeURIComponent(myInstance.id)}/send-message`, {

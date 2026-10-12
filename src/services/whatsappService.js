@@ -436,14 +436,12 @@ class WhatsAppService {
               sendMsgModule.__chatActionPatched = true;
               const origAddAndSend = sendMsgModule.addAndSendMsgToChat;
               sendMsgModule.addAndSendMsgToChat = function(chat, message) {
-                console.log("[PATCH addAndSendMsgToChat CALLED]");
                 let pendingCap = (window.WWebJS && window.WWebJS.__pendingCaption) || (message ? message.caption : undefined);
                 if (pendingCap && typeof pendingCap === 'string' && !pendingCap.startsWith('data:')) {
                   pendingCap = pendingCap.trim();
                 } else {
                   pendingCap = null;
                 }
-                console.log("[PATCH] resolved caption to apply:", pendingCap);
 
                 if (message) {
                   try {
@@ -458,10 +456,16 @@ class WhatsAppService {
                       if (typeof message.mediaData.set === 'function') {
                         message.mediaData.set('caption', pendingCap);
                       }
+                      if (message.id) {
+                        if (!window.WWebJS.__captionByMsgKey) window.WWebJS.__captionByMsgKey = new Map();
+                        if (message.id._serialized) window.WWebJS.__captionByMsgKey.set(message.id._serialized, pendingCap);
+                        if (message.id.id) window.WWebJS.__captionByMsgKey.set(message.id.id, pendingCap);
+                      }
+                      window.WWebJS.__lastCaption = pendingCap;
+                      window.WWebJS.__lastCaptionTime = Date.now();
                     } else if (message.caption && typeof message.caption === 'string' && message.caption.startsWith('data:')) {
                       message.caption = '';
                     }
-                    console.log("[PATCH] message.caption after patch:", message.caption);
                   } catch (_) {}
                 }
 
@@ -478,6 +482,10 @@ class WhatsAppService {
                           msgModel.set('caption', pendingCap);
                           msgModel.set('isCaptionByUser', true);
                         }
+                        if (msgModel.attributes) {
+                          msgModel.attributes.caption = pendingCap;
+                          msgModel.attributes.isCaptionByUser = true;
+                        }
                         if (msgModel.mediaData) {
                           msgModel.mediaData.caption = pendingCap;
                           if (typeof msgModel.mediaData.set === 'function') {
@@ -488,11 +496,49 @@ class WhatsAppService {
                     }
                   }).catch(() => {});
                 }
-                if (window.WWebJS) {
-                  window.WWebJS.__pendingCaption = null;
-                }
                 return result;
               };
+            }
+
+            // Hook WAWebE2EProtoGenerator so outgoing WebSocket Protobuf ALWAYS contains caption
+            const protoGenModule = window.require ? window.require('WAWebE2EProtoGenerator') : null;
+            if (protoGenModule && !protoGenModule.__captionHookInstalled) {
+              protoGenModule.__captionHookInstalled = true;
+              for (const k of ['createMsgProtobuf', 'getProtobufMessage']) {
+                if (typeof protoGenModule[k] === 'function') {
+                  const origGenFn = protoGenModule[k];
+                  protoGenModule[k] = function(...genArgs) {
+                    const protoResult = origGenFn.apply(this, genArgs);
+                    try {
+                      const targetMsg = protoResult && (protoResult.imageMessage || protoResult.videoMessage || protoResult.documentMessage);
+                      if (targetMsg && !targetMsg.caption) {
+                        const a0 = genArgs[0];
+                        const mKey = (a0 && a0.id && (a0.id._serialized || a0.id.id || a0.id)) || (a0 && a0.__x_id && (a0.__x_id._serialized || a0.__x_id.id)) || null;
+                        let resolved = null;
+                        if (window.WWebJS && window.WWebJS.__captionByMsgKey && mKey) {
+                          resolved = window.WWebJS.__captionByMsgKey.get(mKey) || window.WWebJS.__captionByMsgKey.get(String(mKey));
+                        }
+                        if (!resolved && a0) {
+                          resolved = (typeof a0.caption === 'string' && !a0.caption.startsWith('data:') && a0.caption.trim()) ||
+                                     (a0.attributes && typeof a0.attributes.caption === 'string' && a0.attributes.caption.trim()) ||
+                                     (a0.mediaData && typeof a0.mediaData.caption === 'string' && a0.mediaData.caption.trim()) ||
+                                     null;
+                        }
+                        if (!resolved && genArgs[1] && typeof genArgs[1].caption === 'string' && genArgs[1].caption.trim()) {
+                          resolved = genArgs[1].caption.trim();
+                        }
+                        if (!resolved && window.WWebJS && window.WWebJS.__lastCaption && (Date.now() - (window.WWebJS.__lastCaptionTime || 0) < 120000)) {
+                          resolved = window.WWebJS.__lastCaption;
+                        }
+                        if (resolved) {
+                          targetMsg.caption = resolved;
+                        }
+                      }
+                    } catch (_) {}
+                    return protoResult;
+                  };
+                }
+              }
             }
           }
         } catch (_) {}
@@ -579,14 +625,13 @@ class WhatsAppService {
       console.warn('[WhatsAppService] LID priming warning:', lidErr.message);
     }
 
-    console.log(`[WhatsAppService] Sending ${hasMedia ? 'media ' : ''}message to ${targetJid}...`);
+    const captionText = msgText || (mediaOptions && mediaOptions.caption ? mediaOptions.caption.toString().trim() : '');
 
-    let response = null;
-    let payload = msgText;
-    let sendOptions = {};
+    console.log(`[WhatsAppService] Send request -> recipient: ${cleaned}, message length: ${msgText.length}, hasImage: ${hasMedia}, caption length: ${captionText.length}`);
 
+    let media = null;
     if (hasMedia) {
-      let media = await buildMessageMedia(mediaOptions);
+      media = await buildMessageMedia(mediaOptions);
       if (!media) throw new Error('Could not parse image attachment.');
 
       // Convert WebP to JPEG so WhatsApp Web sends it as a standard photo with caption (not a sticker without caption)
@@ -624,57 +669,75 @@ class WhatsAppService {
           console.warn('[WhatsAppService] WebP to JPEG conversion warning:', convErr.message);
         }
       }
-
-      payload = media;
-      // Always attach the text as the image caption so the user's message is
-      // never lost when an image is sent alongside it.
-      const captionText = msgText || (mediaOptions && mediaOptions.caption ? mediaOptions.caption.toString().trim() : '');
-      if (captionText) {
-        sendOptions = { caption: captionText };
-      }
     }
 
-    const hasOptions = sendOptions && Object.keys(sendOptions).length > 0;
-    console.log("=== SEND MESSAGE DEBUG ===");
-    console.log("Media object type:", typeof payload);
-    console.log("Media mimetype:", payload?.mimetype);
-    console.log("Options object:", JSON.stringify(sendOptions));
-    console.log("Options.caption:", sendOptions?.caption);
-    console.log("=== SEND MESSAGE DEBUG END ===");
-    try {
-      response = hasOptions
-        ? await this.client.sendMessage(targetJid, payload, sendOptions)
-        : await this.client.sendMessage(targetJid, payload);
-    } catch (sendErr) {
-      console.warn(`[WhatsAppService] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
+    // Helper to send content with LID & standard jid recovery
+    const sendToTarget = async (content, options = null) => {
+      let result = null;
+      const hasOpts = options && Object.keys(options).length > 0;
+      try {
+        result = hasOpts
+          ? await this.client.sendMessage(targetJid, content, options)
+          : await this.client.sendMessage(targetJid, content);
+      } catch (sendErr) {
+        console.warn(`[WhatsAppService] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
 
-      // 1. Try sending directly to LID if available and different from targetJid
-      if (lidInfo && lidInfo.lid && lidInfo.lid !== targetJid) {
-        try {
-          console.log(`[WhatsAppService] Retrying send directly to LID: ${lidInfo.lid}`);
-          response = hasOptions
-            ? await this.client.sendMessage(lidInfo.lid, payload, sendOptions)
-            : await this.client.sendMessage(lidInfo.lid, payload);
-        } catch (lidRetryErr) {
-          console.warn('[WhatsAppService] Direct LID send failed:', lidRetryErr.message);
+        // 1. Try sending directly to LID if available and different from targetJid
+        if (lidInfo && lidInfo.lid && lidInfo.lid !== targetJid) {
+          try {
+            console.log(`[WhatsAppService] Retrying send directly to LID: ${lidInfo.lid}`);
+            result = hasOpts
+              ? await this.client.sendMessage(lidInfo.lid, content, options)
+              : await this.client.sendMessage(lidInfo.lid, content);
+          } catch (lidRetryErr) {
+            console.warn('[WhatsAppService] Direct LID send failed:', lidRetryErr.message);
+          }
+        }
+
+        // 2. Try sending to raw jid
+        if (!result && targetJid !== jid) {
+          try {
+            console.log(`[WhatsAppService] Retrying send to standard jid: ${jid}`);
+            result = hasOpts
+              ? await this.client.sendMessage(jid, content, options)
+              : await this.client.sendMessage(jid, content);
+          } catch (jidRetryErr) {
+            console.warn('[WhatsAppService] Standard jid send failed:', jidRetryErr.message);
+          }
+        }
+
+        if (!result) {
+          throw sendErr;
         }
       }
+      return result;
+    };
 
-      // 2. Try sending to raw jid
-      if (!response && targetJid !== jid) {
-        try {
-          console.log(`[WhatsAppService] Retrying send to standard jid: ${jid}`);
-          response = hasOptions
-            ? await this.client.sendMessage(jid, payload, sendOptions)
-            : await this.client.sendMessage(jid, payload);
-        } catch (jidRetryErr) {
-          console.warn('[WhatsAppService] Standard jid send failed:', jidRetryErr.message);
+    // Send Message:
+    // 1. Image + Text (<= 1024 chars): client.sendMessage(targetJid, media, { caption: message })
+    // 2. Image + Text (> 1024 chars): fallback: send image first, 2s delay, then send text separately
+    // 3. Only Image: client.sendMessage(targetJid, media)
+    // 4. Only Text: client.sendMessage(targetJid, msgText)
+    let response = null;
+    if (hasMedia) {
+      if (captionText) {
+        if (captionText.length <= 1024) {
+          console.log(`[WhatsAppService] Sending combined photo + caption (${captionText.length} chars) to ${targetJid}`);
+          response = await sendToTarget(media, { caption: captionText });
+        } else {
+          console.log(`[WhatsAppService] Caption exceeds 1024 chars (${captionText.length} chars). Fallback: sending image first, then text after 2s delay.`);
+          response = await sendToTarget(media);
+          await new Promise((r) => setTimeout(r, 2000));
+          const textResponse = await sendToTarget(captionText);
+          if (textResponse) response = textResponse;
         }
+      } else {
+        console.log(`[WhatsAppService] Sending photo only to ${targetJid}`);
+        response = await sendToTarget(media);
       }
-
-      if (!response) {
-        throw sendErr;
-      }
+    } else {
+      console.log(`[WhatsAppService] Sending text message only (${msgText.length} chars) to ${targetJid}`);
+      response = await sendToTarget(msgText);
     }
 
     console.log('[WhatsAppService] Send response received:', response ? 'Success' : 'Empty');

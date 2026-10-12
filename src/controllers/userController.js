@@ -333,12 +333,6 @@ class UserController {
   }
 
   async sendMessage(req, res) {
-    console.log("=== BACKEND DEBUG START ===");
-    console.log("req.body keys:", Object.keys(req.body || {}));
-    console.log("req.body.caption:", req.body?.caption);
-    console.log("req.body.message:", req.body?.message);
-    console.log("req.body.media length:", req.body?.media?.length);
-    console.log("=== BACKEND DEBUG END ===");
     try {
       if (!instanceService.userOwnsInstance(req.user._id, req.params.id)) {
         return res.status(404).json({ success: false, error: 'WhatsApp instance not found.' });
@@ -356,6 +350,9 @@ class UserController {
 
       // Build media input: prefer data URL / object forms.
       const mediaInput = media || mediaUrl || image || file || (filename && (data || media) ? { filename, mimetype, data: data || media } : null);
+      const hasImage = !!mediaInput;
+
+      console.log(`[UserController SendMessage] recipient: ${phoneNumber}, message length: ${messageText.length}, hasImage: ${hasImage}, caption: "${messageText.slice(0, 50)}${messageText.length > 50 ? '...' : ''}"`);
 
       if (!phoneNumber || !phoneNumber.toString().trim()) {
         return res.status(400).json({ success: false, error: 'Recipient phone number is required.' });

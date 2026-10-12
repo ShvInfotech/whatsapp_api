@@ -813,7 +813,7 @@ function applyUserFilters() {
 
     return `
       <tr>
-        <td style="padding-left: 1.25rem;">
+        <td style="padding-left: 1.75rem;">
           <span class="user-index-num">${idx + 1}</span>
         </td>
         <td>
@@ -848,7 +848,7 @@ function applyUserFilters() {
         </td>
         <td>${instStatusHtml}</td>
         <td>${statusPillHtml}</td>
-        <td style="text-align: right; padding-right: 1.25rem;">
+        <td style="text-align: right; padding-right: 1.75rem;">
           <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.45rem;">
             ${isPending ? `
               <button class="btn-user-approve" type="button" data-user-action="approve" data-user-id="${u.id}" title="Approve account">

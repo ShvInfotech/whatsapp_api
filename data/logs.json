@@ -1,6 +1,60 @@
 [
   {
-
+    "id": "log_8da1383658ff",
+    "userId": "6ab362bf89f5077435419198",
+    "instanceId": "CCF2735942273",
+    "recipient": "919714920969",
+    "type": "media",
+    "preview": "Admission open 2026-27\ntesting message",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-12T11:58:22.309Z"
+  },
+  {
+    "id": "log_751b751c06e8",
+    "userId": "6ab362bf89f5077435419198",
+    "instanceId": "CCF2735942273",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Admission open 2026-27\ntesting message",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-12T11:58:17.035Z"
+  },
+  {
+    "id": "log_c14452694886",
+    "userId": "6ab362bf89f5077435419198",
+    "instanceId": "CCF2735942273",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Dear Customer, this is a friendly reminder that your payment is due. Please review your ac...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-12T11:57:24.718Z"
+  },
+  {
+    "id": "log_4b3952908143",
+    "userId": "6ab362bf89f5077435419198",
+    "instanceId": "CCF2735942273",
+    "recipient": "918140349408",
+    "type": "single",
+    "preview": "Dear Customer, this is a friendly reminder that your payment is due. Please review your ac...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-12T09:11:29.841Z"
+  },
+  {
+    "id": "log_9ddc7172fdbf",
+    "userId": "6ab362bf89f5077435419198",
+    "instanceId": "CCF2735942273",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Dear Customer, this is a friendly reminder that your payment is due. Please review your ac...",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-12T09:10:56.531Z"
+  },
+  {
     "id": "log_bf547507d7b3",
     "userId": "6ab20d1a57d571d629bc6b5d",
     "instanceId": "487CF5A803F19",
@@ -285,7 +339,6 @@
     "status": "sent",
     "error": null,
     "timestamp": "2026-10-08T05:36:03.092Z"
-
   },
   {
     "id": "log_a32025d765bc",
