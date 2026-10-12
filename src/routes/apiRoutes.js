@@ -6,6 +6,7 @@ const whatsappController = require('../controllers/whatsappController');
 const requireAdmin = require('../middlewares/adminAuthMiddleware');
 const requireUser = require('../middlewares/userAuthMiddleware');
 const userController = require('../controllers/userController');
+const uploadController = require('../controllers/uploadController');
 
 /**
  * ====================================================================
@@ -30,6 +31,10 @@ router.get('/send-template', (req, res) => sendBuddyController.handleSendTemplat
 
 // Public client QR scan endpoint (used by /scan.html)
 router.get('/public/instance-qr', (req, res) => instanceController.publicQr(req, res));
+
+// Public Image / Document Upload Endpoint (Returns public URL)
+router.post('/upload', (req, res) => uploadController.handleUpload(req, res));
+router.post('/upload-media', (req, res) => uploadController.handleUpload(req, res));
 
 /**
  * ====================================================================

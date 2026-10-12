@@ -68,34 +68,58 @@ After verification, the password hash is updated dynamically in `data/admin.json
 
 ## 🚀 SendBuddy Compatible Dispatch API
 
-Use this endpoint to connect existing desktop software (VB.NET, C#, Python, PHP) using your original SendBuddy URL structure:
+Use this endpoint to connect existing desktop software (VB.NET, C#, Python, PHP) or web systems:
 
 - **Method:** `GET` or `POST`
 - **Path:** `/api/send`
+- **Capabilities:** Supports **Text Only**, **Image + Caption Combined**, or **Standalone Media**
 - **Authentication:** `instance_id` + `access_token` query or body parameters (no admin cookie required)
 
-### Request URL Format:
+### Request URL Formats:
+
+#### 1. Image + Text (Photo with Caption) - GET:
 ```text
-http://<your-server>/whatsapp_api/api/send?number=919876543210&type=text&message=Your+message+here&instance_id=679B485A1510B&access_token=679b262160af7
+http://<your-server>/api/send?number=919876543210&type=text&message=Invoice+%231042+Attached&media_url=https://example.com/invoice.jpg&instance_id=679B485A1510B&access_token=679b262160af7
+```
+
+#### 2. Text Only - GET:
+```text
+http://<your-server>/api/send?number=919876543210&type=text&message=Your+message+here&instance_id=679B485A1510B&access_token=679b262160af7
 ```
 
 ### Parameters:
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `number` (or `phone`) | string | **Yes** | Recipient mobile number with country code (e.g. `919876543210`) |
+| `message` (or `caption`) | string | **Yes\*** | Text content or Photo caption (\*Required unless sending image only) |
+| `media_url` (or `media`) | string | Optional | Public image URL or Base64 string. When provided with `message`, WhatsApp delivers the photo with the text as caption! |
 | `type` | string | No | Message type (`text` default) |
-| `message` | string | **Yes** | Text message content (URL-encoded) |
 | `instance_id` | string | **Yes** | Client WhatsApp instance identifier |
 | `access_token` | string | **Yes** | Instance secret authorization token |
 
-### VB.NET / C# Code Example:
+### POST Body (JSON Format):
+```json
+POST /api/send
+Content-Type: application/json
+
+{
+  "instance_id": "679B485A1510B",
+  "access_token": "679b262160af7",
+  "number": "919876543210",
+  "message": "Dear Customer, your invoice is attached.",
+  "media_url": "https://example.com/invoice.jpg"
+}
+```
+
+### VB.NET Desktop Example (Image + Caption):
 ```vb
 Dim strMobileNo As String = "919876543210"
 Dim strMessage As String = "Invoice #1042 has been generated."
+Dim strMediaUrl As String = "https://example.com/invoice.jpg" ' Optional image
 Dim strInstance As String = "679B485A1510B"
 Dim strToken As String = "679b262160af7"
 
-Dim requestUrl As String = "http://93.127.198.184/whatsapp_api/api/send?number=" & strMobileNo & "&type=text&message=" & Uri.EscapeDataString(strMessage) & "&instance_id=" & strInstance & "&access_token=" & strToken
+Dim requestUrl As String = "http://<your-server>/api/send?number=" & strMobileNo & "&type=text&message=" & Uri.EscapeDataString(strMessage) & "&media_url=" & Uri.EscapeDataString(strMediaUrl) & "&instance_id=" & strInstance & "&access_token=" & strToken
 
 Dim client As New System.Net.WebClient()
 Dim response As String = client.DownloadString(requestUrl)

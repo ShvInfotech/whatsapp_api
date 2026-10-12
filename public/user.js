@@ -1575,6 +1575,10 @@ function initApiDocsTab(instance) {
   const liveUrl = `${origin}/api/send?number=91XXXXXXXXXX&type=text&message=Hello+from+Pixano+API&instance_id=${encodeURIComponent(instance.id)}&access_token=${encodeURIComponent(instance.accessToken)}`;
   if (docLiveUrl) docLiveUrl.textContent = liveUrl;
 
+  const docLiveMediaUrl = document.getElementById('docLiveMediaUrl');
+  const liveMediaUrl = `${origin}/api/send?number=91XXXXXXXXXX&type=text&message=Hello!+Your+Invoice+Attached&media_url=https://example.com/invoice.jpg&instance_id=${encodeURIComponent(instance.id)}&access_token=${encodeURIComponent(instance.accessToken)}`;
+  if (docLiveMediaUrl) docLiveMediaUrl.textContent = liveMediaUrl;
+
   renderSnippet(activeSnippetLang);
 }
 
@@ -1630,7 +1634,12 @@ document.getElementById('btnCopyDocBaseUrl')?.addEventListener('click', (e) => {
 
 document.getElementById('btnCopyLiveUrl')?.addEventListener('click', (e) => {
   const code = document.getElementById('docLiveUrl')?.textContent;
-  if (code) copyText(code, e.target, '📋 Copy Full URL');
+  if (code) copyText(code, e.target, '📋 Copy Text URL');
+});
+
+document.getElementById('btnCopyLiveMediaUrl')?.addEventListener('click', (e) => {
+  const code = document.getElementById('docLiveMediaUrl')?.textContent;
+  if (code) copyText(code, e.target, '📋 Copy Image+Text URL');
 });
 
 document.getElementById('btnCopySnippet')?.addEventListener('click', (e) => {

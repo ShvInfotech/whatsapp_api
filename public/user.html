@@ -1248,25 +1248,93 @@
             </div>
           </div>
 
-          <!-- SendBuddy Universal Dispatch Card -->
+          <!-- SendBuddy Universal Dispatch Card (Text & Image+Caption) -->
           <div class="card mt-4">
             <div class="card-header">
               <div>
                 <span class="badge-get-post">GET / POST</span>
                 <code class="endpoint-name">/api/send</code>
               </div>
-              <span class="tag-pill tag-instant">SendBuddy Drop-In</span>
+              <span class="tag-pill tag-instant">Image + Text (Caption) Supported</span>
             </div>
             <p class="text-secondary" style="font-size: 0.9rem; margin-top: 0.4rem;">
-              Call via standard HTTP GET query parameters or POST body.
+              Send <strong>Text Messages</strong>, <strong>Image + Text (Photo with Caption)</strong>, or standalone Media from any software, ERP, or website.
             </p>
 
-            <div class="live-url-box">
+            <!-- Live URL 1: Image + Text (Caption) -->
+            <div class="live-url-box mt-3" style="border-left: 4px solid #10b981;">
               <div class="live-url-top">
-                <span class="live-url-badge">⚡ Ready-to-Use Live URL</span>
-                <button type="button" class="btn btn-primary btn-xs" id="btnCopyLiveUrl">📋 Copy Full URL</button>
+                <span class="live-url-badge" style="background: rgba(16, 185, 129, 0.15); color: #059669;">📸 Image + Text (Photo with Caption) URL</span>
+                <button type="button" class="btn btn-primary btn-xs" id="btnCopyLiveMediaUrl">📋 Copy Image+Text URL</button>
               </div>
-              <pre class="live-url-code"><code id="docLiveUrl">Generating your custom API link...</code></pre>
+              <pre class="live-url-code"><code id="docLiveMediaUrl">Generating your custom Image + Caption API link...</code></pre>
+            </div>
+
+            <!-- Live URL 2: Text Only -->
+            <div class="live-url-box mt-3">
+              <div class="live-url-top">
+                <span class="live-url-badge">💬 Text-Only URL</span>
+                <button type="button" class="btn btn-secondary btn-xs" id="btnCopyLiveUrl">📋 Copy Text URL</button>
+              </div>
+              <pre class="live-url-code"><code id="docLiveUrl">Generating your custom Text API link...</code></pre>
+            </div>
+
+            <!-- Parameter Reference Table -->
+            <div class="table-responsive mt-3">
+              <table class="table-clean" style="width: 100%; font-size: 0.85rem;">
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Required</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>number</code></td>
+                    <td>string</td>
+                    <td><span class="tag-pill tag-sent">Yes</span></td>
+                    <td>Recipient phone with country code (e.g. <code>919876543210</code>)</td>
+                  </tr>
+                  <tr>
+                    <td><code>message</code></td>
+                    <td>string</td>
+                    <td><span class="tag-pill tag-sent">Yes*</span></td>
+                    <td>Text message content or Photo Caption (*Required unless sending image only)</td>
+                  </tr>
+                  <tr>
+                    <td><code>media_url</code></td>
+                    <td>string</td>
+                    <td>Optional</td>
+                    <td>Public image URL or Base64 string. <em>When provided with <code>message</code>, WhatsApp delivers the photo with the text as caption!</em></td>
+                  </tr>
+                  <tr>
+                    <td><code>instance_id</code></td>
+                    <td>string</td>
+                    <td><span class="tag-pill tag-sent">Yes</span></td>
+                    <td>Your WhatsApp instance identifier</td>
+                  </tr>
+                  <tr>
+                    <td><code>access_token</code></td>
+                    <td>string</td>
+                    <td><span class="tag-pill tag-sent">Yes</span></td>
+                    <td>Your secret authorization token</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- POST JSON Request Body Sample -->
+            <div class="code-mini-box mt-3">
+              <div class="code-mini-lbl">Or Call via POST Request Body (JSON):</div>
+              <pre><code>{
+  "instance_id": "<span class="tpl-replace-inst">YOUR_INSTANCE_ID</span>",
+  "access_token": "<span class="tpl-replace-tok">YOUR_ACCESS_TOKEN</span>",
+  "number": "919876543210",
+  "message": "Dear Customer, your invoice is attached herewith.",
+  "media_url": "https://example.com/invoice.jpg"
+}</code></pre>
             </div>
           </div>
 

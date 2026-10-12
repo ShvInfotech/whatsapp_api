@@ -748,14 +748,31 @@
               <span class="method get">GET</span>
               <span class="method post">POST</span>
               <code class="endpoint">/api/send</code>
-              <span class="doc-desc" style="color: #16a34a; font-weight: 700;">SendBuddy Desktop Compatible Dispatch API</span>
+              <span class="doc-desc" style="color: #16a34a; font-weight: 700;">SendBuddy Compatible Dispatch API (Text, Image + Caption)</span>
             </div>
             <div class="doc-body">
-              <p>Send single messages directly from desktop accounting or ERP software without modifying existing code.</p>
-              <h5>HTTP URL &amp; Parameters:</h5>
+              <p>Send text messages or <strong>Image + Caption</strong> directly from desktop accounting (Busy, Tally, Marg), ERP, or web software.</p>
+              
+              <h5 style="color: #10b981; font-weight: 700;">1. Image + Text (Photo with Caption) URL:</h5>
+              <pre><code>GET /api/send?number=919876543210&amp;type=text&amp;message=Invoice+%231042+Attached&amp;media_url=https://example.com/invoice.jpg&amp;instance_id=3726C2094FAD4&amp;access_token=2113677e2fdc3cf441b6557e</code></pre>
+
+              <h5>2. Text-Only URL:</h5>
               <pre><code>GET /api/send?number=919876543210&amp;type=text&amp;message=Hello+World&amp;instance_id=3726C2094FAD4&amp;access_token=2113677e2fdc3cf441b6557e</code></pre>
-              <h5>VB.NET Desktop Example:</h5>
-              <pre><code>Dim url As String = "http://93.127.198.184/whatsapp_api/api/send?number=" &amp; strMobile &amp; "&amp;type=text&amp;message=" &amp; Uri.EscapeDataString(strMsg) &amp; "&amp;instance_id=" &amp; strInstance &amp; "&amp;access_token=" &amp; strToken
+
+              <h5>3. POST Request Body (JSON):</h5>
+              <pre><code>POST /api/send
+Content-Type: application/json
+
+{
+  "instance_id": "3726C2094FAD4",
+  "access_token": "2113677e2fdc3cf441b6557e",
+  "number": "919876543210",
+  "message": "Dear Customer, invoice is attached.",
+  "media_url": "https://example.com/invoice.jpg"
+}</code></pre>
+
+              <h5>VB.NET Desktop Example (Image + Caption):</h5>
+              <pre><code>Dim url As String = "http://93.127.198.184/whatsapp_api/api/send?number=" &amp; strMobile &amp; "&amp;type=text&amp;message=" &amp; Uri.EscapeDataString(strMsg) &amp; "&amp;media_url=" &amp; Uri.EscapeDataString(strMediaUrl) &amp; "&amp;instance_id=" &amp; strInstance &amp; "&amp;access_token=" &amp; strToken
 Dim req As HttpWebRequest = WebRequest.Create(url)
 Dim res As HttpWebResponse = req.GetResponse()</code></pre>
             </div>
