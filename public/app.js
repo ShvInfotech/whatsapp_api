@@ -84,7 +84,7 @@ async function restoreAdminSession() {
 
     if (json.data) {
       if (adminDisplayName) adminDisplayName.textContent = json.data.displayName || json.data.username || 'Administrator';
-      if (adminProfileFullName) adminProfileFullName.textContent = json.data.displayName || 'Safe Vault Administrator';
+      if (adminProfileFullName) adminProfileFullName.textContent = json.data.displayName || 'Pixano Connect Administrator';
     }
     return true;
   } catch (_) {
@@ -1535,7 +1535,7 @@ function exportTransactionsCsv() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `safevault_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute('download', `pixanoconnect_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
