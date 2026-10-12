@@ -146,8 +146,15 @@ if (registerForm) {
       if (loginU) loginU.value = username;
       const loginP = document.getElementById('userLoginPassword');
       if (loginP) loginP.value = '';
-      showError(userAuthError, 'Account created! Please sign in with your credentials.');
-      if (userAuthError) userAuthError.style.color = '#008069';
+      const approvalMsg = data.message || 'Account created! Your account is pending admin approval. You will be able to log in once approved by the administrator.';
+      showError(userAuthError, approvalMsg);
+      if (userAuthError) {
+        userAuthError.style.color = '#d97706';
+        userAuthError.style.backgroundColor = '#fef3c7';
+        userAuthError.style.padding = '0.75rem 1rem';
+        userAuthError.style.borderRadius = '8px';
+        userAuthError.style.border = '1px solid #fde68a';
+      }
     } catch (err) {
       showError(registerError, err.message || 'Unable to register.');
     } finally {
@@ -2230,6 +2237,9 @@ function renderTemplatesList() {
           <button type="button" class="btn-tpl-icon" data-action="copy-code" data-code="${tpl.code}" title="Copy template code">
             📋
           </button>
+          <button type="button" class="btn-tpl-icon" data-action="edit-tpl" data-id="${tpl.id}" title="Edit template">
+            ✏️
+          </button>
           ${!tpl.isDefault ? `
             <button type="button" class="btn-tpl-icon danger" data-action="delete-tpl" data-id="${tpl.id}" title="Delete template">
               🗑️
@@ -2256,7 +2266,7 @@ document.getElementById('tplSearchInput')?.addEventListener('input', () => {
   renderTemplatesList();
 });
 
-// Template card action buttons (Test Send, Copy, Delete)
+// Template card action buttons (Test Send, Copy, Edit, Delete)
 document.getElementById('templatesContainer')?.addEventListener('click', async (e) => {
   const testBtn = e.target.closest('[data-action="test-tpl"]');
   if (testBtn) {
@@ -2271,6 +2281,14 @@ document.getElementById('templatesContainer')?.addEventListener('click', async (
     const code = copyBtn.dataset.code;
     copyText(code, copyBtn, '📋');
     showToast(`Template code '${code}' copied!`);
+    return;
+  }
+
+  const editBtn = e.target.closest('[data-action="edit-tpl"]');
+  if (editBtn) {
+    const tplId = editBtn.dataset.id;
+    const targetTpl = allTemplates.find((t) => t.id === tplId);
+    if (targetTpl) openEditTemplateModal(targetTpl);
     return;
   }
 
@@ -2423,12 +2441,56 @@ document.getElementById('tplCustomVarInput')?.addEventListener('keydown', (e) =>
   }
 });
 
-// Modal: Create New Template
+// Modal: Create & Edit Template
 const modalNewTpl = document.getElementById('modalNewTemplate');
+let editingTemplateId = null;
+
+function openEditTemplateModal(tpl) {
+  editingTemplateId = tpl.id;
+  if (!modalNewTpl) return;
+
+  const titleEl = document.getElementById('modalNewTemplateTitle');
+  if (titleEl) titleEl.textContent = '✏️ Edit Message Template';
+
+  const btnText = document.getElementById('btnSaveTemplateText');
+  if (btnText) btnText.textContent = '💾 Update Template';
+
+  const errBox = document.getElementById('tplErrorMsg');
+  if (errBox) errBox.classList.add('hidden');
+
+  const catSelect = document.getElementById('tplCategorySelect');
+  if (catSelect) catSelect.value = tpl.category || 'general';
+
+  const nameInput = document.getElementById('tplNameInput');
+  if (nameInput) nameInput.value = tpl.name || '';
+
+  const codeInput = document.getElementById('tplCodeInput');
+  if (codeInput) {
+    codeInput.value = tpl.code || '';
+    codeInput.readOnly = true;
+    codeInput.title = 'Template code is locked for API stability';
+    codeInput.style.background = '#f1f5f9';
+  }
+
+  const contentInput = document.getElementById('tplContentInput');
+  if (contentInput) contentInput.value = tpl.content || '';
+
+  renderTplCategoryVariables(tpl.category || 'general', false);
+  updateTplModalLivePreview();
+  modalNewTpl.classList.remove('hidden');
+}
 
 document.getElementById('btnOpenNewTemplateModal')?.addEventListener('click', () => {
   if (modalNewTpl) {
+    editingTemplateId = null;
     modalNewTpl.classList.remove('hidden');
+
+    const titleEl = document.getElementById('modalNewTemplateTitle');
+    if (titleEl) titleEl.textContent = '📑 Create Custom Message Template';
+
+    const btnText = document.getElementById('btnSaveTemplateText');
+    if (btnText) btnText.textContent = '💾 Save Template';
+
     const errBox = document.getElementById('tplErrorMsg');
     if (errBox) errBox.classList.add('hidden');
 
@@ -2440,10 +2502,16 @@ document.getElementById('btnOpenNewTemplateModal')?.addEventListener('click', ()
     const codeInput = document.getElementById('tplCodeInput');
     const contentInput = document.getElementById('tplContentInput');
 
+    if (codeInput) {
+      codeInput.readOnly = false;
+      codeInput.title = '';
+      codeInput.style.background = '';
+    }
+
     // Pre-populate with category default if empty
-    if (nameInput && !nameInput.value) nameInput.value = TPL_CATEGORIES[selectedCat].defaultName;
-    if (codeInput && !codeInput.value) codeInput.value = TPL_CATEGORIES[selectedCat].defaultCode;
-    if (contentInput && !contentInput.value) contentInput.value = TPL_CATEGORIES[selectedCat].sampleContent;
+    if (nameInput) nameInput.value = TPL_CATEGORIES[selectedCat]?.defaultName || '';
+    if (codeInput) codeInput.value = TPL_CATEGORIES[selectedCat]?.defaultCode || '';
+    if (contentInput) contentInput.value = TPL_CATEGORIES[selectedCat]?.sampleContent || '';
 
     updateTplModalLivePreview();
   }
@@ -2584,25 +2652,43 @@ document.getElementById('formNewTemplate')?.addEventListener('submit', async (e)
   }
 
   const submitBtn = document.getElementById('btnSaveTemplate');
+  const submitBtnText = document.getElementById('btnSaveTemplateText');
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Saving Template...';
+    if (submitBtnText) submitBtnText.textContent = editingTemplateId ? 'Updating...' : 'Saving...';
   }
 
   try {
-    const res = await api('/api/user/templates', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, code, category, content })
-    });
-    const data = await res.safeJson();
-    if (!res.ok) throw new Error(data.error || 'Failed to save template.');
+    if (editingTemplateId) {
+      const res = await api(`/api/user/templates/${encodeURIComponent(editingTemplateId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category, content })
+      });
+      const data = await res.safeJson();
+      if (!res.ok) throw new Error(data.error || 'Failed to update template.');
+      showToast('Template updated successfully!');
+    } else {
+      const res = await api('/api/user/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, code, category, content })
+      });
+      const data = await res.safeJson();
+      if (!res.ok) throw new Error(data.error || 'Failed to save template.');
+      showToast('New template created successfully!');
+    }
 
     modalNewTpl?.classList.add('hidden');
-    showToast('New template created successfully!');
+    editingTemplateId = null;
     if (nameInput) nameInput.value = '';
     if (contentInput) contentInput.value = '';
-    if (document.getElementById('tplCodeInput')) document.getElementById('tplCodeInput').value = '';
+    if (document.getElementById('tplCodeInput')) {
+      const c = document.getElementById('tplCodeInput');
+      c.value = '';
+      c.readOnly = false;
+      c.style.background = '';
+    }
     await loadTemplates();
   } catch (err) {
     if (errorBox) {
@@ -2612,7 +2698,7 @@ document.getElementById('formNewTemplate')?.addEventListener('submit', async (e)
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Save Template';
+      if (submitBtnText) submitBtnText.textContent = editingTemplateId ? '💾 Update Template' : '💾 Save Template';
     }
   }
 });

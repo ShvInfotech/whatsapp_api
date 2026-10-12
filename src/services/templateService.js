@@ -200,7 +200,10 @@ class TemplateService {
     const db = await getDatabase();
     await this.migrateFromStore(db);
 
-    const existing = await db.collection('templates').findOne({ userId: uid, id: templateId });
+    const existing = await db.collection('templates').findOne({
+      userId: uid,
+      $or: [{ id: templateId }, { code: templateId }]
+    });
     if (!existing) {
       throw new Error('Template not found or unauthorized.');
     }
@@ -214,12 +217,12 @@ class TemplateService {
     }
 
     await db.collection('templates').updateOne(
-      { userId: uid, id: templateId },
+      { userId: uid, _id: existing._id },
       { $set: updateFields }
     );
 
     const updated = await db.collection('templates').findOne(
-      { userId: uid, id: templateId },
+      { userId: uid, _id: existing._id },
       { projection: { _id: 0 } }
     );
 
@@ -252,6 +255,10 @@ class TemplateService {
     }
 
     return rendered;
+  }
+
+  getTemplates(userId) {
+    return this.getUserTemplates(userId);
   }
 }
 

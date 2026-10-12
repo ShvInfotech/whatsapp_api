@@ -869,6 +869,15 @@
             throw new Error(data.error || 'Invalid verification code.');
           }
 
+          if (data.isPending) {
+            btnVerifyIcon.textContent = '⏳';
+            btnVerifyText.textContent = 'Pending Admin Approval';
+            btnVerifyOtp.style.background = '#d97706';
+            btnVerifyOtp.disabled = true;
+            showAlert('તમારો મોબાઈલ નંબર વેરિફાય થઈ ગયો છે! તમારું એકાઉન્ટ એડમિન એપ્રુવલ (Approval) માટે પેન્ડિંગ છે. એડમિન દ્વારા મંજૂર કર્યા પછી તમે લોગિન કરી શકશો.');
+            return;
+          }
+
           // Success!
           btnVerifyIcon.textContent = '✓';
           btnVerifyText.textContent = 'Success! Redirecting...';

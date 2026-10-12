@@ -1,8 +1,10 @@
+const crypto = require('crypto');
 const { ObjectId } = require('mongodb');
 const { getDatabase } = require('../services/databaseService');
-const { publicUser, AVAILABLE_PLANS } = require('../services/userAuthService');
+const { publicUser, AVAILABLE_PLANS, approveUser, rejectUser, updateUserStatus } = require('../services/userAuthService');
 const instanceService = require('../services/instanceService');
 const logService = require('../services/logService');
+const templateService = require('../services/templateService');
 const transactionService = require('../services/transactionService');
 
 class AdminController {
@@ -14,14 +16,25 @@ class AdminController {
       const db = await getDatabase();
       const users = await db.collection('users').find({}).toArray();
       const totalUsers = users.length;
-      const activeUsers = users.filter((u) => u.status === 'active' || !u.status).length;
-      const inactiveUsers = users.filter((u) => u.status === 'inactive').length;
+      const pendingUsers = users.filter((u) => u.status === 'pending' || u.isApproved === false).length;
+      const activeUsers = users.filter((u) => (u.status === 'active' || (!u.status && u.isApproved !== false)) && u.status !== 'pending').length;
+      const inactiveUsers = users.filter((u) => u.status === 'inactive' || u.status === 'suspended').length;
 
       // WhatsApp instances stats
       const instances = instanceService.getAllInstances();
       const totalInstances = instances.length;
       const connectedInstances = instances.filter((i) => i.isConnected).length;
       const pendingQrInstances = instances.filter((i) => i.qrReady && !i.isConnected).length;
+
+      // Count duplicate phones
+      const phoneCountMap = new Map();
+      instances.forEach((inst) => {
+        if (inst.phone) {
+          const p = String(inst.phone).trim();
+          phoneCountMap.set(p, (phoneCountMap.get(p) || 0) + 1);
+        }
+      });
+      const duplicatePhoneCount = Array.from(phoneCountMap.values()).filter((c) => c > 1).length;
 
       // Dispatch statistics from logs
       const allLogs = logService.getUserLogs(null, 1000);
@@ -43,12 +56,14 @@ class AdminController {
           users: {
             total: totalUsers,
             active: activeUsers,
+            pending: pendingUsers,
             inactive: inactiveUsers
           },
           instances: {
             total: totalInstances,
             connected: connectedInstances,
-            pendingQr: pendingQrInstances
+            pendingQr: pendingQrInstances,
+            duplicatePhones: duplicatePhoneCount
           },
           dispatches: {
             total: totalDispatches,
@@ -67,7 +82,7 @@ class AdminController {
   }
 
   /**
-   * List all registered users enriched with instance, plan, and quota details
+   * List all registered users enriched with instance, plan, quota, and template counts
    */
   async getUsers(req, res) {
     try {
@@ -77,8 +92,18 @@ class AdminController {
         .sort({ createdAt: -1 })
         .toArray();
 
+      // Aggregate template counts per user
+      let tplCountMap = new Map();
+      try {
+        const templateCounts = await db.collection('templates').aggregate([
+          { $group: { _id: '$userId', count: { $sum: 1 } } }
+        ]).toArray();
+        tplCountMap = new Map(templateCounts.map((t) => [t._id, t.count]));
+      } catch (_) {}
+
       const enriched = users.map((u) => {
         const userObj = publicUser(u);
+        const uid = u._id.toString();
         const instances = instanceService.getInstancesForUser(u._id);
         const primaryInst = instances[0] || null;
 
@@ -88,13 +113,15 @@ class AdminController {
 
         return {
           ...userObj,
-          status: u.status || 'active',
+          status: u.status || (u.isApproved === false ? 'pending' : 'active'),
+          isApproved: u.isApproved !== undefined ? u.isApproved : (u.status === 'active'),
           plan: u.plan || 'Pro SaaS Plan',
           planStatus: u.planStatus || 'active',
           messageQuota: quota,
           messagesUsed: used,
           creditsRemaining: remaining,
           planExpiresAt: u.planExpiresAt || null,
+          templateCount: tplCountMap.get(uid) || 0,
           hasInstance: Boolean(primaryInst),
           instance: primaryInst ? {
             id: primaryInst.id,
@@ -112,6 +139,61 @@ class AdminController {
     } catch (err) {
       console.error('[AdminController] Get users error:', err);
       return res.status(500).json({ success: false, error: 'Failed to retrieve users.' });
+    }
+  }
+
+  /**
+   * Admin direct user creation with auto-approval and instance provisioning
+   */
+  async createUser(req, res) {
+    try {
+      const { fullName, username, email, phone, password, plan } = req.body || {};
+      if (!username || !email || !password) {
+        return res.status(400).json({ success: false, error: 'Username, email and password are required.' });
+      }
+
+      const db = await getDatabase();
+      const existing = await db.collection('users').findOne({
+        $or: [{ username: username.toLowerCase().trim() }, { email: email.toLowerCase().trim() }]
+      });
+      if (existing) {
+        return res.status(400).json({ success: false, error: 'Username or email already registered.' });
+      }
+
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+      const planName = plan || 'Pro SaaS Plan';
+      const quota = planName.includes('Starter') ? 5000 : (planName.includes('Agency') ? 10000 : 2500);
+
+      const newUser = {
+        fullName: (fullName || username).trim(),
+        username: username.toLowerCase().trim(),
+        email: email.toLowerCase().trim(),
+        phone: phone ? String(phone).trim() : '',
+        passwordHash: hash,
+        passwordSalt: salt,
+        role: 'user',
+        status: 'active',
+        isApproved: true,
+        approvedAt: new Date().toISOString(),
+        plan: planName,
+        messageQuota: quota,
+        messagesUsed: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const result = await db.collection('users').insertOne(newUser);
+      newUser._id = result.insertedId;
+
+      try {
+        await instanceService.createInstance(newUser._id, `${newUser.username}_wa`);
+      } catch (_) {}
+
+      return res.status(201).json({ success: true, message: `User '${newUser.username}' created successfully!`, data: publicUser(newUser) });
+    } catch (err) {
+      console.error('[AdminController] Create user error:', err);
+      return res.status(500).json({ success: false, error: err.message || 'Failed to create user.' });
     }
   }
 
@@ -367,7 +449,153 @@ class AdminController {
   }
 
   /**
-   * Get global WhatsApp instances with owner user names
+   * Get complete user history, templates, instance, and dispatch logs for tracking
+   */
+  async getUserDetails(req, res) {
+    try {
+      const userId = req.params.id;
+      if (!userId || !ObjectId.isValid(userId)) {
+        return res.status(400).json({ success: false, error: 'Valid user ID is required.' });
+      }
+
+      const db = await getDatabase();
+      const user = await db.collection('users').findOne(
+        { _id: new ObjectId(userId) },
+        { projection: { passwordHash: 0, passwordSalt: 0 } }
+      );
+
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'User not found.' });
+      }
+
+      const uid = user._id.toString();
+      const userObj = publicUser(user);
+
+      // WhatsApp Instances owned by user
+      const instances = instanceService.getInstancesForUser(uid);
+
+      // All templates created by this specific user
+      const templates = await templateService.getTemplates(uid);
+
+      // Message logs & stats for this user
+      const logs = logService.getUserLogs(uid, 60);
+      const stats = logService.getUserStats(uid);
+
+      // Razorpay billing transactions
+      let transactions = [];
+      try {
+        transactions = await transactionService.getTransactionsByUser(user._id);
+      } catch (_) {}
+
+      return res.json({
+        success: true,
+        data: {
+          user: {
+            ...userObj,
+            isApproved: user.isApproved !== undefined ? user.isApproved : (user.status === 'active'),
+            status: user.status || 'active',
+            rejectionReason: user.rejectionReason || null,
+            approvedAt: user.approvedAt || null
+          },
+          instances,
+          primaryInstance: instances[0] || null,
+          templates,
+          logs,
+          stats,
+          transactions
+        }
+      });
+    } catch (err) {
+      console.error('[AdminController] Get user details error:', err);
+      return res.status(500).json({ success: false, error: 'Failed to retrieve user details & history.' });
+    }
+  }
+
+  /**
+   * Approve a pending user account
+   */
+  async approveUser(req, res) {
+    try {
+      const userId = req.params.id || req.body.userId;
+      if (!userId || !ObjectId.isValid(userId)) {
+        return res.status(400).json({ success: false, error: 'Valid user ID is required.' });
+      }
+
+      const db = await getDatabase();
+      const result = await db.collection('users').findOneAndUpdate(
+        { _id: new ObjectId(userId) },
+        {
+          $set: {
+            status: 'active',
+            isApproved: true,
+            planStatus: 'active',
+            approvedAt: new Date().toISOString(),
+            statusUpdatedAt: new Date().toISOString()
+          }
+        },
+        { returnDocument: 'after', projection: { passwordHash: 0, passwordSalt: 0 } }
+      );
+
+      if (!result) {
+        return res.status(404).json({ success: false, error: 'User not found.' });
+      }
+
+      // Ensure WhatsApp instance exists for approved user
+      await instanceService.ensureUserInstance(result);
+
+      return res.json({
+        success: true,
+        message: `User '${result.fullName || result.username}' approved successfully! They can now log in.`,
+        data: publicUser(result)
+      });
+    } catch (err) {
+      console.error('[AdminController] Approve user error:', err);
+      return res.status(500).json({ success: false, error: 'Failed to approve user.' });
+    }
+  }
+
+  /**
+   * Reject a pending user account
+   */
+  async rejectUser(req, res) {
+    try {
+      const userId = req.params.id || req.body.userId;
+      const reason = req.body?.reason || 'Administrator rejection';
+      if (!userId || !ObjectId.isValid(userId)) {
+        return res.status(400).json({ success: false, error: 'Valid user ID is required.' });
+      }
+
+      const db = await getDatabase();
+      const result = await db.collection('users').findOneAndUpdate(
+        { _id: new ObjectId(userId) },
+        {
+          $set: {
+            status: 'rejected',
+            isApproved: false,
+            rejectionReason: reason,
+            statusUpdatedAt: new Date().toISOString()
+          }
+        },
+        { returnDocument: 'after', projection: { passwordHash: 0, passwordSalt: 0 } }
+      );
+
+      if (!result) {
+        return res.status(404).json({ success: false, error: 'User not found.' });
+      }
+
+      return res.json({
+        success: true,
+        message: `User '${result.fullName || result.username}' registration rejected.`,
+        data: publicUser(result)
+      });
+    } catch (err) {
+      console.error('[AdminController] Reject user error:', err);
+      return res.status(500).json({ success: false, error: 'Failed to reject user.' });
+    }
+  }
+
+  /**
+   * Get global WhatsApp instances with owner user names & duplicate phone detection
    */
   async getInstances(req, res) {
     try {
@@ -376,12 +604,27 @@ class AdminController {
       const users = await db.collection('users').find({}, { projection: { fullName: 1, username: 1, email: 1 } }).toArray();
       const userMap = new Map(users.map((u) => [u._id.toString(), u]));
 
+      // Count occurrences per phone number to detect duplicate/shared instances
+      const phoneCountMap = new Map();
+      list.forEach((inst) => {
+        if (inst.phone) {
+          const p = String(inst.phone).trim();
+          phoneCountMap.set(p, (phoneCountMap.get(p) || 0) + 1);
+        }
+      });
+
       const enriched = list.map((inst) => {
         const owner = inst.ownerUserId ? userMap.get(inst.ownerUserId) : null;
+        const phone = inst.phone ? String(inst.phone).trim() : null;
+        const phoneInstancesCount = phone ? (phoneCountMap.get(phone) || 0) : 0;
+        const hasDuplicatePhone = phoneInstancesCount > 1;
+
         return {
           ...inst,
           ownerName: owner ? (owner.fullName || owner.username) : (inst.isDefault ? 'Admin / Default' : 'Unassigned'),
-          ownerEmail: owner ? owner.email : null
+          ownerEmail: owner ? owner.email : null,
+          hasDuplicatePhone,
+          duplicatePhoneCount: phoneInstancesCount
         };
       });
 
@@ -389,6 +632,59 @@ class AdminController {
     } catch (err) {
       console.error('[AdminController] Get instances error:', err);
       return res.status(500).json({ success: false, error: 'Failed to retrieve instances.' });
+    }
+  }
+
+  /**
+   * Clean up stale duplicate instances sharing the same mobile number
+   */
+  async cleanupDuplicateInstances(req, res) {
+    try {
+      const list = instanceService.getAllInstances();
+      // Group non-default instances by phone number
+      const phoneGroups = new Map();
+      for (const inst of list) {
+        if (inst.isDefault || !inst.phone) continue;
+        const p = String(inst.phone).trim();
+        if (!phoneGroups.has(p)) phoneGroups.set(p, []);
+        phoneGroups.get(p).push(inst);
+      }
+
+      let cleanedCount = 0;
+      const details = [];
+
+      for (const [phone, group] of phoneGroups.entries()) {
+        if (group.length > 1) {
+          // Keep the actively connected instance if one exists, otherwise the first
+          const connectedInst = group.find((i) => i.isConnected) || group[0];
+          for (const duplicate of group) {
+            if (duplicate.id === connectedInst.id) continue;
+            try {
+              instanceService.updateInstanceRecord(duplicate.id, {
+                phone: null,
+                pushname: null,
+                status: 'DISCONNECTED',
+                isConnected: false,
+                qrReady: false
+              });
+              cleanedCount++;
+              details.push(`Cleared conflicting phone +${phone} from instance '${duplicate.name}' (${duplicate.id})`);
+            } catch (_) {}
+          }
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: cleanedCount > 0
+          ? `Successfully cleaned ${cleanedCount} duplicate phone session references.`
+          : 'No duplicate phone numbers found across active instances.',
+        cleanedCount,
+        details
+      });
+    } catch (err) {
+      console.error('[AdminController] Cleanup duplicate instances error:', err);
+      return res.status(500).json({ success: false, error: 'Failed to cleanup duplicate instances.' });
     }
   }
 

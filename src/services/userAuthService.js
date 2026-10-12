@@ -31,15 +31,18 @@ function publicUser(user) {
     username: user.username,
     fullName: user.fullName || user.username || 'User',
     email: user.email,
+    phone: user.phone || user.phoneNumber || null,
     role: user.role || 'user',
     status: user.status || 'active',
+    isApproved: user.isApproved !== undefined ? user.isApproved : (user.status === 'active'),
     plan,
     planStatus,
     messageQuota: quota,
     messagesUsed: used,
     creditsRemaining: Math.max(0, quota - used),
     planExpiresAt,
-    createdAt: user.createdAt
+    createdAt: user.createdAt,
+    approvedAt: user.approvedAt || null
   };
 }
 
@@ -61,9 +64,10 @@ async function register({ fullName, username, email, password }) {
     passwordSalt,
     passwordHash: await hashPassword(password, passwordSalt),
     role: 'user',
-    status: 'active',
+    status: 'pending', // Requires administrator approval before login
+    isApproved: false,
     plan: 'Pro SaaS Plan',
-    planStatus: 'active',
+    planStatus: 'pending',
     messageQuota: 2500,
     messagesUsed: 0,
     planExpiresAt,
@@ -110,11 +114,44 @@ async function listUsers() {
 }
 
 async function updateUserStatus(userId, status) {
-  if (!ObjectId.isValid(userId) || !['active', 'inactive'].includes(status)) return null;
+  if (!ObjectId.isValid(userId) || !['active', 'inactive', 'pending', 'rejected', 'suspended'].includes(status)) return null;
+  const database = await getDatabase();
+  const isApproved = status === 'active';
+  const updates = {
+    status,
+    isApproved,
+    statusUpdatedAt: new Date().toISOString()
+  };
+  if (isApproved) {
+    updates.approvedAt = new Date().toISOString();
+    updates.planStatus = 'active';
+  }
+
+  const result = await database.collection('users').findOneAndUpdate(
+    { _id: new ObjectId(userId) },
+    { $set: updates },
+    { returnDocument: 'after', projection: { passwordHash: 0, passwordSalt: 0 } }
+  );
+  return result ? publicUser(result) : null;
+}
+
+async function approveUser(userId) {
+  return updateUserStatus(userId, 'active');
+}
+
+async function rejectUser(userId, reason = 'Administrative decision') {
+  if (!ObjectId.isValid(userId)) return null;
   const database = await getDatabase();
   const result = await database.collection('users').findOneAndUpdate(
     { _id: new ObjectId(userId) },
-    { $set: { status, statusUpdatedAt: new Date().toISOString() } },
+    {
+      $set: {
+        status: 'rejected',
+        isApproved: false,
+        rejectionReason: reason,
+        statusUpdatedAt: new Date().toISOString()
+      }
+    },
     { returnDocument: 'after', projection: { passwordHash: 0, passwordSalt: 0 } }
   );
   return result ? publicUser(result) : null;
@@ -290,6 +327,8 @@ module.exports = {
   publicUser,
   listUsers,
   updateUserStatus,
+  approveUser,
+  rejectUser,
   incrementMessagesUsed,
   checkQuotaAvailable,
   upgradeUserPlan,

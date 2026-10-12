@@ -402,6 +402,16 @@ class InstanceService {
     }
   }
 
+  updateInstanceRecord(instanceId, updates) {
+    this.updateStoreRecord(instanceId, updates);
+    const state = this.instances.get(instanceId);
+    if (state) {
+      if (updates.phone !== undefined && state.clientInfo) state.clientInfo.phone = updates.phone;
+      if (updates.pushname !== undefined && state.clientInfo) state.clientInfo.pushname = updates.pushname;
+      if (updates.status !== undefined) state.status = updates.status;
+    }
+  }
+
   /**
    * Create a new instance
    */

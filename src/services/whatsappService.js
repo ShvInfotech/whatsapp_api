@@ -402,6 +402,12 @@ class WhatsAppService {
                   try {
                     delete res.__x_id;
                     delete res.id;
+                    if (window.WWebJS && window.WWebJS.__pendingCaption) {
+                      res.caption = window.WWebJS.__pendingCaption;
+                      if (typeof res.set === 'function') {
+                        res.set('caption', window.WWebJS.__pendingCaption);
+                      }
+                    }
                     if (typeof res.toJSON === 'function') {
                       const origToJSON = res.toJSON.bind(res);
                       res.toJSON = function() {
@@ -409,7 +415,9 @@ class WhatsAppService {
                         if (json) {
                           delete json.__x_id;
                           delete json.id;
-                          if (json.caption === undefined || json.caption === null) {
+                          if (window.WWebJS && window.WWebJS.__pendingCaption) {
+                            json.caption = window.WWebJS.__pendingCaption;
+                          } else if (json.caption === undefined || json.caption === null) {
                             delete json.caption;
                           }
                         }
@@ -480,7 +488,6 @@ class WhatsAppService {
                     }
                   }).catch(() => {});
                 }
-
                 if (window.WWebJS) {
                   window.WWebJS.__pendingCaption = null;
                 }

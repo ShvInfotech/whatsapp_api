@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3.1.0" />
+  <link rel="stylesheet" href="style.css?v=3.3.1" />
 </head>
 <body class="auth-required admin-console">
 
@@ -177,7 +177,7 @@
   <!-- ============================================== -->
   <!-- 2-COLUMN WORKSPACE: LEFT SIDEBAR + MAIN PANEL  -->
   <!-- ============================================== -->
-  <div class="admin-workspace-layout">
+  <div class="admin-workspace-layout main-content">
     <!-- LEFT SIDEBAR -->
     <aside class="admin-sidebar-left" id="adminSidebar">
       <div class="admin-sidebar-nav">
@@ -383,61 +383,99 @@
       <!-- TAB 2: REGISTERED USERS MANAGEMENT             -->
       <!-- ============================================== -->
       <section id="usersTab" class="tab-panel">
-        <div class="panel-header" style="margin-bottom: 1.5rem;">
+        <!-- User Management Header matching mockup -->
+        <div class="user-mgmt-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.85rem;">
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: #2563eb; flex-shrink: 0;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0; line-height: 1.2;">User Management</h2>
+              <p style="color: #64748b; font-size: 0.85rem; margin: 0.2rem 0 0 0;">Manage your users, plans, credits and connected devices</p>
+            </div>
+          </div>
           <div>
-            <h2 style="font-size: 1.5rem; font-weight: 800; color: #0f172a;">Registered Users &amp; Subscription Control</h2>
-            <p style="color: #64748b; font-size: 0.9rem;">Manage user accounts, assign subscription tiers, grant manual credits, and control WhatsApp instances.</p>
-          </div>
-        </div>
-
-        <!-- Filter & Search Toolbar -->
-        <div class="admin-toolbar-row">
-          <div class="admin-search-box">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#64748b" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="userSearchInput" placeholder="Search by name, username, or email..." />
-          </div>
-
-          <div class="admin-filter-group">
-            <select id="userStatusFilter" class="form-control" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; width: auto;">
-              <option value="all">All Statuses</option>
-              <option value="active">Active Accounts</option>
-              <option value="inactive">Suspended Accounts</option>
-            </select>
-
-            <select id="userPlanFilter" class="form-control" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; width: auto;">
-              <option value="all">All Subscription Plans</option>
-              <option value="Starter">Starter Plan</option>
-              <option value="Pro">Pro Plan</option>
-              <option value="Agency">Agency Plan</option>
-            </select>
-
-            <button id="btnReloadUsers" class="btn btn-secondary btn-sm" type="button">
-              ↻ Refresh
+            <button type="button" id="btnAdminAddUser" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.55rem 1.15rem; font-weight: 600; font-size: 0.85rem; border-radius: 8px; box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
+              <span style="font-size: 1.1rem; line-height: 1;">+</span> Add User
             </button>
           </div>
         </div>
 
-        <!-- Users Table Card -->
-        <div class="admin-data-card">
-          <div class="admin-table-container">
-            <table class="admin-table">
+        <!-- Filter & Search Toolbar matching mockup -->
+        <div class="user-mgmt-filter-row" style="display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap;">
+          <div class="user-search-box-pill" style="position: relative; flex: 1; min-width: 280px; max-width: 480px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2" style="position: absolute; left: 0.9rem; top: 50%; transform: translateY(-50%); pointer-events: none;">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="userSearchInput" placeholder="Search by name, phone, email..." style="width: 100%; padding: 0.55rem 1rem 0.55rem 2.4rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; background: #ffffff; color: #0f172a; outline: none; transition: all 0.15s ease;" />
+          </div>
+
+          <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+            <select id="userPlanFilter" class="form-control user-mgmt-select" style="padding: 0.5rem 0.85rem; font-size: 0.82rem; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; color: #334155; width: auto;">
+              <option value="all">All Plans</option>
+              <option value="Starter">Starter Booster</option>
+              <option value="Pro">Pro SaaS Plan</option>
+              <option value="Agency">Agency Master</option>
+            </select>
+
+            <select id="userStatusFilter" class="form-control user-mgmt-select" style="padding: 0.5rem 0.85rem; font-size: 0.82rem; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; color: #334155; width: auto;">
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending Approval</option>
+              <option value="inactive">Suspended</option>
+              <option value="rejected">Rejected</option>
+            </select>
+
+            <select id="userDeviceFilter" class="form-control user-mgmt-select" style="padding: 0.5rem 0.85rem; font-size: 0.82rem; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; color: #334155; width: auto;">
+              <option value="all">All Devices</option>
+              <option value="connected">Connected</option>
+              <option value="scan_pending">Scan Pending</option>
+              <option value="no_instance">No Instance</option>
+            </select>
+
+            <button id="btnReloadUsers" class="btn btn-secondary btn-sm" type="button" style="padding: 0.5rem 0.75rem; font-size: 0.82rem; border-radius: 8px;" title="Refresh list">
+              ↻
+            </button>
+          </div>
+        </div>
+
+        <!-- Users Table Card matching mockup -->
+        <div class="admin-data-card" style="box-shadow: 0 4px 16px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; border-radius: 12px; overflow: visible; background: #ffffff;">
+          <div class="admin-table-container" style="overflow: visible;">
+            <table class="admin-table users-admin-table">
               <thead>
                 <tr>
-                  <th>User Details</th>
-                  <th>Subscription Tier</th>
-                  <th>Credits &amp; Quota</th>
-                  <th>WhatsApp Instance</th>
-                  <th>Account Status</th>
-                  <th>Joined Date</th>
-                  <th style="text-align: right;">Administrative Actions</th>
+                  <th style="width: 4%; padding-left: 1.25rem;">#</th>
+                  <th style="width: 28%;">USER</th>
+                  <th style="width: 14%;">PLAN</th>
+                  <th style="width: 18%;">CREDITS &amp; QUOTA</th>
+                  <th style="width: 16%;">WHATSAPP DEVICE</th>
+                  <th style="width: 10%;">STATUS</th>
+                  <th style="width: 10%; text-align: right; padding-right: 1.25rem;">ACTIONS</th>
                 </tr>
               </thead>
               <tbody id="adminUsersTableBody">
                 <tr>
-                  <td colspan="7" class="text-secondary" style="text-align: center; padding: 2rem;">Loading registered users...</td>
+                  <td colspan="7" class="text-secondary" style="text-align: center; padding: 2.5rem;">Loading registered users...</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Table Footer matching mockup -->
+          <div class="user-mgmt-table-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1.25rem; border-top: 1px solid #f1f5f9; background: #ffffff;">
+            <span id="userTableFooterInfo" style="color: #64748b; font-size: 0.82rem; font-weight: 500;">Showing 1-8 of 8 users</span>
+            <div class="user-mgmt-pagination" style="display: flex; align-items: center; gap: 0.35rem;">
+              <button type="button" class="btn-pagination-arrow" disabled style="width: 28px; height: 28px; border: 1px solid #e2e8f0; background: #ffffff; border-radius: 6px; color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; cursor: not-allowed; font-size: 0.8rem;">&lt;</button>
+              <button type="button" class="btn-pagination-page active" style="width: 28px; height: 28px; border: 1px solid #2563eb; background: #2563eb; border-radius: 6px; color: #ffffff; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem;">1</button>
+              <button type="button" class="btn-pagination-arrow" disabled style="width: 28px; height: 28px; border: 1px solid #e2e8f0; background: #ffffff; border-radius: 6px; color: #94a3b8; display: inline-flex; align-items: center; justify-content: center; cursor: not-allowed; font-size: 0.8rem;">&gt;</button>
+            </div>
           </div>
         </div>
       </section>
@@ -523,15 +561,82 @@
       <!-- TAB 4: WHATSAPP INSTANCES MONITOR              -->
       <!-- ============================================== -->
       <section id="instancesTab" class="tab-panel">
-        <div class="panel-header" style="margin-bottom: 1.5rem;">
+        <div class="panel-header" style="margin-bottom: 1.25rem;">
           <div>
             <h2 style="font-size: 1.5rem; font-weight: 800; color: #0f172a;">Global WhatsApp Client Instances</h2>
-            <p style="color: #64748b; font-size: 0.9rem;">Monitor isolated WhatsApp Web sessions, pair QR codes, generate SendBuddy tokens, and force reset broken sessions.</p>
+            <p style="color: #64748b; font-size: 0.9rem;">Monitor isolated WhatsApp Web sessions, detect duplicate phone numbers across accounts, pair QR codes, and manage sessions.</p>
           </div>
-          <button id="btnOpenCreateInstance" class="btn btn-primary btn-sm" type="button">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            <span>Create New Instance</span>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button id="btnCleanupDuplicateInstances" class="btn btn-secondary btn-sm" type="button" title="Clean inactive sessions sharing duplicate phone numbers" style="color: #d97706; border-color: #fcd34d;">
+              🧹 Clean Duplicate Sessions
+            </button>
+            <button id="btnOpenCreateInstance" class="btn btn-primary btn-sm" type="button">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Create New Instance</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Instance KPI Summary Strip -->
+        <div class="admin-kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 1.25rem;">
+          <div class="admin-kpi-card" style="padding: 1rem 1.25rem;">
+            <span class="admin-kpi-title">Total Instances</span>
+            <div class="admin-kpi-value" id="instKpiTotal" style="font-size: 1.5rem;">0</div>
+            <span class="text-secondary" style="font-size: 0.78rem;">System sessions registered</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 1rem 1.25rem;">
+            <span class="admin-kpi-title">Connected (Online)</span>
+            <div class="admin-kpi-value" id="instKpiConnected" style="font-size: 1.5rem; color: #16a34a;">0</div>
+            <span class="text-secondary" style="font-size: 0.78rem;">Live ready for messages</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 1rem 1.25rem;">
+            <span class="admin-kpi-title">Pending QR / Standby</span>
+            <div class="admin-kpi-value" id="instKpiPending" style="font-size: 1.5rem; color: #f59e0b;">0</div>
+            <span class="text-secondary" style="font-size: 0.78rem;">Waiting for phone scan</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 1rem 1.25rem;">
+            <span class="admin-kpi-title">Duplicate Phone Alerts</span>
+            <div class="admin-kpi-value" id="instKpiDuplicates" style="font-size: 1.5rem; color: #ef4444;">0</div>
+            <span class="text-secondary" style="font-size: 0.78rem;">Shared across multiple accounts</span>
+          </div>
+        </div>
+
+        <!-- Duplicate Phone Warning Banner (Dynamically shown if duplicate phones exist) -->
+        <div id="duplicateInstancesAlertBanner" class="hidden" style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+          <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+            <span style="font-size: 1.5rem; line-height: 1;">⚠️</span>
+            <div>
+              <div style="font-weight: 700; color: #92400e; font-size: 0.92rem;">Duplicate Mobile Numbers Detected Across Accounts</div>
+              <p id="duplicateInstancesBannerText" style="color: #b45309; font-size: 0.82rem; margin: 0.2rem 0 0 0;">
+                One or more WhatsApp numbers are linked to multiple client instances. WhatsApp Web only permits one active session per phone.
+              </p>
+            </div>
+          </div>
+          <button id="btnQuickCleanDuplicates" class="btn btn-secondary btn-sm" type="button" style="white-space: nowrap; background: #fef3c7; border-color: #f59e0b; color: #92400e; font-weight: 700;">
+            🧹 Auto-Resolve Duplicates
           </button>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="admin-toolbar-row" style="margin-bottom: 1.25rem;">
+          <div class="admin-search-box">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#64748b" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="instanceSearchInput" placeholder="Search instances by name, ID, linked phone, or owner..." />
+          </div>
+
+          <div class="admin-filter-group">
+            <select id="instanceStatusFilter" class="form-control" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; width: auto;">
+              <option value="all">All Instances</option>
+              <option value="connected">✓ Connected Only</option>
+              <option value="qr_ready">📷 QR Ready / Awaiting Scan</option>
+              <option value="disconnected">Disconnected Only</option>
+              <option value="duplicate">⚠️ Has Duplicate Phone</option>
+            </select>
+
+            <button id="btnRefreshInstances" class="btn btn-secondary btn-sm" type="button">
+              ↻ Refresh
+            </button>
+          </div>
         </div>
 
         <!-- Instances Grid -->
@@ -851,10 +956,837 @@ Content-Type: application/json
     </div>
   </div>
 
+  <!-- ============================================== -->
+  <!-- MODAL: ADD NEW USER ACCOUNT                    -->
+  <!-- ============================================== -->
+  <div id="modalAdminAddUser" class="modal-backdrop hidden">
+    <div class="modal-card" style="max-width: 480px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
+      <div class="modal-header flex-between" style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <div style="width: 36px; height: 36px; border-radius: 8px; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: #2563eb; font-size: 1.1rem;">
+            👤
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #0f172a;">Add New User Account</h3>
+            <p style="margin: 0.15rem 0 0; font-size: 0.78rem; color: #64748b;">Instantly provision a new active client account</p>
+          </div>
+        </div>
+        <button type="button" class="btn-close" id="btnCloseAddUserModal" style="background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #94a3b8;">&times;</button>
+      </div>
+      <form id="formAdminAddUser" style="padding: 1.5rem;">
+        <div class="form-group mb-2">
+          <label style="font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 0.25rem; display: block;">Full Name</label>
+          <input type="text" id="addUserName" class="form-control" placeholder="e.g. John Doe" required style="width: 100%; padding: 0.55rem 0.85rem; font-size: 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1;" />
+        </div>
+        <div class="grid-2col mb-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label style="font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 0.25rem; display: block;">Username</label>
+            <input type="text" id="addUserUsername" class="form-control" placeholder="johndoe" required style="width: 100%; padding: 0.55rem 0.85rem; font-size: 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1;" />
+          </div>
+          <div class="form-group">
+            <label style="font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 0.25rem; display: block;">Phone Number</label>
+            <input type="text" id="addUserPhone" class="form-control" placeholder="919876543210" style="width: 100%; padding: 0.55rem 0.85rem; font-size: 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1;" />
+          </div>
+        </div>
+        <div class="form-group mb-2">
+          <label style="font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 0.25rem; display: block;">Email Address</label>
+          <input type="email" id="addUserEmail" class="form-control" placeholder="john@example.com" required style="width: 100%; padding: 0.55rem 0.85rem; font-size: 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1;" />
+        </div>
+        <div class="form-group mb-2">
+          <label style="font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 0.25rem; display: block;">Password</label>
+          <input type="password" id="addUserPassword" class="form-control" placeholder="Create user password" required style="width: 100%; padding: 0.55rem 0.85rem; font-size: 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1;" />
+        </div>
+        <div class="form-group mb-3">
+          <label style="font-size: 0.82rem; font-weight: 600; color: #334155; margin-bottom: 0.25rem; display: block;">Subscription Plan</label>
+          <select id="addUserPlan" class="form-control" style="width: 100%; padding: 0.55rem 0.85rem; font-size: 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+            <option value="Pro SaaS Plan">Pro SaaS Plan (2,500 messages/mo)</option>
+            <option value="Starter Booster Plan">Starter Booster Plan (5,000 messages/mo)</option>
+            <option value="Agency Master Plan">Agency Master Plan (10,000 messages/mo)</option>
+          </select>
+        </div>
+        <p id="addUserErrorMsg" class="text-danger hidden" style="font-size: 0.8rem; margin: 0.5rem 0 0;"></p>
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem;">
+          <button type="button" class="btn btn-secondary" id="btnCancelAddUser" style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 6px;">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitAddUser" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600;">Create User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: USER DETAILS, TRACKING & HISTORY MODAL   -->
+  <!-- ============================================== -->
+  <div id="userDetailsModal" class="modal-backdrop hidden">
+    <div class="modal-card user-details-modal-card">
+      <div class="modal-header user-modal-header">
+        <div class="user-modal-profile">
+          <div class="user-modal-avatar" id="udmAvatar">U</div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <h3 id="udmFullName" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #0f172a;">User Details</h3>
+              <span id="udmStatusBadge" class="status-pill status-connected">Active</span>
+            </div>
+            <p id="udmSubTitle" style="margin: 0.2rem 0 0; font-size: 0.82rem; color: #64748b;">@username &bull; email &bull; phone</p>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <button id="udmBtnApprove" class="btn btn-primary btn-sm hidden" type="button" style="background: #16a34a; border-color: #15803d; font-weight: 700;">
+            ✓ Approve Account
+          </button>
+          <button id="udmBtnChangePlan" class="btn btn-secondary btn-sm" type="button">
+            🏷️ Change Plan
+          </button>
+          <button id="udmBtnTopup" class="btn btn-secondary btn-sm" type="button">
+            ⚡ Add Credits
+          </button>
+          <button id="btnCloseUserDetailsModal" class="btn-close" type="button">&times;</button>
+        </div>
+      </div>
+
+      <!-- Tab Navigation inside User Modal -->
+      <div class="user-modal-tabs">
+        <button type="button" class="user-modal-tab-btn active" data-user-modal-tab="tabUserOverview">
+          📌 Profile &amp; Instance
+        </button>
+        <button type="button" class="user-modal-tab-btn" data-user-modal-tab="tabUserTemplates">
+          📝 Templates (<span id="udmTemplateCountBadge">0</span>)
+        </button>
+        <button type="button" class="user-modal-tab-btn" data-user-modal-tab="tabUserLogs">
+          📊 Dispatch History (<span id="udmLogsCountBadge">0</span>)
+        </button>
+        <button type="button" class="user-modal-tab-btn" data-user-modal-tab="tabUserBilling">
+          💳 Billing History (<span id="udmTxCountBadge">0</span>)
+        </button>
+      </div>
+
+      <!-- Tab 1: Overview & WhatsApp Instance -->
+      <div id="tabUserOverview" class="user-modal-tab-pane active">
+        <!-- KPI Strip -->
+        <div class="user-modal-kpi-grid">
+          <div class="user-modal-kpi-card">
+            <span class="user-modal-kpi-title">Credits Remaining</span>
+            <div class="user-modal-kpi-val" id="udmCreditsRemaining" style="color: #16a34a;">0</div>
+            <span class="user-modal-kpi-sub" id="udmQuotaSummary">of 2,500 Quota</span>
+          </div>
+          <div class="user-modal-kpi-card">
+            <span class="user-modal-kpi-title">Messages Sent</span>
+            <div class="user-modal-kpi-val" id="udmMessagesUsed" style="color: #0284c7;">0</div>
+            <span class="user-modal-kpi-sub" id="udmUsagePercent">0% consumed</span>
+          </div>
+          <div class="user-modal-kpi-card">
+            <span class="user-modal-kpi-title">Custom Templates</span>
+            <div class="user-modal-kpi-val" id="udmTemplatesTotal">0</div>
+            <span class="user-modal-kpi-sub">Created in account</span>
+          </div>
+          <div class="user-modal-kpi-card">
+            <span class="user-modal-kpi-title">WhatsApp Session</span>
+            <div class="user-modal-kpi-val" id="udmWaStatus" style="font-size: 1.1rem;">Standby</div>
+            <span class="user-modal-kpi-sub" id="udmWaPhone">No Phone Linked</span>
+          </div>
+        </div>
+
+        <!-- Account & Device Details Grid -->
+        <div class="user-modal-details-grid">
+          <div class="user-modal-box">
+            <h4 class="user-modal-box-title">👤 User Account Information</h4>
+            <div class="user-detail-row">
+              <span class="detail-label">User ID:</span>
+              <span class="detail-value" id="udmUserId" style="font-family: monospace; font-size: 0.78rem;">-</span>
+            </div>
+            <div class="user-detail-row">
+              <span class="detail-label">Username:</span>
+              <span class="detail-value" id="udmUsername">-</span>
+            </div>
+            <div class="user-detail-row">
+              <span class="detail-label">Email:</span>
+              <span class="detail-value" id="udmEmail">-</span>
+            </div>
+            <div class="user-detail-row">
+              <span class="detail-label">Contact Mobile:</span>
+              <span class="detail-value" id="udmPhone">-</span>
+            </div>
+            <div class="user-detail-row">
+              <span class="detail-label">Account Approval:</span>
+              <span class="detail-value" id="udmApprovalStatus">-</span>
+            </div>
+            <div class="user-detail-row">
+              <span class="detail-label">Current Plan:</span>
+              <span class="detail-value" style="display: inline-flex; align-items: center; gap: 0.5rem; justify-content: flex-end;">
+                <span id="udmPlanName" style="font-weight: 700; color: #2563eb;">-</span>
+                <button type="button" id="udmInlineChangePlan" class="btn btn-secondary btn-sm" style="font-size: 0.72rem; padding: 0.15rem 0.5rem; height: auto;">Change Plan</button>
+              </span>
+            </div>
+            <div class="user-detail-row">
+              <span class="detail-label">Registered On:</span>
+              <span class="detail-value" id="udmCreatedAt">-</span>
+            </div>
+            <div class="user-detail-row">
+              <span class="detail-label">Plan Expires:</span>
+              <span class="detail-value" id="udmPlanExpiry">-</span>
+            </div>
+          </div>
+
+          <div class="user-modal-box">
+            <h4 class="user-modal-box-title">📱 Assigned WhatsApp Instance</h4>
+            <div id="udmNoInstanceNotice" class="hidden" style="color: #64748b; font-size: 0.85rem; padding: 1rem 0;">
+              No WhatsApp instance assigned to this user yet.
+            </div>
+            <div id="udmInstanceDetails">
+              <div class="user-detail-row">
+                <span class="detail-label">Instance Name:</span>
+                <span class="detail-value" id="udmInstName" style="font-weight: 700;">-</span>
+              </div>
+              <div class="user-detail-row">
+                <span class="detail-label">Instance ID:</span>
+                <span class="detail-value" id="udmInstId" style="font-family: monospace;">-</span>
+              </div>
+              <div class="user-detail-row">
+                <span class="detail-label">Connection Status:</span>
+                <span class="detail-value" id="udmInstStatus">-</span>
+              </div>
+              <div class="user-detail-row">
+                <span class="detail-label">Linked Phone:</span>
+                <span class="detail-value" id="udmInstPhone">-</span>
+              </div>
+              <div class="user-detail-row">
+                <span class="detail-label">Push Name:</span>
+                <span class="detail-value" id="udmInstPushname">-</span>
+              </div>
+              <div class="user-detail-row">
+                <span class="detail-label">Access Token:</span>
+                <span class="detail-value" id="udmInstToken" style="font-family: monospace; font-size: 0.78rem;">-</span>
+              </div>
+              <div style="margin-top: 1.25rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button id="udmBtnPairQr" class="btn btn-primary btn-sm" type="button">
+                  📷 Pair QR Code
+                </button>
+                <button id="udmBtnResetSession" class="btn btn-secondary btn-sm" type="button" style="color: #dc2626; border-color: #fca5a5;">
+                  🔁 Force Reset Session
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: User Created Templates -->
+      <div id="tabUserTemplates" class="user-modal-tab-pane">
+        <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+          <p style="font-size: 0.88rem; color: #64748b; margin: 0;">
+            All templates configured and created inside this user's workspace account.
+          </p>
+        </div>
+        <div id="udmTemplatesContainer" class="user-templates-grid">
+          <p class="text-secondary" style="padding: 2rem; text-align: center;">Loading templates...</p>
+        </div>
+      </div>
+
+      <!-- Tab 3: Message History & Logs -->
+      <div id="tabUserLogs" class="user-modal-tab-pane">
+        <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+          <p style="font-size: 0.88rem; color: #64748b; margin: 0;">
+            Complete message dispatch logs sent by this user via Single, Bulk, or Template API.
+          </p>
+          <div id="udmLogsSuccessRateBadge" style="font-size: 0.82rem; font-weight: 700; color: #16a34a; background: #f0fdf4; padding: 0.25rem 0.65rem; border-radius: 6px;">
+            100% Success Rate
+          </div>
+        </div>
+        <div style="overflow-x: auto; max-height: 400px; border: 1px solid #e2e8f0; border-radius: 10px;">
+          <table class="admin-table" style="font-size: 0.82rem;">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Recipient</th>
+                <th>Type</th>
+                <th>Message Content</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="udmLogsTableBody">
+              <tr><td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">Loading logs...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 4: Billing History -->
+      <div id="tabUserBilling" class="user-modal-tab-pane">
+        <div id="udmBillingContainer">
+          <p class="text-secondary" style="padding: 2rem; text-align: center;">Loading billing transactions...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* User Details & Tracking Modal Styles */
+    .user-details-modal-card {
+      max-width: 860px !important;
+      width: 95% !important;
+      max-height: 90vh !important;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 0 !important;
+      border-radius: 16px;
+    }
+    .user-modal-header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+    }
+    .user-modal-profile {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+    .user-modal-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #4f46e5, #3730a3);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+    .user-modal-tabs {
+      display: flex;
+      background: #f1f5f9;
+      padding: 0 1.25rem;
+      border-bottom: 1px solid #e2e8f0;
+      gap: 0.5rem;
+      overflow-x: auto;
+    }
+    .user-modal-tab-btn {
+      background: none;
+      border: none;
+      padding: 0.85rem 1rem;
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .user-modal-tab-btn.active {
+      color: #4f46e5;
+      border-bottom-color: #4f46e5;
+      background: #fff;
+    }
+    .user-modal-tab-pane {
+      display: none;
+      padding: 1.5rem 1.75rem;
+      overflow-y: auto;
+      max-height: calc(90vh - 150px);
+    }
+    .user-modal-tab-pane.active {
+      display: block;
+    }
+    .user-modal-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .user-modal-kpi-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+    }
+    .user-modal-kpi-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .user-modal-kpi-val {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0.25rem 0;
+    }
+    .user-modal-kpi-sub {
+      font-size: 0.74rem;
+      color: #94a3b8;
+    }
+    .user-modal-details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+    .user-modal-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1.25rem;
+      background: #fff;
+    }
+    .user-modal-box-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .user-detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.4rem 0;
+      font-size: 0.84rem;
+      border-bottom: 1px solid #f8fafc;
+    }
+    .detail-label {
+      color: #64748b;
+      font-weight: 500;
+    }
+    .detail-value {
+      font-weight: 600;
+      color: #0f172a;
+      text-align: right;
+    }
+    .user-templates-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    .user-template-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem;
+      background: #f8fafc;
+      transition: all 0.2s;
+    }
+    .user-template-card:hover {
+      border-color: #cbd5e1;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .admin-user-clickable-name {
+      color: #4f46e5;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border: none;
+      background: none;
+      padding: 0;
+      font-size: inherit;
+      text-align: left;
+    }
+    .admin-user-clickable-name:hover {
+      text-decoration: underline;
+      color: #3730a3;
+    }
+    .status-pending {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .status-rejected {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+    }
+    .duplicate-phone-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #b45309;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      margin-top: 0.35rem;
+    }
+
+    /* User Management Table & Quick Filter Pills Redesign */
+    .user-status-quick-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.15rem;
+      flex-wrap: wrap;
+    }
+    .quick-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .quick-pill:hover {
+      background: #e2e8f0;
+      color: #1e293b;
+      transform: translateY(-1px);
+    }
+    .quick-pill.active {
+      background: #2563eb !important;
+      color: #ffffff !important;
+      border-color: #1d4ed8 !important;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    }
+    .quick-pill .pill-count {
+      display: inline-block;
+      padding: 0.05rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.08);
+      color: inherit;
+    }
+    .quick-pill.active .pill-count {
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }
+    .quick-pill.pending .pill-count {
+      background: #f59e0b;
+      color: #ffffff;
+    }
+    .quick-pill.pending.active .pill-count {
+      background: #ffffff;
+      color: #b45309;
+    }
+
+    #usersTab .admin-table-container {
+      overflow: visible !important;
+      max-width: 100%;
+    }
+    .users-admin-table {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .users-admin-table th {
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.85rem 0.75rem !important;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    .users-admin-table td {
+      padding: 0.85rem 0.75rem !important;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+      font-size: 0.82rem;
+      overflow: visible !important;
+    }
+    .users-admin-table tbody tr {
+      transition: background 0.15s ease;
+    }
+    .users-admin-table tbody tr:hover {
+      background: #f8fafc;
+    }
+    .users-admin-table th:last-child,
+    .users-admin-table td:last-child {
+      padding-right: 1.25rem !important;
+      text-align: right;
+    }
+
+    /* Mockup-Matched Row Element Styles */
+    .user-index-num {
+      font-weight: 700;
+      color: #0f172a;
+      font-size: 0.88rem;
+    }
+    .user-avatar-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .user-profile-title {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #0f172a;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      text-align: left;
+      line-height: 1.2;
+      transition: color 0.15s ease;
+    }
+    .user-profile-title:hover {
+      color: #2563eb;
+      text-decoration: underline;
+    }
+
+    /* Mockup-Matched Plan Badges */
+    .badge-plan-pro {
+      display: inline-block;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #dbeafe;
+      font-weight: 700;
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-plan-starter {
+      display: inline-block;
+      background: #f0fdfa;
+      color: #0d9488;
+      border: 1px solid #ccfbf1;
+      font-weight: 700;
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-plan-agency {
+      display: inline-block;
+      background: #fdf4ff;
+      color: #a21caf;
+      border: 1px solid #f5d0fe;
+      font-weight: 700;
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* Mockup-Matched Status Badges */
+    .status-pill-active {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #dcfce7;
+      color: #15803d;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.22rem 0.65rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .status-pill-active .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #16a34a;
+    }
+    .status-pill-pending {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #fef3c7;
+      color: #b45309;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.22rem 0.65rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .status-pill-pending .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #d97706;
+    }
+    .status-pill-suspended {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #fee2e2;
+      color: #dc2626;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.22rem 0.65rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .status-pill-suspended .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+
+    /* Mockup-Matched Action Buttons */
+    .btn-user-suspend {
+      background: #ffffff;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      border-radius: 999px;
+      padding: 0.32rem 0.85rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-user-suspend:hover {
+      background: #fef2f2;
+      border-color: #f87171;
+    }
+    .btn-user-activate {
+      background: #ffffff;
+      color: #16a34a;
+      border: 1px solid #86efac;
+      border-radius: 999px;
+      padding: 0.32rem 0.85rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-user-activate:hover {
+      background: #f0fdf4;
+      border-color: #4ade80;
+    }
+    .btn-user-approve {
+      background: #16a34a;
+      color: #ffffff;
+      border: 1px solid #15803d;
+      border-radius: 999px;
+      padding: 0.32rem 0.85rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-user-approve:hover {
+      background: #15803d;
+    }
+
+    /* Kebab Dropdown Menu */
+    .user-kebab-wrap {
+      position: relative;
+      display: inline-block;
+    }
+    .btn-kebab-menu {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      color: #64748b;
+      font-size: 1.15rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: all 0.15s ease;
+    }
+    .btn-kebab-menu:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    .kebab-dropdown {
+      position: absolute;
+      right: 0;
+      top: 110%;
+      z-index: 999;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+      min-width: 210px;
+      padding: 0.35rem;
+      text-align: left;
+    }
+    .kebab-dropdown.hidden {
+      display: none !important;
+    }
+    .kebab-dropdown button {
+      width: 100%;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.8rem;
+      color: #334155;
+      background: none;
+      border: none;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.1s ease;
+    }
+    .kebab-dropdown button:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .kebab-dropdown button.danger-item {
+      color: #dc2626;
+    }
+    .kebab-dropdown button.danger-item:hover {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .kebab-dropdown-divider {
+      height: 1px;
+      background: #f1f5f9;
+      margin: 0.25rem 0;
+    }
+
+    @media (max-width: 768px) {
+      .user-modal-kpi-grid,
+      .user-modal-details-grid,
+      .user-templates-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  </style>
+
   <!-- Notification Toast -->
   <div id="toast" class="toast hidden"></div>
 
   <!-- Admin Controller Script -->
-  <script src="app.js?v=3.1.0"></script>
+  <script src="app.js?v=3.3.1"></script>
 </body>
 </html>

@@ -26,7 +26,12 @@ class UserController {
       const user = await register(req.body);
       // Every registered user receives one isolated WhatsApp instance.
       const instance = await instanceService.createInstance(`${user.fullName}'s WhatsApp`, user._id.toString());
-      return res.status(201).json({ success: true, data: { user: publicUser(user), instance } });
+      return res.status(201).json({
+        success: true,
+        isPending: true,
+        message: 'Account created successfully! Your account is pending administrator approval before you can sign in.',
+        data: { user: publicUser(user), instance }
+      });
     } catch (error) {
       return res.status(error.message.includes('required') || error.message.includes('valid') || error.message.includes('Password') || error.message.includes('already') ? 400 : 503)
         .json({ success: false, error: error.message || 'Could not register user.' });
@@ -37,6 +42,30 @@ class UserController {
     try {
       const user = await authenticate(req.body.username, req.body.password);
       if (!user) return res.status(401).json({ success: false, error: 'Invalid username or password.' });
+
+      // Check Administrator Approval status
+      if (user.status === 'pending' || user.isApproved === false) {
+        return res.status(403).json({
+          success: false,
+          isPending: true,
+          error: 'તમારું એકાઉન્ટ હજુ પેન્ડિંગ છે. એડમિન દ્વારા મંજૂર (Approve) કર્યા પછી જ તમે લોગિન કરી શકશો. (Your account is pending admin approval).'
+        });
+      }
+
+      if (user.status === 'inactive' || user.status === 'suspended') {
+        return res.status(403).json({
+          success: false,
+          error: 'Your account has been deactivated or suspended by the administrator.'
+        });
+      }
+
+      if (user.status === 'rejected') {
+        return res.status(403).json({
+          success: false,
+          error: 'Your account registration was not approved.'
+        });
+      }
+
       // Supports existing MongoDB users who were registered before their
       // WhatsApp instance record was created.
       await instanceService.ensureUserInstance(user);
@@ -184,7 +213,7 @@ class UserController {
       });
 
       if (!user) {
-        // Auto-create new user account for this phone
+        // Auto-create new user account for this phone (requires admin approval)
         const newDoc = {
           fullName: `WhatsApp User (+${cleanPhone})`,
           username: `wa_${cleanPhone}`,
@@ -192,9 +221,10 @@ class UserController {
           phone: cleanPhone,
           phoneNumber: cleanPhone,
           role: 'user',
-          status: 'active',
+          status: 'pending', // Requires administrator approval before login
+          isApproved: false,
           plan: 'Pro SaaS Plan',
-          planStatus: 'active',
+          planStatus: 'pending',
           messageQuota: 2500,
           messagesUsed: 0,
           planExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -215,6 +245,29 @@ class UserController {
           user.phoneNumber = cleanPhone;
         }
         await instanceService.ensureUserInstance(user);
+      }
+
+      // Check Administrator Approval status
+      if (user.status === 'pending' || user.isApproved === false) {
+        return res.status(403).json({
+          success: false,
+          isPending: true,
+          error: 'તમારું એકાઉન્ટ હજુ પેન્ડિંગ છે. એડમિન દ્વારા મંજૂર (Approve) કર્યા પછી જ તમે લોગિન કરી શકશો. (Your account is pending admin approval).'
+        });
+      }
+
+      if (user.status === 'inactive' || user.status === 'suspended') {
+        return res.status(403).json({
+          success: false,
+          error: 'Your account has been deactivated or suspended by the administrator.'
+        });
+      }
+
+      if (user.status === 'rejected') {
+        return res.status(403).json({
+          success: false,
+          error: 'Your account registration was not approved.'
+        });
       }
 
       // Set cookie session

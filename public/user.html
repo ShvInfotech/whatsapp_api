@@ -1636,7 +1636,7 @@
       <div class="modal-header flex-between">
         <div style="display:flex; align-items:center; gap:0.5rem;">
           <span style="font-size:1.3rem;">📑</span>
-          <h3>Create Custom Message Template</h3>
+          <h3 id="modalNewTemplateTitle">Create Custom Message Template</h3>
         </div>
         <button type="button" class="modal-close-btn" id="btnCloseNewTplModal">✕</button>
       </div>
@@ -1730,7 +1730,7 @@
         <div class="modal-footer flex-between">
           <button type="button" class="btn btn-secondary" id="btnCancelNewTpl">Cancel</button>
           <button type="submit" class="btn btn-primary" id="btnSaveTemplate">
-            <span>💾 Save Template</span>
+            <span id="btnSaveTemplateText">💾 Save Template</span>
           </button>
         </div>
       </form>
@@ -1795,6 +1795,6 @@
 
   <!-- SheetJS library for high-speed client-side Excel (.xlsx, .xls) and CSV parsing -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="user.js?v=3.0.0"></script>
+  <script src="user.js?v=3.1.0"></script>
 </body>
 </html>
