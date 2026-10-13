@@ -1,5 +1,16 @@
 [
   {
+    "id": "log_7fe15c2b3ae8",
+    "userId": "6ab20d1a57d571d629bc6b5d",
+    "instanceId": "4068FFEC6F3FE",
+    "recipient": "918140349408",
+    "type": "media",
+    "preview": "Hello! 👋 Thank you for connecting with us. How can we assist you today?",
+    "status": "sent",
+    "error": null,
+    "timestamp": "2026-10-13T04:04:33.737Z"
+  },
+  {
     "id": "log_8da1383658ff",
     "userId": "6ab362bf89f5077435419198",
     "instanceId": "CCF2735942273",

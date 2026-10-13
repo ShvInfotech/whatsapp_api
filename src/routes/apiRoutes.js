@@ -7,6 +7,7 @@ const requireAdmin = require('../middlewares/adminAuthMiddleware');
 const requireUser = require('../middlewares/userAuthMiddleware');
 const userController = require('../controllers/userController');
 const uploadController = require('../controllers/uploadController');
+const metaCloudController = require('../controllers/metaCloudController');
 
 /**
  * ====================================================================
@@ -35,6 +36,10 @@ router.get('/public/instance-qr', (req, res) => instanceController.publicQr(req,
 // Public Image / Document Upload Endpoint (Returns public URL)
 router.post('/upload', (req, res) => uploadController.handleUpload(req, res));
 router.post('/upload-media', (req, res) => uploadController.handleUpload(req, res));
+
+// Official Meta WhatsApp Cloud API (Templates with Image & Buttons)
+router.post('/meta/send-template', (req, res) => metaCloudController.handleSendTemplate(req, res));
+router.post('/meta/send-interactive', (req, res) => metaCloudController.handleSendInteractive(req, res));
 
 /**
  * ====================================================================

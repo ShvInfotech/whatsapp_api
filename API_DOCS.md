@@ -478,3 +478,53 @@ def send_bulk_whatsapp(numbers: list, message: str):
 2. **Contact Validation**: The API automatically checks if each number is on WhatsApp before attempting to send.
 3. **Presence Simulation**: Humanized typing state is simulated before sending.
 4. **Number Warmup**: If using a newly activated SIM, start with 15 messages on Day 1, 30 on Day 2, and 50-60 on Day 3 onwards.
+
+---
+
+## 🟢 Meta WhatsApp Cloud API (Official Template & Interactive Buttons)
+
+Use these endpoints to send **official WhatsApp messages with clickable buttons (CTA / Quick Reply)** matching Meta's native templates.
+
+### 1. Send Interactive Buttons (Image Header + Text + Up to 3 Buttons)
+`POST /api/meta/send-interactive`
+
+**Request Body:**
+```json
+{
+  "to": "919876543210",
+  "image_url": "https://yourdomain.com/uploads/banner.jpg",
+  "message": "Hi Gajera Yash Viplbhai\n\nAn update is available for ready-to-move luxury homes at Ambience Creacions, Sector 22, Gurugram.\n\nExplore 3, 4 & 5 BHK apartments with 51+ lifestyle amenities.",
+  "footer": "Reply STOP to Unsubscribe",
+  "buttons": [
+    { "id": "btn_check_now", "title": "Check Now" },
+    { "id": "btn_not_interested", "title": "Not Interested" }
+  ],
+  "phone_number_id": "YOUR_META_PHONE_NUMBER_ID",
+  "access_token": "YOUR_META_SYSTEM_USER_ACCESS_TOKEN"
+}
+```
+
+### 2. Send Approved Meta Template (Header Image + Dynamic Variables + Buttons)
+`POST /api/meta/send-template`
+
+**Request Body:**
+```json
+{
+  "to": "919876543210",
+  "template_name": "ambience_creacions_update",
+  "language": "en",
+  "header_image": "https://yourdomain.com/uploads/banner.jpg",
+  "variables": [
+    "Gajera Yash Viplbhai",
+    "Sector 22, Gurugram"
+  ],
+  "buttons": [
+    { "type": "url", "index": 0, "text": "creacions" },
+    { "type": "quick_reply", "index": 1, "payload": "NOT_INTERESTED" }
+  ],
+  "phone_number_id": "YOUR_META_PHONE_NUMBER_ID",
+  "access_token": "YOUR_META_ACCESS_TOKEN"
+}
+```
+
+> **Tip:** You can also define `META_PHONE_NUMBER_ID` and `META_ACCESS_TOKEN` directly in `.env` so you don't need to pass them in every request.
