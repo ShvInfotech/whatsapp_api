@@ -7,6 +7,11 @@ const QRCode = require('qrcode');
 const config = require('../config');
 const { buildMessageMedia } = require('./mediaService');
 const whatsappService = require('./whatsappService');
+const {
+  DEFAULT_PUPPETEER_ARGS,
+  executeWithFrameRetry,
+  ensurePageHealthyAndReady
+} = require('./puppeteerHelper');
 
 class InstanceService {
   constructor() {
@@ -163,18 +168,7 @@ class InstanceService {
 
     const puppeteerOptions = {
       headless: config.headless,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu',
-        '--disable-extensions',
-        '--disable-default-apps',
-        '--mute-audio'
-      ]
+      args: [...DEFAULT_PUPPETEER_ARGS]
     };
 
     if (config.chromePath) {
@@ -655,6 +649,17 @@ class InstanceService {
       throw new Error(`WhatsApp instance '${state.name || instanceId}' is not connected. Current status: ${state.status}`);
     }
 
+    if (state.client.pupBrowser && typeof state.client.pupBrowser.isConnected === 'function' && !state.client.pupBrowser.isConnected()) {
+      state.status = 'DISCONNECTED';
+      this.updateStoreRecord(instanceId, { status: 'DISCONNECTED' });
+      throw new Error(`WhatsApp instance '${state.name || instanceId}' browser disconnected or crashed.`);
+    }
+    if (state.client.pupPage && state.client.pupPage.isClosed()) {
+      state.status = 'DISCONNECTED';
+      this.updateStoreRecord(instanceId, { status: 'DISCONNECTED' });
+      throw new Error(`WhatsApp instance '${state.name || instanceId}' page was closed.`);
+    }
+
     if (!recipientPhone || !recipientPhone.toString().trim()) {
       throw new Error('Recipient phone number is required.');
     }
@@ -675,10 +680,14 @@ class InstanceService {
     const chatId = `${sanitized}@c.us`;
     let targetJid = chatId;
 
-    // Resolve registered WhatsApp ID via getNumberId
+    // Resolve registered WhatsApp ID via getNumberId with detached frame retry
     try {
       if (typeof state.client.getNumberId === 'function') {
-        const numberDetails = await state.client.getNumberId(sanitized);
+        const numberDetails = await executeWithFrameRetry(
+          () => state.client.getNumberId(sanitized),
+          state.client,
+          { maxRetries: 3, initialDelay: 800, logPrefix: `[InstanceService][${instanceId}]` }
+        );
         if (numberDetails && numberDetails._serialized) {
           targetJid = numberDetails._serialized;
         }
@@ -710,27 +719,31 @@ class InstanceService {
       // Convert WebP to JPEG so WhatsApp Web sends it as a standard photo with caption (not a sticker without caption)
       if (media.mimetype && media.mimetype.includes('webp') && state.client && state.client.pupPage) {
         try {
-          const convertedJpeg = await state.client.pupPage.evaluate(async (base64Webp) => {
-            return new Promise((resolve) => {
-              const img = new Image();
-              img.onload = () => {
-                try {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = img.naturalWidth || 800;
-                  canvas.height = img.naturalHeight || 800;
-                  const ctx = canvas.getContext('2d');
-                  ctx.fillStyle = '#FFFFFF';
-                  ctx.fillRect(0, 0, canvas.width, canvas.height);
-                  ctx.drawImage(img, 0, 0);
-                  resolve(canvas.toDataURL('image/jpeg', 0.92));
-                } catch (e) {
-                  resolve(null);
-                }
-              };
-              img.onerror = () => resolve(null);
-              img.src = base64Webp.startsWith('data:') ? base64Webp : `data:image/webp;base64,${base64Webp}`;
-            });
-          }, media.data);
+          const convertedJpeg = await executeWithFrameRetry(
+            () => state.client.pupPage.evaluate(async (base64Webp) => {
+              return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                  try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth || 800;
+                    canvas.height = img.naturalHeight || 800;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL('image/jpeg', 0.92));
+                  } catch (e) {
+                    resolve(null);
+                  }
+                };
+                img.onerror = () => resolve(null);
+                img.src = base64Webp.startsWith('data:') ? base64Webp : `data:image/webp;base64,${base64Webp}`;
+              });
+            }, media.data),
+            state.client,
+            { maxRetries: 2, initialDelay: 500, logPrefix: `[InstanceService][${instanceId}]` }
+          );
 
           if (convertedJpeg && convertedJpeg.startsWith('data:image/jpeg;base64,')) {
             media.data = convertedJpeg.replace(/^data:image\/jpeg;base64,/, '');
@@ -744,14 +757,17 @@ class InstanceService {
       }
     }
 
-    // Helper to send content with LID & standard chatId recovery
+    // Helper to send content with LID & standard chatId recovery and detached frame resilience
     const sendToTarget = async (content, options = null) => {
-      let result = null;
       const hasOpts = options && Object.keys(options).length > 0;
+      const doSend = (to) => (hasOpts ? state.client.sendMessage(to, content, options) : state.client.sendMessage(to, content));
+
       try {
-        result = hasOpts
-          ? await state.client.sendMessage(targetJid, content, options)
-          : await state.client.sendMessage(targetJid, content);
+        return await executeWithFrameRetry(
+          () => doSend(targetJid),
+          state.client,
+          { maxRetries: 3, initialDelay: 1000, logPrefix: `[InstanceService][${instanceId}]` }
+        );
       } catch (sendErr) {
         console.warn(`[InstanceService] [${instanceId}] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
 
@@ -759,29 +775,31 @@ class InstanceService {
         if (lidInfo && lidInfo.lid && lidInfo.lid !== targetJid) {
           try {
             console.log(`[InstanceService] [${instanceId}] Retrying send directly to LID: ${lidInfo.lid}`);
-            result = hasOpts
-              ? await state.client.sendMessage(lidInfo.lid, content, options)
-              : await state.client.sendMessage(lidInfo.lid, content);
+            return await executeWithFrameRetry(
+              () => doSend(lidInfo.lid),
+              state.client,
+              { maxRetries: 2, initialDelay: 1000, logPrefix: `[InstanceService][${instanceId}]` }
+            );
           } catch (lidRetryErr) {
             console.warn(`[InstanceService] [${instanceId}] Direct LID send failed:`, lidRetryErr.message);
           }
         }
 
         // 2. Try sending to raw chatId if target was different
-        if (!result && targetJid !== chatId) {
+        if (targetJid !== chatId) {
           try {
             console.log(`[InstanceService] [${instanceId}] Retrying send to standard chatId: ${chatId}`);
-            result = hasOpts
-              ? await state.client.sendMessage(chatId, content, options)
-              : await state.client.sendMessage(chatId, content);
+            return await executeWithFrameRetry(
+              () => doSend(chatId),
+              state.client,
+              { maxRetries: 2, initialDelay: 1000, logPrefix: `[InstanceService][${instanceId}]` }
+            );
           } catch (chatRetryErr) {
-            console.warn(`[InstanceService] [${instanceId}] Standard chatId send failed:`, chatRetryErr.message);
+            console.warn('[InstanceService] Standard chatId send failed:', chatRetryErr.message);
           }
         }
 
-        if (!result) {
-          throw sendErr;
-        }
+        throw sendErr;
       }
       return result;
     };

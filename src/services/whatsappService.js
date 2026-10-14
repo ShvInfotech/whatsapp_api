@@ -4,6 +4,11 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode');
 const config = require('../config');
 const { buildMessageMedia } = require('./mediaService');
+const {
+  DEFAULT_PUPPETEER_ARGS,
+  executeWithFrameRetry,
+  ensurePageHealthyAndReady
+} = require('./puppeteerHelper');
 
 class WhatsAppService {
   constructor() {
@@ -48,15 +53,7 @@ class WhatsAppService {
 
     const puppeteerOptions = {
       headless: config.headless,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu'
-      ]
+      args: [...DEFAULT_PUPPETEER_ARGS]
     };
 
     if (config.chromePath) {
@@ -589,6 +586,15 @@ class WhatsAppService {
       throw new Error(`WhatsApp client is not ready. Current status: ${this.status}. Please scan QR code first.`);
     }
 
+    if (this.client.pupBrowser && typeof this.client.pupBrowser.isConnected === 'function' && !this.client.pupBrowser.isConnected()) {
+      this.status = 'DISCONNECTED';
+      throw new Error('WhatsApp browser instance disconnected or crashed. Please wait a moment or restart session.');
+    }
+    if (this.client.pupPage && this.client.pupPage.isClosed()) {
+      this.status = 'DISCONNECTED';
+      throw new Error('WhatsApp browser page was closed.');
+    }
+
     const hasMedia = !!mediaOptions;
     const msgText = (typeof message === 'string') ? message.trim() : (message !== undefined && message !== null ? message.toString().trim() : '');
 
@@ -598,14 +604,22 @@ class WhatsAppService {
 
     const { cleaned, jid } = this.formatPhoneNumber(phoneNumber);
 
-    // Get the registered WhatsApp ID for the number
+    // Get the registered WhatsApp ID for the number with detached frame retry
     let targetJid = jid;
     try {
-      const numberDetails = await this.client.getNumberId(cleaned);
+      const numberDetails = await executeWithFrameRetry(
+        () => this.client.getNumberId(cleaned),
+        this.client,
+        { maxRetries: 3, initialDelay: 800, logPrefix: '[WhatsAppService]' }
+      );
       if (numberDetails && numberDetails._serialized) {
         targetJid = numberDetails._serialized;
       } else {
-        const isRegistered = await this.client.isRegisteredUser(jid);
+        const isRegistered = await executeWithFrameRetry(
+          () => this.client.isRegisteredUser(jid),
+          this.client,
+          { maxRetries: 2, initialDelay: 800, logPrefix: '[WhatsAppService]' }
+        );
         if (!isRegistered) {
           throw new Error(`Phone number ${cleaned} is not registered on WhatsApp.`);
         }
@@ -637,27 +651,31 @@ class WhatsAppService {
       // Convert WebP to JPEG so WhatsApp Web sends it as a standard photo with caption (not a sticker without caption)
       if (media.mimetype && media.mimetype.includes('webp') && this.client && this.client.pupPage) {
         try {
-          const convertedJpeg = await this.client.pupPage.evaluate(async (base64Webp) => {
-            return new Promise((resolve) => {
-              const img = new Image();
-              img.onload = () => {
-                try {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = img.naturalWidth || 800;
-                  canvas.height = img.naturalHeight || 800;
-                  const ctx = canvas.getContext('2d');
-                  ctx.fillStyle = '#FFFFFF';
-                  ctx.fillRect(0, 0, canvas.width, canvas.height);
-                  ctx.drawImage(img, 0, 0);
-                  resolve(canvas.toDataURL('image/jpeg', 0.92));
-                } catch (e) {
-                  resolve(null);
-                }
-              };
-              img.onerror = () => resolve(null);
-              img.src = base64Webp.startsWith('data:') ? base64Webp : `data:image/webp;base64,${base64Webp}`;
-            });
-          }, media.data);
+          const convertedJpeg = await executeWithFrameRetry(
+            () => this.client.pupPage.evaluate(async (base64Webp) => {
+              return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                  try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth || 800;
+                    canvas.height = img.naturalHeight || 800;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL('image/jpeg', 0.92));
+                  } catch (e) {
+                    resolve(null);
+                  }
+                };
+                img.onerror = () => resolve(null);
+                img.src = base64Webp.startsWith('data:') ? base64Webp : `data:image/webp;base64,${base64Webp}`;
+              });
+            }, media.data),
+            this.client,
+            { maxRetries: 2, initialDelay: 500, logPrefix: '[WhatsAppService]' }
+          );
 
           if (convertedJpeg && convertedJpeg.startsWith('data:image/jpeg;base64,')) {
             media.data = convertedJpeg.replace(/^data:image\/jpeg;base64,/, '');
@@ -671,14 +689,17 @@ class WhatsAppService {
       }
     }
 
-    // Helper to send content with LID & standard jid recovery
+    // Helper to send content with LID & standard jid recovery and detached frame resilience
     const sendToTarget = async (content, options = null) => {
-      let result = null;
       const hasOpts = options && Object.keys(options).length > 0;
+      const doSend = (to) => (hasOpts ? this.client.sendMessage(to, content, options) : this.client.sendMessage(to, content));
+
       try {
-        result = hasOpts
-          ? await this.client.sendMessage(targetJid, content, options)
-          : await this.client.sendMessage(targetJid, content);
+        return await executeWithFrameRetry(
+          () => doSend(targetJid),
+          this.client,
+          { maxRetries: 3, initialDelay: 1000, logPrefix: '[WhatsAppService]' }
+        );
       } catch (sendErr) {
         console.warn(`[WhatsAppService] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
 
@@ -686,31 +707,32 @@ class WhatsAppService {
         if (lidInfo && lidInfo.lid && lidInfo.lid !== targetJid) {
           try {
             console.log(`[WhatsAppService] Retrying send directly to LID: ${lidInfo.lid}`);
-            result = hasOpts
-              ? await this.client.sendMessage(lidInfo.lid, content, options)
-              : await this.client.sendMessage(lidInfo.lid, content);
+            return await executeWithFrameRetry(
+              () => doSend(lidInfo.lid),
+              this.client,
+              { maxRetries: 2, initialDelay: 1000, logPrefix: '[WhatsAppService]' }
+            );
           } catch (lidRetryErr) {
             console.warn('[WhatsAppService] Direct LID send failed:', lidRetryErr.message);
           }
         }
 
         // 2. Try sending to raw jid
-        if (!result && targetJid !== jid) {
+        if (targetJid !== jid) {
           try {
             console.log(`[WhatsAppService] Retrying send to standard jid: ${jid}`);
-            result = hasOpts
-              ? await this.client.sendMessage(jid, content, options)
-              : await this.client.sendMessage(jid, content);
+            return await executeWithFrameRetry(
+              () => doSend(jid),
+              this.client,
+              { maxRetries: 2, initialDelay: 1000, logPrefix: '[WhatsAppService]' }
+            );
           } catch (jidRetryErr) {
             console.warn('[WhatsAppService] Standard jid send failed:', jidRetryErr.message);
           }
         }
 
-        if (!result) {
-          throw sendErr;
-        }
+        throw sendErr;
       }
-      return result;
     };
 
     // Send Message:
