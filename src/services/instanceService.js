@@ -640,9 +640,36 @@ class InstanceService {
       };
     }
 
-    const state = this.instances.get(instanceId);
+    let state = this.instances.get(instanceId);
+    if (!state) {
+      const record = this.readStore().find((r) => r.id === instanceId);
+      if (record && record.phone) {
+        console.log(`[InstanceService] [${instanceId}] Starting client on demand...`);
+        try {
+          state = await this.startClient(record.id, record.name, record.accessToken, record.createdAt);
+        } catch (e) {
+          console.warn(`[InstanceService] [${instanceId}] Failed to auto-start client:`, e.message);
+        }
+      }
+    }
+
     if (!state) {
       throw new Error(`Instance '${instanceId}' is not active on this server.`);
+    }
+
+    if (state.status !== 'CONNECTED' || !state.client) {
+      const record = this.readStore().find((r) => r.id === instanceId);
+      if (record && record.phone && (state.status === 'DISCONNECTED' || !state.client)) {
+        console.log(`[InstanceService] [${instanceId}] Instance is disconnected. Attempting auto-reconnection...`);
+        try {
+          const restored = await this.startClient(record.id, record.name, record.accessToken, record.createdAt);
+          if (restored && restored.status === 'CONNECTED' && restored.client) {
+            state = restored;
+          }
+        } catch (restErr) {
+          console.warn(`[InstanceService] [${instanceId}] Auto-reconnect attempt failed:`, restErr.message);
+        }
+      }
     }
 
     if (state.status !== 'CONNECTED' || !state.client) {
@@ -660,6 +687,13 @@ class InstanceService {
       throw new Error(`WhatsApp instance '${state.name || instanceId}' page was closed.`);
     }
 
+    // Stabilize page and frame context before message dispatch
+    try {
+      if (state.client) {
+        await ensurePageHealthyAndReady(state.client);
+      }
+    } catch (_) {}
+
     if (!recipientPhone || !recipientPhone.toString().trim()) {
       throw new Error('Recipient phone number is required.');
     }
@@ -672,7 +706,13 @@ class InstanceService {
     }
 
     // Sanitize phone number (strip all non-digits, e.g. +, spaces, dashes)
-    const sanitized = recipientPhone.toString().replace(/\D/g, '');
+    let sanitized = recipientPhone.toString().replace(/\D/g, '');
+    if (sanitized.startsWith('00')) sanitized = sanitized.slice(2);
+    else if (sanitized.startsWith('0')) sanitized = sanitized.slice(1);
+    // If exactly 10 digits, auto-prefix India country code (91)
+    if (sanitized.length === 10) {
+      sanitized = `91${sanitized}`;
+    }
     if (sanitized.length < 10 || sanitized.length > 15) {
       throw new Error(`Invalid phone number length (${sanitized.length} digits). Provide full number with country code.`);
     }
@@ -771,6 +811,37 @@ class InstanceService {
       } catch (sendErr) {
         console.warn(`[InstanceService] [${instanceId}] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
 
+        // If "No LID for user" occurs, attempt to force contact & chat store sync
+        if (sendErr.message && sendErr.message.includes('No LID for user') && state.client && state.client.pupPage) {
+          try {
+            console.log(`[InstanceService] [${instanceId}] Syncing contact & chat store to resolve LID for ${targetJid}...`);
+            await state.client.pupPage.evaluate(async (jid) => {
+              try {
+                const widFactory = window.require ? window.require('WAWebWidFactory') : null;
+                const findChatAction = window.require ? window.require('WAWebFindChatAction') : null;
+                const queryJob = window.require ? window.require('WAWebQueryExistsJob') : null;
+                if (widFactory && widFactory.createWid) {
+                  const wid = widFactory.createWid(jid);
+                  if (queryJob && typeof queryJob.queryWidExists === 'function') {
+                    await queryJob.queryWidExists(wid);
+                  }
+                  if (findChatAction && typeof findChatAction.findOrCreateLatestChat === 'function') {
+                    await findChatAction.findOrCreateLatestChat(wid);
+                  }
+                }
+              } catch (_) {}
+            }, targetJid);
+
+            return await executeWithFrameRetry(
+              () => doSend(targetJid),
+              state.client,
+              { maxRetries: 2, initialDelay: 1000, logPrefix: `[InstanceService][${instanceId}]` }
+            );
+          } catch (syncRetryErr) {
+            console.warn(`[InstanceService] [${instanceId}] Post-sync retry failed:`, syncRetryErr.message);
+          }
+        }
+
         // 1. Try sending directly to LID if available and different from targetJid
         if (lidInfo && lidInfo.lid && lidInfo.lid !== targetJid) {
           try {
@@ -799,9 +870,12 @@ class InstanceService {
           }
         }
 
+        if (sendErr.message && sendErr.message.includes('No LID for user')) {
+          throw new Error(`Recipient (+${sanitized}) is not registered on WhatsApp or does not have an active account.`);
+        }
+
         throw sendErr;
       }
-      return result;
     };
 
     // Send Message:

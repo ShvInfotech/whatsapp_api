@@ -478,7 +478,7 @@ class AdminController {
       const templates = await templateService.getTemplates(uid);
 
       // Message logs & stats for this user
-      const logs = logService.getUserLogs(uid, 60);
+      const logs = logService.getUserLogs(uid, 200);
       const stats = logService.getUserStats(uid);
 
       // Razorpay billing transactions

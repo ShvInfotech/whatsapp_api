@@ -95,6 +95,7 @@ router.get('/admin/dashboard-stats', (req, res) => adminController.getDashboardS
 router.get('/admin/users', (req, res) => adminController.getUsers(req, res));
 router.post('/admin/users/create', (req, res) => adminController.createUser(req, res));
 router.get('/admin/users/:id/details', (req, res) => adminController.getUserDetails(req, res));
+router.get('/admin/users/:id/messages', (req, res) => adminController.getUserMessageHistory(req, res));
 router.post('/admin/users/:id/approve', (req, res) => adminController.approveUser(req, res));
 router.post('/admin/users/:id/reject', (req, res) => adminController.rejectUser(req, res));
 router.post('/admin/users/credits', (req, res) => adminController.updateUserCredits(req, res));

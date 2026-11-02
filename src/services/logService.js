@@ -69,7 +69,7 @@ class LogService {
     }
   }
 
-  getUserLogs(userId, limit = 50) {
+  getUserLogs(userId, limit = 150) {
     const uid = userId ? userId.toString() : null;
     const all = this.readStore();
     const userLogs = uid ? all.filter((l) => l.userId === uid) : all;

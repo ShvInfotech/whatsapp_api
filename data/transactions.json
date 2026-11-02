@@ -1,5 +1,21 @@
 [
   {
+    "id": "tx_c599efc8f41f",
+    "orderId": "ord_1793594883595",
+    "paymentId": "pay_1793594883595",
+    "userId": "6ab11fb4efa3c9a73a9013a1",
+    "userName": "Darshik Shekhada",
+    "userEmail": "darshikshekhada07@gmail.com",
+    "planId": "agency",
+    "planName": "Admin Plan Assignment (Agency Unlimited Plan)",
+    "amount": 3999,
+    "currency": "INR",
+    "creditsAdded": 100000,
+    "status": "captured",
+    "method": "Admin Plan Assignment",
+    "createdAt": "2026-11-02T04:48:03.595Z"
+  },
+  {
     "id": "tx_seed_101",
     "orderId": "order_PRO_98241",
     "paymentId": "pay_PRO_48102948",

@@ -22,7 +22,7 @@ All WhatsApp API routes require the HTTP-only administrator session created by d
 `POST /api/auth/login`
 
 ```json
-{ "username": "admin", "password": "your-password" }
+{ "username": "admin", "password": "Admin@123" }
 ```
 
 ### Forgot Password
@@ -33,7 +33,7 @@ All WhatsApp API routes require the HTTP-only administrator session created by d
 {
   "username": "admin",
   "email": "admin@safevault.local",
-  "recoveryCode": "your-recovery-code",
+  "recoveryCode": "32f1501268f4e67a96528a857782de08",
   "newPassword": "minimum-8-characters"
 }
 ```
@@ -44,25 +44,25 @@ After verification, the password hash is updated dynamically in `data/admin.json
 
 ## 📑 Summary of Endpoints
 
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/login` | Create administrator session | Public |
-| `POST` | `/api/auth/forgot-password` | Reset password after recovery verification | Public |
-| `GET`/`POST` | `/api/send` | **SendBuddy Compatible API** (Dispatch via `instance_id` & `access_token`) | Public / Token |
-| `POST` | `/api/send-template` | **E-Commerce & Dynamic Template API** (Variables replacement) | Public / Token |
-| `GET` | `/scan.html` | Public standalone QR scan page for client device pairing | Public |
-| `GET` | `/api/instances` | List all WhatsApp client instances | Admin |
-| `POST` | `/api/instances` | Create new client instance and generate credentials | Admin |
-| `GET` | `/api/instances/:id/qr` | Get QR code and live connection status for instance | Admin |
-| `POST` | `/api/instances/:id/reset` | Clear instance session and generate fresh QR | Admin |
-| `DELETE` | `/api/instances/:id` | Delete instance and remove all session files | Admin |
-| `GET` | `/api/status` | Check WhatsApp client connection status and device details | Admin |
-| `GET` | `/api/qr` | Get current pairing QR code (JSON or Browser HTML view) | Admin |
-| `POST` | `/api/send-message` | Send a single WhatsApp message to one number | Admin |
-| `POST` | `/api/send-bulk` | Send bulk WhatsApp messages with 4-5s Anti-Ban jitter delay | Admin |
-| `GET` | `/api/reset-session` | Clear session cache and generate fresh QR code | Admin |
-| `POST` | `/api/logout` | Disconnect WhatsApp client and clear session | Admin |
-| `GET` | `/api/health` | Health check endpoint returning microservice info | Admin |
+| Method       | Endpoint                    | Description                                                                | Access         |
+| :----------- | :-------------------------- | :------------------------------------------------------------------------- | :------------- |
+| `POST`       | `/api/auth/login`           | Create administrator session                                               | Public         |
+| `POST`       | `/api/auth/forgot-password` | Reset password after recovery verification                                 | Public         |
+| `GET`/`POST` | `/api/send`                 | **SendBuddy Compatible API** (Dispatch via `instance_id` & `access_token`) | Public / Token |
+| `POST`       | `/api/send-template`        | **E-Commerce & Dynamic Template API** (Variables replacement)              | Public / Token |
+| `GET`        | `/scan.html`                | Public standalone QR scan page for client device pairing                   | Public         |
+| `GET`        | `/api/instances`            | List all WhatsApp client instances                                         | Admin          |
+| `POST`       | `/api/instances`            | Create new client instance and generate credentials                        | Admin          |
+| `GET`        | `/api/instances/:id/qr`     | Get QR code and live connection status for instance                        | Admin          |
+| `POST`       | `/api/instances/:id/reset`  | Clear instance session and generate fresh QR                               | Admin          |
+| `DELETE`     | `/api/instances/:id`        | Delete instance and remove all session files                               | Admin          |
+| `GET`        | `/api/status`               | Check WhatsApp client connection status and device details                 | Admin          |
+| `GET`        | `/api/qr`                   | Get current pairing QR code (JSON or Browser HTML view)                    | Admin          |
+| `POST`       | `/api/send-message`         | Send a single WhatsApp message to one number                               | Admin          |
+| `POST`       | `/api/send-bulk`            | Send bulk WhatsApp messages with 4-5s Anti-Ban jitter delay                | Admin          |
+| `GET`        | `/api/reset-session`        | Clear session cache and generate fresh QR code                             | Admin          |
+| `POST`       | `/api/logout`               | Disconnect WhatsApp client and clear session                               | Admin          |
+| `GET`        | `/api/health`               | Health check endpoint returning microservice info                          | Admin          |
 
 ---
 
@@ -78,26 +78,30 @@ Use this endpoint to connect existing desktop software (VB.NET, C#, Python, PHP)
 ### Request URL Formats:
 
 #### 1. Image + Text (Photo with Caption) - GET:
+
 ```text
 http://<your-server>/api/send?number=919876543210&type=text&message=Invoice+%231042+Attached&media_url=https://example.com/invoice.jpg&instance_id=679B485A1510B&access_token=679b262160af7
 ```
 
 #### 2. Text Only - GET:
+
 ```text
 http://<your-server>/api/send?number=919876543210&type=text&message=Your+message+here&instance_id=679B485A1510B&access_token=679b262160af7
 ```
 
 ### Parameters:
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `number` (or `phone`) | string | **Yes** | Recipient mobile number with country code (e.g. `919876543210`) |
-| `message` (or `caption`) | string | **Yes\*** | Text content or Photo caption (\*Required unless sending image only) |
-| `media_url` (or `media`) | string | Optional | Public image URL or Base64 string. When provided with `message`, WhatsApp delivers the photo with the text as caption! |
-| `type` | string | No | Message type (`text` default) |
-| `instance_id` | string | **Yes** | Client WhatsApp instance identifier |
-| `access_token` | string | **Yes** | Instance secret authorization token |
+
+| Parameter                | Type   | Required  | Description                                                                                                            |
+| :----------------------- | :----- | :-------- | :--------------------------------------------------------------------------------------------------------------------- |
+| `number` (or `phone`)    | string | **Yes**   | Recipient mobile number with country code (e.g. `919876543210`)                                                        |
+| `message` (or `caption`) | string | **Yes\*** | Text content or Photo caption (\*Required unless sending image only)                                                   |
+| `media_url` (or `media`) | string | Optional  | Public image URL or Base64 string. When provided with `message`, WhatsApp delivers the photo with the text as caption! |
+| `type`                   | string | No        | Message type (`text` default)                                                                                          |
+| `instance_id`            | string | **Yes**   | Client WhatsApp instance identifier                                                                                    |
+| `access_token`           | string | **Yes**   | Instance secret authorization token                                                                                    |
 
 ### POST Body (JSON Format):
+
 ```json
 POST /api/send
 Content-Type: application/json
@@ -112,6 +116,7 @@ Content-Type: application/json
 ```
 
 ### VB.NET Desktop Example (Image + Caption):
+
 ```vb
 Dim strMobileNo As String = "919876543210"
 Dim strMessage As String = "Invoice #1042 has been generated."
@@ -126,6 +131,7 @@ Dim response As String = client.DownloadString(requestUrl)
 ```
 
 ### Success Response (`200 OK`):
+
 ```json
 {
   "status": "success",
@@ -141,6 +147,7 @@ Dim response As String = client.DownloadString(requestUrl)
 ```
 
 ### Error Response (`400` / `401`):
+
 ```json
 {
   "status": "error",
@@ -153,12 +160,14 @@ Dim response As String = client.DownloadString(requestUrl)
 ## 📖 Endpoint Details
 
 ### 1. Connection Status
+
 Checks whether the WhatsApp client is currently connected and ready to transmit messages.
 
 - **Method:** `GET`
 - **Path:** `/api/status`
 
 #### Success Response (`200 OK`):
+
 ```json
 {
   "success": true,
@@ -178,6 +187,7 @@ Checks whether the WhatsApp client is currently connected and ready to transmit 
 ```
 
 #### Possible `status` values:
+
 - `CONNECTED`: Ready to send and receive messages.
 - `AUTHENTICATING`: Linked session is loading from local cache.
 - `QR_READY`: Waiting for user to scan pairing QR code.
@@ -187,6 +197,7 @@ Checks whether the WhatsApp client is currently connected and ready to transmit 
 ---
 
 ### 2. Pairing QR Code
+
 Retrieves the QR code needed to pair a phone with the microservice.
 
 - **Method:** `GET`
@@ -194,6 +205,7 @@ Retrieves the QR code needed to pair a phone with the microservice.
 - **Query Parameter (Optional):** `?format=html` (Forces HTML view)
 
 #### Behavior:
+
 - **In Web Browser:** Renders a clean, auto-refreshing QR scanning page.
 - **In API Request (JSON):**
 
@@ -209,6 +221,7 @@ Retrieves the QR code needed to pair a phone with the microservice.
 ---
 
 ### 3. Send Single Message
+
 Dispatches a text message to a single WhatsApp contact.
 
 - **Method:** `POST`
@@ -216,6 +229,7 @@ Dispatches a text message to a single WhatsApp contact.
 - **Headers:** `Content-Type: application/json`
 
 #### Request Body:
+
 ```json
 {
   "phoneNumber": "918140349408",
@@ -223,12 +237,13 @@ Dispatches a text message to a single WhatsApp contact.
 }
 ```
 
-| Field | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `phoneNumber` | String | **Yes** | Destination number with country code (e.g. `918140349408` or `+91 81403 49408`). Non-digits are automatically stripped. |
-| `message` | String | **Yes** | Message text to deliver. Supports WhatsApp markdown (`*bold*`, `_italic_`, `~strike~`, ` ```code``` `). |
+| Field         | Type   | Required | Description                                                                                                             |
+| :------------ | :----- | :------- | :---------------------------------------------------------------------------------------------------------------------- |
+| `phoneNumber` | String | **Yes**  | Destination number with country code (e.g. `918140349408` or `+91 81403 49408`). Non-digits are automatically stripped. |
+| `message`     | String | **Yes**  | Message text to deliver. Supports WhatsApp markdown (`*bold*`, `_italic_`, `~strike~`, ` ```code``` `).                 |
 
 #### Success Response (`200 OK`):
+
 ```json
 {
   "success": true,
@@ -243,18 +258,26 @@ Dispatches a text message to a single WhatsApp contact.
 ```
 
 #### Error Responses:
+
 - `400 Bad Request`: Number is not registered on WhatsApp.
   ```json
-  { "success": false, "error": "Phone number 918140349408 is not registered on WhatsApp." }
+  {
+    "success": false,
+    "error": "Phone number 918140349408 is not registered on WhatsApp."
+  }
   ```
 - `503 Service Unavailable`: WhatsApp client is not connected.
   ```json
-  { "success": false, "error": "WhatsApp client is not ready. Current status: DISCONNECTED. Please scan QR code first." }
+  {
+    "success": false,
+    "error": "WhatsApp client is not ready. Current status: DISCONNECTED. Please scan QR code first."
+  }
   ```
 
 ---
 
 ### 4. Send Bulk Messages (With 4-5s Anti-Ban Delay)
+
 Sends messages to multiple contacts sequentially with randomized anti-spam jitter delay.
 
 - **Method:** `POST`
@@ -262,13 +285,10 @@ Sends messages to multiple contacts sequentially with randomized anti-spam jitte
 - **Headers:** `Content-Type: application/json`
 
 #### Request Body - Option A: Same message to multiple numbers
+
 ```json
 {
-  "phoneNumbers": [
-    "918140349408",
-    "919727899812",
-    "919876543210"
-  ],
+  "phoneNumbers": ["918140349408", "919727899812", "919876543210"],
   "message": "Safe Vault Alert: Scheduled server maintenance is tonight at 11:00 PM.",
   "options": {
     "minDelayMs": 4000,
@@ -278,6 +298,7 @@ Sends messages to multiple contacts sequentially with randomized anti-spam jitte
 ```
 
 #### Request Body - Option B: Personalized message per contact
+
 ```json
 {
   "recipients": [
@@ -298,6 +319,7 @@ Sends messages to multiple contacts sequentially with randomized anti-spam jitte
 ```
 
 #### Success Response (`200 OK`):
+
 ```json
 {
   "success": true,
@@ -327,29 +349,34 @@ Sends messages to multiple contacts sequentially with randomized anti-spam jitte
 ---
 
 ### 5. Reset Session & Force Fresh QR
+
 Cleans `.wwebjs_auth` cache, closes Puppeteer, and restarts the engine to generate a brand new pairing QR code.
 
 - **Method:** `GET`
 - **Path:** `/api/reset-session`
 
 #### Response (`200 OK`):
+
 ```json
 {
   "success": true,
   "message": "Session reset. Generating fresh QR code..."
 }
 ```
-*(If accessed from a browser, it automatically redirects you back to `/api/qr`).*
+
+_(If accessed from a browser, it automatically redirects you back to `/api/qr`)._
 
 ---
 
 ### 6. Logout Session
+
 Gracefully logs out from WhatsApp Web and disconnects the browser.
 
 - **Method:** `POST`
 - **Path:** `/api/logout`
 
 #### Response (`200 OK`):
+
 ```json
 {
   "success": true,
@@ -413,31 +440,31 @@ public class SafeVaultWhatsAppClient
 ### JavaScript / TypeScript (Node.js / Electron / React / Vue)
 
 ```javascript
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = "http://localhost:3000/api";
 
 // Send Single Message
 async function sendWhatsAppAlert(phoneNumber, message) {
   const response = await fetch(`${API_BASE}/send-message`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phoneNumber, message })
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phoneNumber, message }),
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || 'Failed to send');
+  if (!response.ok) throw new Error(data.error || "Failed to send");
   return data;
 }
 
 // Send Bulk Messages
 async function sendBulkWhatsApp(phoneNumbers, message) {
   const response = await fetch(`${API_BASE}/send-bulk`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       phoneNumbers,
       message,
-      options: { minDelayMs: 4000, maxDelayMs: 5000 }
-    })
+      options: { minDelayMs: 4000, maxDelayMs: 5000 },
+    }),
   });
 
   return await response.json();
@@ -486,9 +513,11 @@ def send_bulk_whatsapp(numbers: list, message: str):
 Use these endpoints to send **official WhatsApp messages with clickable buttons (CTA / Quick Reply)** matching Meta's native templates.
 
 ### 1. Send Interactive Buttons (Image Header + Text + Up to 3 Buttons)
+
 `POST /api/meta/send-interactive`
 
 **Request Body:**
+
 ```json
 {
   "to": "919876543210",
@@ -505,19 +534,18 @@ Use these endpoints to send **official WhatsApp messages with clickable buttons 
 ```
 
 ### 2. Send Approved Meta Template (Header Image + Dynamic Variables + Buttons)
+
 `POST /api/meta/send-template`
 
 **Request Body:**
+
 ```json
 {
   "to": "919876543210",
   "template_name": "ambience_creacions_update",
   "language": "en",
   "header_image": "https://yourdomain.com/uploads/banner.jpg",
-  "variables": [
-    "Gajera Yash Viplbhai",
-    "Sector 22, Gurugram"
-  ],
+  "variables": ["Gajera Yash Viplbhai", "Sector 22, Gurugram"],
   "buttons": [
     { "type": "url", "index": 0, "text": "creacions" },
     { "type": "quick_reply", "index": 1, "payload": "NOT_INTERESTED" }

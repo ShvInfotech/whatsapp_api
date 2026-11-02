@@ -553,7 +553,9 @@ function setupUserManagement() {
       if (!user) return;
 
       if (action === 'view-details') {
-        openUserDetailsModal(userId);
+        openUserDetailsModal(userId, 'tabUserOverview');
+      } else if (action === 'message-history') {
+        openUserDetailsModal(userId, 'tabUserLogs');
       } else if (action === 'approve') {
         btn.disabled = true;
         try {
@@ -867,6 +869,9 @@ function applyUserFilters() {
                 <button type="button" data-user-action="view-details" data-user-id="${u.id}">
                   <span>🔍</span> View Details &amp; Tracking
                 </button>
+                <button type="button" data-user-action="message-history" data-user-id="${u.id}" style="color: #0284c7; font-weight: 600;">
+                  <span>💬</span> Message History
+                </button>
                 <button type="button" data-user-action="plan" data-user-id="${u.id}">
                   <span>🏷️</span> Change Subscription Plan
                 </button>
@@ -900,6 +905,82 @@ function applyUserFilters() {
 // User Details, Tracking & History Modal Handlers
 // ==========================================================================
 let currentModalUserId = null;
+let currentModalUserLogsCache = [];
+
+function renderUdmLogsTable() {
+  const tbody = document.getElementById('udmLogsTableBody');
+  if (!tbody) return;
+
+  const searchTerm = (document.getElementById('udmLogsSearchInput')?.value || '').trim().toLowerCase();
+  const filterStatus = document.getElementById('udmLogsFilterStatus')?.value || 'all';
+
+  let filtered = currentModalUserLogsCache.filter((l) => {
+    const rec = (l.recipient || l.phone || l.number || '').toString().toLowerCase();
+    const text = (l.preview || l.message || l.body || '').toString().toLowerCase();
+    const err = (l.error || '').toString().toLowerCase();
+    const matchesSearch = !searchTerm || rec.includes(searchTerm) || text.includes(searchTerm) || err.includes(searchTerm);
+
+    const isSent = (l.status || '').toLowerCase() === 'sent';
+    let matchesStatus = true;
+    if (filterStatus === 'failed') matchesStatus = !isSent;
+    else if (filterStatus === 'sent') matchesStatus = isSent;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2.5rem 1rem; color: #64748b;">No message history found matching criteria.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((l) => {
+    const isSent = (l.status || '').toLowerCase() === 'sent';
+    const rawTime = l.timestamp || l.createdAt;
+    const timeStr = rawTime ? new Date(rawTime).toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    }) : '-';
+
+    const cleanRec = l.recipient ? (String(l.recipient).startsWith('+') ? l.recipient : '+' + l.recipient) : '-';
+    const typeLabel = (l.type || 'single').toUpperCase();
+    const msgText = l.preview || l.message || l.body || '-';
+
+    let reasonHtml = '';
+    if (!isSent) {
+      const errMsg = l.error || 'Message dispatch failed. WhatsApp instance offline or unregistered number.';
+      reasonHtml = `
+        <div style="background: #fef2f2; border: 1px solid #fee2e2; border-radius: 6px; padding: 0.35rem 0.6rem; color: #991b1b; font-size: 0.76rem; line-height: 1.35; word-break: break-word;">
+          <div style="font-weight: 700; display: flex; align-items: center; gap: 0.3rem; margin-bottom: 2px;">
+            <span>⚠️ Failure Reason:</span>
+          </div>
+          <span>${escapeHtml(errMsg)}</span>
+        </div>
+      `;
+    } else {
+      reasonHtml = '<span style="color: #16a34a; font-size: 0.76rem; font-weight: 600;">✓ Delivered to WhatsApp</span>';
+    }
+
+    return `
+      <tr style="${!isSent ? 'background: #fffafa;' : ''}">
+        <td style="color: #64748b; white-space: nowrap; font-size: 0.8rem; padding: 0.75rem 1rem;">${timeStr}</td>
+        <td style="font-weight: 700; font-family: monospace; font-size: 0.84rem; padding: 0.75rem 1rem;">${escapeHtml(cleanRec)}</td>
+        <td style="padding: 0.75rem 1rem;"><span style="font-size: 0.72rem; background: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; color: #475569;">${escapeHtml(typeLabel)}</span></td>
+        <td style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0.75rem 1rem;" title="${escapeHtml(msgText)}">
+          ${escapeHtml(msgText.slice(0, 90))}
+        </td>
+        <td style="padding: 0.75rem 1rem;">
+          <span class="dispatch-status-pill ${isSent ? 'sent' : 'failed'}" style="font-size: 0.74rem; padding: 0.22rem 0.6rem;">
+            ${isSent ? '✓ Sent' : '✕ Failed'}
+          </span>
+        </td>
+        <td style="padding: 0.75rem 1rem; word-break: break-word;">${reasonHtml}</td>
+      </tr>
+    `;
+  }).join('');
+}
 
 function setupUserDetailsModal() {
   const modal = document.getElementById('userDetailsModal');
@@ -911,6 +992,22 @@ function setupUserDetailsModal() {
   const btnResetSession = document.getElementById('udmBtnResetSession');
   const btnUdmPlan = document.getElementById('udmBtnChangePlan');
   const btnInlinePlan = document.getElementById('udmInlineChangePlan');
+
+  const searchLogsInput = document.getElementById('udmLogsSearchInput');
+  const filterLogsStatus = document.getElementById('udmLogsFilterStatus');
+  const btnReloadLogs = document.getElementById('udmBtnReloadLogs');
+
+  if (searchLogsInput) searchLogsInput.addEventListener('input', renderUdmLogsTable);
+  if (filterLogsStatus) filterLogsStatus.addEventListener('change', renderUdmLogsTable);
+  if (btnReloadLogs) {
+    btnReloadLogs.addEventListener('click', async () => {
+      if (currentModalUserId) {
+        showToast('Refreshing message logs...', 'info');
+        await openUserDetailsModal(currentModalUserId, 'tabUserLogs');
+        showToast('Message logs refreshed.', 'success');
+      }
+    });
+  }
 
   const closeModal = () => {
     modal?.classList.add('hidden');
@@ -1000,20 +1097,20 @@ function setupUserDetailsModal() {
   }
 }
 
-async function openUserDetailsModal(userId) {
+async function openUserDetailsModal(userId, initialTab = 'tabUserOverview') {
   currentModalUserId = userId;
   const modal = document.getElementById('userDetailsModal');
   if (!modal) return;
 
   modal.classList.remove('hidden');
 
-  // Reset tab selection to tab 1
-  modal.querySelectorAll('[data-user-modal-tab]').forEach((b, idx) => {
-    if (idx === 0) b.classList.add('active');
+  // Activate requested tab
+  modal.querySelectorAll('[data-user-modal-tab]').forEach((b) => {
+    if (b.dataset.userModalTab === initialTab) b.classList.add('active');
     else b.classList.remove('active');
   });
-  modal.querySelectorAll('.user-modal-tab-pane').forEach((p, idx) => {
-    if (idx === 0) p.classList.add('active');
+  modal.querySelectorAll('.user-modal-tab-pane').forEach((p) => {
+    if (p.id === initialTab) p.classList.add('active');
     else p.classList.remove('active');
   });
 
@@ -1202,39 +1299,28 @@ async function openUserDetailsModal(userId) {
       }
     }
 
-    // Tab 3: Dispatch Logs
-    if (logsTbody) {
-      if (!logs || logs.length === 0) {
-        logsTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2.5rem 1rem; color: #64748b;">No message dispatch logs recorded for this user yet.</td></tr>`;
-      } else {
-        logsTbody.innerHTML = logs.slice(0, 50).map((l) => {
-          const isSuccess = l.status === 'SENT' || l.status === 'SUCCESS' || l.status === 'DELIVERED';
-          return `
-            <tr>
-              <td style="color: #64748b; white-space: nowrap;">${l.createdAt ? new Date(l.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-              <td style="font-weight: 600; font-family: monospace;">+${escapeHtml(l.recipient || l.number || l.phone || '-')}</td>
-              <td><span style="font-size: 0.72rem; background: #f1f5f9; padding: 0.15rem 0.4rem; border-radius: 4px;">${escapeHtml(l.type || 'text')}</span></td>
-              <td style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(l.message || l.body || '')}">
-                ${escapeHtml((l.message || l.body || '-').slice(0, 60))}
-              </td>
-              <td>
-                <span class="status-pill ${isSuccess ? 'status-connected' : 'status-disconnected'}" style="font-size: 0.7rem;">
-                  ${escapeHtml(l.status || 'SENT')}
-                </span>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      }
+    // Tab 3: Message History & Delivery Logs
+    currentModalUserLogsCache = logs || [];
+
+    const totalLogs = currentModalUserLogsCache.length;
+    const sentLogs = currentModalUserLogsCache.filter((l) => (l.status || '').toLowerCase() === 'sent').length;
+    const failedLogs = currentModalUserLogsCache.filter((l) => (l.status || '').toLowerCase() === 'failed').length;
+    const successRateVal = totalLogs > 0 ? Math.round((sentLogs / totalLogs) * 100) : 100;
+
+    const elTotalLogs = document.getElementById('udmLogsTotalCount');
+    if (elTotalLogs) elTotalLogs.textContent = totalLogs.toLocaleString();
+    const elSentLogs = document.getElementById('udmLogsSentCount');
+    if (elSentLogs) elSentLogs.textContent = sentLogs.toLocaleString();
+    const elFailedLogs = document.getElementById('udmLogsFailedCount');
+    if (elFailedLogs) elFailedLogs.textContent = failedLogs.toLocaleString();
+
+    const rateBadge = document.getElementById('udmLogsSuccessRateBadge');
+    if (rateBadge) {
+      rateBadge.textContent = `${successRateVal}%`;
+      rateBadge.style.color = successRateVal >= 90 ? '#0d9488' : '#dc2626';
     }
 
-    // Dispatch stats badge
-    const rateBadge = document.getElementById('udmLogsSuccessRateBadge');
-    if (rateBadge && stats) {
-      const rate = stats.successRate || 100;
-      rateBadge.textContent = `${rate}% Success Rate (${stats.sent || 0} sent, ${stats.failed || 0} failed)`;
-      rateBadge.style.color = rate >= 90 ? '#16a34a' : '#dc2626';
-    }
+    renderUdmLogsTable();
 
     // Tab 4: Billing History
     const billingContainer = document.getElementById('udmBillingContainer');

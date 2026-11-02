@@ -324,9 +324,13 @@ class WhatsAppService {
     } else if (cleaned.startsWith('0')) {
       cleaned = cleaned.substring(1);
     }
+    // Auto-prefix India country code if 10 digits
+    if (cleaned.length === 10) {
+      cleaned = `91${cleaned}`;
+    }
 
-    // Must be at least 7 digits to be a valid phone number
-    if (cleaned.length < 7 || cleaned.length > 15) {
+    // Must be at least 10 digits to be a valid phone number with country code
+    if (cleaned.length < 10 || cleaned.length > 15) {
       throw new Error(`Invalid phone number format: "${phone}". Must include country code without symbols (e.g. 919876543210).`);
     }
 
@@ -703,6 +707,37 @@ class WhatsAppService {
       } catch (sendErr) {
         console.warn(`[WhatsAppService] Send to ${targetJid} failed (${sendErr.message}). Attempting recovery...`);
 
+        // If "No LID for user" occurs, attempt to force contact & chat store sync
+        if (sendErr.message && sendErr.message.includes('No LID for user') && this.client && this.client.pupPage) {
+          try {
+            console.log(`[WhatsAppService] Syncing contact & chat store to resolve LID for ${targetJid}...`);
+            await this.client.pupPage.evaluate(async (jid) => {
+              try {
+                const widFactory = window.require ? window.require('WAWebWidFactory') : null;
+                const findChatAction = window.require ? window.require('WAWebFindChatAction') : null;
+                const queryJob = window.require ? window.require('WAWebQueryExistsJob') : null;
+                if (widFactory && widFactory.createWid) {
+                  const wid = widFactory.createWid(jid);
+                  if (queryJob && typeof queryJob.queryWidExists === 'function') {
+                    await queryJob.queryWidExists(wid);
+                  }
+                  if (findChatAction && typeof findChatAction.findOrCreateLatestChat === 'function') {
+                    await findChatAction.findOrCreateLatestChat(wid);
+                  }
+                }
+              } catch (_) {}
+            }, targetJid);
+
+            return await executeWithFrameRetry(
+              () => doSend(targetJid),
+              this.client,
+              { maxRetries: 2, initialDelay: 1000, logPrefix: '[WhatsAppService]' }
+            );
+          } catch (syncRetryErr) {
+            console.warn('[WhatsAppService] Post-sync retry failed:', syncRetryErr.message);
+          }
+        }
+
         // 1. Try sending directly to LID if available and different from targetJid
         if (lidInfo && lidInfo.lid && lidInfo.lid !== targetJid) {
           try {
@@ -729,6 +764,10 @@ class WhatsAppService {
           } catch (jidRetryErr) {
             console.warn('[WhatsAppService] Standard jid send failed:', jidRetryErr.message);
           }
+        }
+
+        if (sendErr.message && sendErr.message.includes('No LID for user')) {
+          throw new Error(`Recipient (+${cleaned}) is not registered on WhatsApp or does not have an active account.`);
         }
 
         throw sendErr;

@@ -2,11 +2,8 @@
   "username": "admin",
   "displayName": "Safe Vault Administrator",
   "email": "admin@safevault.local",
-  "passwordSalt": "ae26f97fccd76a1116e403ee30fcccdf",
-  "passwordHash": "7c0c1c4bc15f59db988cec290018571c5e6f046b59b4ac3e4a0e2ad9006bbcf3b67b61652f17d64b23ec239185d9c1ea5308d16a7a536c3fdc7f242937794cf1",
-  "recoveryCodeSalt": "ada1c2b08c01a948e3ac5856da3b4d37",
-  "recoveryCodeHash": "6ac025e43ffeb6e801a4ada3d52ece407c7f7d0be7ad7186e7b4a4a7db1de8c33357a0e837dffe1c9f58737047043edd688bc7536a6721e596efd51d579bc27c"
+  "passwordSalt": "9cffed646bc032f1326b8a80ae5768f8",
+  "passwordHash": "556bb6536c7a2b6b773fc1395d9cf49a639407e9d7e5878129f86a9e294c498f57d14c1c6558fcaa26aecfb91b19f9d0b75233b58b5748462f31054462e2f142",
+  "recoveryCodeSalt": "d7114a7bbd18848025865dc5565488d2",
+  "recoveryCodeHash": "8ce87f2b138cba3f9d979725f93e26ed250c70b882c541a272b2e02193073a7bfe41bc415f41a8a1038295812a50cd038e956320b7357674f70b852d7537f9da"
 }
-
-
-
