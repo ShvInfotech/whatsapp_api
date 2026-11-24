@@ -202,7 +202,299 @@ function applyCaptionPatch() {
   }
 }
 
+
+function applySocketInitPatch() {
+  try {
+    // 1. Patch AuthStore.js: prevent "Cannot read properties of null (reading 'Socket')"
+    const authStorePath = path.join(__dirname, 'node_modules', 'whatsapp-web.js', 'src', 'util', 'Injected', 'AuthStore', 'AuthStore.js');
+    if (fs.existsSync(authStorePath)) {
+      const safeAuthStore = `'use strict';
+
+exports.ExposeAuthStore = () => {
+    window.AuthStore = {};
+    const safeReq = (name) => {
+        try {
+            return (typeof window.require === 'function') ? window.require(name) : null;
+        } catch (_) {
+            return null;
+        }
+    };
+    const ws = safeReq('WAWebSocketModel') || safeReq('WAWebBackendSocket');
+    window.AuthStore.AppState = ws ? ws.Socket : null;
+    const cmd = safeReq('WAWebCmd');
+    window.AuthStore.Cmd = cmd ? cmd.Cmd : null;
+    const conn = safeReq('WAWebConnModel');
+    window.AuthStore.Conn = conn ? conn.Conn : null;
+    const offline = safeReq('WAWebOfflineHandler');
+    window.AuthStore.OfflineMessageHandler = offline ? offline.OfflineMessageHandler : null;
+    window.AuthStore.PairingCodeLinkUtils = safeReq('WAWebAltDeviceLinkingApi') || null;
+    window.AuthStore.Base64Tools = safeReq('WABase64') || null;
+    window.AuthStore.RegistrationUtils = {
+        ...(safeReq('WAWebCompanionRegClientUtils') || {}),
+        ...(safeReq('WAWebAdvSignatureApi') || {}),
+        ...(safeReq('WAWebUserPrefsInfoStore') || {}),
+        ...(safeReq('WAWebSignalStoreApi') || {}),
+    };
+};
+`;
+      const current = fs.readFileSync(authStorePath, 'utf8');
+      if (current.includes("window.AuthStore.AppState = window.require('WAWebSocketModel').Socket;") || !current.includes("safeReq('WAWebOfflineHandler')")) {
+        fs.writeFileSync(authStorePath, safeAuthStore, 'utf8');
+        console.log('[Patch] AuthStore.js patched successfully for safe Socket/AppState resolution!');
+      } else {
+        console.log('[Patch] AuthStore.js already patched.');
+      }
+    }
+
+    // 2. Patch Client.js: ensure quick startup without auth timeout and safe needAuthentication
+    const clientPath = path.join(__dirname, 'node_modules', 'whatsapp-web.js', 'src', 'Client.js');
+    if (fs.existsSync(clientPath)) {
+      let clientContent = fs.readFileSync(clientPath, 'utf8');
+      let clientModified = false;
+
+      // Fix 2a: Ensure wait loop waits for window.Debug?.VERSION != undefined so QR generation is NOT blocked
+      const customWait = `res = await this.pupPage.evaluate(
+                () => {
+                if (typeof window.Debug?.VERSION === 'undefined') return false;
+                if (typeof window.require !== 'function') return false;
+                try {
+                    const ws = window.require('WAWebSocketModel') || window.require('WAWebBackendSocket');
+                    return Boolean(ws && ws.Socket);
+                } catch (_) {
+                    return false;
+                }
+            },
+            );`;
+      const standardWait = `res = await this.pupPage.evaluate(
+                'window.Debug?.VERSION != undefined',
+            );`;
+
+      if (clientContent.includes(customWait)) {
+        clientContent = clientContent.replace(customWait, standardWait);
+        clientModified = true;
+        console.log('[Patch] Client.js restored standard Debug?.VERSION wait check to avoid auth timeout.');
+      }
+
+      // Fix 2b: Safeguard needAuthentication in Client.js
+      const oldNeedAuth = `        const needAuthentication = await this.pupPage.evaluate(async () => {
+            let state = window.require('WAWebSocketModel').Socket.state;`;
+
+      const safeNeedAuth = `        const needAuthentication = await this.pupPage.evaluate(async () => {
+            const getSocket = () => {
+                try {
+                    return (typeof window.require === 'function')
+                        ? (window.require('WAWebSocketModel')?.Socket || window.require('WAWebBackendSocket')?.Socket || null)
+                        : null;
+                } catch (_) {
+                    return null;
+                }
+            };
+            let socket = getSocket();
+            if (!socket) {
+                return true;
+            }
+            let state = socket.state;`;
+
+      if (clientContent.includes(oldNeedAuth)) {
+        clientContent = clientContent.replace(oldNeedAuth, safeNeedAuth);
+        clientContent = clientContent.replace(
+          "window.require('WAWebSocketModel').Socket.on(",
+          "socket.on("
+        );
+        clientContent = clientContent.replace(
+          "window.require('WAWebSocketModel').Socket.off(",
+          "socket.off("
+        );
+        clientContent = clientContent.replace(
+          "state = window.require('WAWebSocketModel').Socket.state;",
+          "state = (getSocket() || socket)?.state;"
+        );
+        clientModified = true;
+        console.log('[Patch] Client.js patched: needAuthentication now uses safe socket resolution.');
+      }
+
+      // Fix 2c: Safe event listeners inside inject
+      const oldInjectEvents = `        await this.pupPage.evaluate(() => {
+            window
+                .require('WAWebSocketModel')
+                .Socket.on('change:state', (_AppState, state) => {
+                    window.onAuthAppStateChangedEvent(state);
+                });
+            window
+                .require('WAWebSocketModel')
+                .Socket.on('change:hasSynced', () => {
+                    window.onAppStateHasSyncedEvent();
+                });
+            const Cmd = window.require('WAWebCmd').Cmd;
+            Cmd.on('offline_progress_update_from_bridge', () => {
+                window.onOfflineProgressUpdateEvent(
+                    window.AuthStore.OfflineMessageHandler.getOfflineDeliveryProgress(),
+                );
+            });
+            Cmd.on('logout', async () => {
+                await window.onLogoutEvent();
+            });
+            Cmd.on('logout_from_bridge', async () => {
+                await window.onLogoutEvent();
+            });
+        });`;
+
+      const safeInjectEvents = `        await this.pupPage.evaluate(() => {
+            const socket = (typeof window.require === 'function' ? (window.require('WAWebSocketModel')?.Socket || window.require('WAWebBackendSocket')?.Socket) : null) || window.AuthStore?.AppState;
+            if (socket) {
+                socket.on('change:state', (_AppState, state) => {
+                    window.onAuthAppStateChangedEvent(state);
+                });
+                socket.on('change:hasSynced', () => {
+                    window.onAppStateHasSyncedEvent();
+                });
+            }
+            const Cmd = (typeof window.require === 'function' ? window.require('WAWebCmd')?.Cmd : null) || window.AuthStore?.Cmd;
+            if (Cmd) {
+                Cmd.on('offline_progress_update_from_bridge', () => {
+                    if (window.AuthStore?.OfflineMessageHandler) {
+                        window.onOfflineProgressUpdateEvent(
+                            window.AuthStore.OfflineMessageHandler.getOfflineDeliveryProgress(),
+                        );
+                    }
+                });
+                Cmd.on('logout', async () => {
+                    await window.onLogoutEvent();
+                });
+                Cmd.on('logout_from_bridge', async () => {
+                    await window.onLogoutEvent();
+                });
+            }
+        });`;
+
+      if (clientContent.includes(oldInjectEvents)) {
+        clientContent = clientContent.replace(oldInjectEvents, safeInjectEvents);
+        clientModified = true;
+        console.log('[Patch] Client.js patched: safe inject event listeners applied.');
+      }
+
+      // Fix 2d: Safe QR generation with DOM observer + safe retry to prevent Invariant Violation #56356
+      const oldQREval = `                await this.pupPage.evaluate(async () => {
+                    const registrationInfo =
+                        await window.AuthStore.RegistrationUtils.waSignalStore.getRegistrationInfo();
+                    const noiseKeyPair =
+                        await window.AuthStore.RegistrationUtils.waNoiseInfo.get();
+                    const staticKeyB64 = window.AuthStore.Base64Tools.encodeB64(
+                        noiseKeyPair.staticKeyPair.pubKey,
+                    );
+                    const identityKeyB64 =
+                        window.AuthStore.Base64Tools.encodeB64(
+                            registrationInfo.identityKeyPair.pubKey,
+                        );
+                    const platform =
+                        window.AuthStore.RegistrationUtils.DEVICE_PLATFORM;
+                    const getQR = (ref) =>
+                        ref +
+                        ',' +
+                        staticKeyB64 +
+                        ',' +
+                        identityKeyB64 +
+                        ',' +
+                        window
+                            .require('WAWebUserPrefsMultiDevice')
+                            .getADVSecretKey() +
+                        ',' +
+                        platform;
+                    window.onQRChangedEvent(getQR(window.AuthStore.Conn.ref)); // initial qr
+                    window.AuthStore.Conn.on('change:ref', (_, ref) => {
+                        window.onQRChangedEvent(getQR(ref));
+                    }); // future QR changes
+                });`;
+
+      const safeQREval = `                await this.pupPage.evaluate(async () => {
+                    let lastEmittedQR = null;
+                    const emitQR = (qr) => {
+                        if (qr && qr !== lastEmittedQR && typeof window.onQRChangedEvent === 'function') {
+                            lastEmittedQR = qr;
+                            window.onQRChangedEvent(qr);
+                        }
+                    };
+
+                    // Method 1: Continuous DOM observer for [data-ref] (renders instantly in WhatsApp Web UI)
+                    const checkDom = () => {
+                        try {
+                            const el = document.querySelector('div[data-ref]') || document.querySelector('[data-ref]');
+                            if (el) {
+                                const val = el.getAttribute('data-ref');
+                                if (val) emitQR(val);
+                            }
+                        } catch (_) {}
+                    };
+                    checkDom();
+                    try {
+                        const obs = new MutationObserver(() => checkDom());
+                        obs.observe(document.body || document.documentElement, {
+                            childList: true,
+                            subtree: true,
+                            attributes: true,
+                            attributeFilter: ['data-ref']
+                        });
+                    } catch (_) {}
+
+                    // Method 2: Internal WhatsApp Web AuthStore with safe retry to prevent Invariant Violations
+                    const pollAuthStore = async () => {
+                        for (let attempt = 0; attempt < 30; attempt++) {
+                            try {
+                                const regUtils = window.AuthStore?.RegistrationUtils;
+                                const base64 = window.AuthStore?.Base64Tools;
+                                const conn = window.AuthStore?.Conn;
+                                if (regUtils?.waSignalStore && regUtils?.waNoiseInfo && base64 && conn) {
+                                    const registrationInfo = await regUtils.waSignalStore.getRegistrationInfo();
+                                    const noiseKeyPair = await regUtils.waNoiseInfo.get();
+                                    if (registrationInfo && noiseKeyPair) {
+                                        const staticKeyB64 = base64.encodeB64(noiseKeyPair.staticKeyPair.pubKey);
+                                        const identityKeyB64 = base64.encodeB64(registrationInfo.identityKeyPair.pubKey);
+                                        const platform = regUtils.DEVICE_PLATFORM;
+                                        const advSecret = (typeof window.require === 'function' ? window.require('WAWebUserPrefsMultiDevice')?.getADVSecretKey() : null) || '';
+                                        const getQR = (ref) => ref + ',' + staticKeyB64 + ',' + identityKeyB64 + ',' + advSecret + ',' + platform;
+
+                                        if (conn.ref) {
+                                            emitQR(getQR(conn.ref));
+                                        }
+                                        if (!conn.__qrListenerHooked && typeof conn.on === 'function') {
+                                            conn.__qrListenerHooked = true;
+                                            conn.on('change:ref', (_, ref) => {
+                                                if (ref) emitQR(getQR(ref));
+                                            });
+                                        }
+                                        break;
+                                    }
+                                }
+                            } catch (_) {
+                                // Ignore early Invariant Violations while stores initialize
+                            }
+                            await new Promise((r) => setTimeout(r, 500));
+                        }
+                    };
+
+                    pollAuthStore().catch(() => {});
+                });`;
+
+      if (clientContent.includes(oldQREval)) {
+        clientContent = clientContent.replace(oldQREval, safeQREval);
+        clientModified = true;
+        console.log('[Patch] Client.js patched: safe QR generation with DOM observer + retry applied.');
+      }
+
+      if (clientModified) {
+        fs.writeFileSync(clientPath, clientContent, 'utf8');
+        console.log('[Patch] Client.js successfully updated.');
+      } else {
+        console.log('[Patch] Client.js already patched.');
+      }
+    }
+  } catch (err) {
+    console.error('[Patch] Error while applying socket init patch:', err.message);
+  }
+}
+
 // Apply immediately when loaded
 applyCaptionPatch();
+applySocketInitPatch();
 
-module.exports = { applyCaptionPatch };
+module.exports = { applyCaptionPatch, applySocketInitPatch };
