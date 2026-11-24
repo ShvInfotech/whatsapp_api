@@ -138,10 +138,12 @@ async function startServer() {
     console.error('[Server] Failed to initialize Multi-Instance Service:', err);
   });
 
-  // Initialize WhatsApp Web Client asynchronously (legacy default)
-  whatsappService.initialize().catch((err) => {
-    console.error('[Server] Failed to initialize WhatsApp Service:', err);
-  });
+  // Offset legacy default WhatsApp Service initialization so it doesn't fight Multi-Instance on server boot
+  setTimeout(() => {
+    whatsappService.initialize().catch((err) => {
+      console.error('[Server] Failed to initialize WhatsApp Service:', err);
+    });
+  }, 4000);
 
   // Graceful Shutdown Handler
   const shutdown = async (signal) => {

@@ -62,6 +62,7 @@ class WhatsAppService {
     }
 
     const client = new Client({
+      authTimeoutMs: 90000,
       authStrategy: new LocalAuth({
         clientId: this.sessionId,
         dataPath: config.authDataPath

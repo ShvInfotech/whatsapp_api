@@ -252,27 +252,59 @@ exports.ExposeAuthStore = () => {
       let clientContent = fs.readFileSync(clientPath, 'utf8');
       let clientModified = false;
 
-      // Fix 2a: Ensure wait loop waits for window.Debug?.VERSION != undefined so QR generation is NOT blocked
-      const customWait = `res = await this.pupPage.evaluate(
-                () => {
-                if (typeof window.Debug?.VERSION === 'undefined') return false;
-                if (typeof window.require !== 'function') return false;
-                try {
-                    const ws = window.require('WAWebSocketModel') || window.require('WAWebBackendSocket');
-                    return Boolean(ws && ws.Socket);
-                } catch (_) {
-                    return false;
-                }
-            },
-            );`;
-      const standardWait = `res = await this.pupPage.evaluate(
+      // Fix 2a: Robust wait loop with 90s timeout + DOM [data-ref]/canvas detection for high-load servers
+      const oldWait30 = `        if (
+            this.options.authTimeoutMs === undefined ||
+            this.options.authTimeoutMs == 0
+        ) {
+            this.options.authTimeoutMs = 30000;
+        }
+        let start = Date.now();
+        let timeout = this.options.authTimeoutMs;
+        let res = false;
+        while (start > Date.now() - timeout) {
+            res = await this.pupPage.evaluate(
                 'window.Debug?.VERSION != undefined',
-            );`;
+            );
+            if (res) {
+                break;
+            }
+            await new Promise((r) => setTimeout(r, 200));
+        }`;
 
-      if (clientContent.includes(customWait)) {
-        clientContent = clientContent.replace(customWait, standardWait);
+      const robustWait90 = `        if (
+            this.options.authTimeoutMs === undefined ||
+            this.options.authTimeoutMs == 0
+        ) {
+            this.options.authTimeoutMs = 90000;
+        }
+        let start = Date.now();
+        let timeout = this.options.authTimeoutMs;
+        let res = false;
+        while (start > Date.now() - timeout) {
+            try {
+                res = await this.pupPage.evaluate(() => {
+                    return Boolean(
+                        (typeof window.Debug !== 'undefined' && window.Debug?.VERSION != undefined) ||
+                        document.querySelector('div[data-ref]') ||
+                        document.querySelector('[data-ref]') ||
+                        document.querySelector('canvas') ||
+                        document.querySelector('[data-testid="qrcode"]')
+                    );
+                });
+            } catch (_) {
+                res = false;
+            }
+            if (res) {
+                break;
+            }
+            await new Promise((r) => setTimeout(r, 250));
+        }`;
+
+      if (clientContent.includes(oldWait30)) {
+        clientContent = clientContent.replace(oldWait30, robustWait90);
         clientModified = true;
-        console.log('[Patch] Client.js restored standard Debug?.VERSION wait check to avoid auth timeout.');
+        console.log('[Patch] Client.js upgraded to robust 90s wait loop with DOM QR detection.');
       }
 
       // Fix 2b: Safeguard needAuthentication in Client.js

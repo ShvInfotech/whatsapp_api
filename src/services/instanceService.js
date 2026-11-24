@@ -64,6 +64,8 @@ class InstanceService {
         try {
           console.log(`[InstanceService] Restoring active instance ${record.name || ''} (${record.id})...`);
           await this.startClient(record.id, record.name, record.accessToken, record.createdAt);
+          // Stagger instance startup to prevent simultaneous Chrome CPU/network choking on production
+          await new Promise((resolve) => setTimeout(resolve, 3500));
         } catch (err) {
           console.error(`[InstanceService] Failed to restore instance ${record.id}:`, err);
         }
@@ -176,6 +178,7 @@ class InstanceService {
     }
 
     const client = new Client({
+      authTimeoutMs: 90000,
       authStrategy: new LocalAuth({
         clientId: instanceId,
         dataPath: config.authDataPath
