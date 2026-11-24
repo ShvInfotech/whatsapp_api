@@ -253,25 +253,6 @@ exports.ExposeAuthStore = () => {
       let clientModified = false;
 
       // Fix 2a: Robust wait loop with 90s timeout + DOM [data-ref]/canvas detection for high-load servers
-      const oldWait30 = `        if (
-            this.options.authTimeoutMs === undefined ||
-            this.options.authTimeoutMs == 0
-        ) {
-            this.options.authTimeoutMs = 30000;
-        }
-        let start = Date.now();
-        let timeout = this.options.authTimeoutMs;
-        let res = false;
-        while (start > Date.now() - timeout) {
-            res = await this.pupPage.evaluate(
-                'window.Debug?.VERSION != undefined',
-            );
-            if (res) {
-                break;
-            }
-            await new Promise((r) => setTimeout(r, 200));
-        }`;
-
       const robustWait90 = `        if (
             this.options.authTimeoutMs === undefined ||
             this.options.authTimeoutMs == 0
@@ -301,10 +282,13 @@ exports.ExposeAuthStore = () => {
             await new Promise((r) => setTimeout(r, 250));
         }`;
 
-      if (clientContent.includes(oldWait30)) {
-        clientContent = clientContent.replace(oldWait30, robustWait90);
-        clientModified = true;
-        console.log('[Patch] Client.js upgraded to robust 90s wait loop with DOM QR detection.');
+      if (!clientContent.includes('document.querySelector(\'div[data-ref]\')')) {
+        const injectWaitRegex = /(async inject\(\)\s*\{)[\s\S]*?(let start = Date\.now\(\);[\s\S]*?if \(!res\) \{[\s\S]*?throw 'auth timeout';[\s\S]*?\})/;
+        if (injectWaitRegex.test(clientContent)) {
+          clientContent = clientContent.replace(injectWaitRegex, `$1\n${robustWait90}\n        if (!res) {\n            throw 'auth timeout';\n        }`);
+          clientModified = true;
+          console.log('[Patch] Client.js upgraded to robust 90s wait loop with DOM QR detection.');
+        }
       }
 
       // Fix 2b: Safeguard needAuthentication in Client.js
@@ -507,10 +491,17 @@ exports.ExposeAuthStore = () => {
                     pollAuthStore().catch(() => {});
                 });`;
 
-      if (clientContent.includes(oldQREval)) {
-        clientContent = clientContent.replace(oldQREval, safeQREval);
-        clientModified = true;
-        console.log('[Patch] Client.js patched: safe QR generation with DOM observer + retry applied.');
+      if (!clientContent.includes('// Method 1: Continuous DOM observer for [data-ref]')) {
+        const qrEvalRegex = /await this\.pupPage\.evaluate\(async \(\) =>\s*\{[\s\S]*?waSignalStore\.getRegistrationInfo\(\)[\s\S]*?window\.AuthStore\.Conn\.on\('change:ref'[\s\S]*?\}\);/;
+        if (qrEvalRegex.test(clientContent)) {
+          clientContent = clientContent.replace(qrEvalRegex, safeQREval.trim());
+          clientModified = true;
+          console.log('[Patch] Client.js patched: safe QR generation with DOM observer + retry applied.');
+        } else if (clientContent.includes(oldQREval)) {
+          clientContent = clientContent.replace(oldQREval, safeQREval);
+          clientModified = true;
+          console.log('[Patch] Client.js patched: safe QR generation with DOM observer + retry applied.');
+        }
       }
 
       if (clientModified) {

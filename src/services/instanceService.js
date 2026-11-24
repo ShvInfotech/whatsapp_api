@@ -75,7 +75,7 @@ class InstanceService {
           name: record.name,
           accessToken: record.accessToken,
           createdAt: record.createdAt,
-          status: 'QR_READY',
+          status: 'DISCONNECTED',
           qrCodeRaw: null,
           qrCodeDataUrl: null,
           clientInfo: null,
@@ -143,7 +143,10 @@ class InstanceService {
    */
   async startClient(instanceId, name, accessToken, createdAt) {
     const existing = this.instances.get(instanceId);
-    if (existing && existing.client && existing.status !== 'DISCONNECTED') {
+    if (existing && existing.client && (existing.status === 'INITIALIZING' || existing.status === 'AUTHENTICATING' || existing.status === 'CONNECTED')) {
+      return existing;
+    }
+    if (existing && existing.initPromise) {
       return existing;
     }
 
@@ -192,6 +195,8 @@ class InstanceService {
     state.initPromise = client.initialize().catch((err) => {
       console.error(`[InstanceService] [${instanceId}] Initialization failed:`, err);
       state.status = 'DISCONNECTED';
+    }).finally(() => {
+      state.initPromise = null;
     });
 
     return state;
@@ -576,26 +581,20 @@ class InstanceService {
     }
 
     let state = this.instances.get(instanceId);
-    if (!state || state.status === 'DISCONNECTED' || !state.client) {
-      // Check if exists in store, if so start/restart it
+    if (!state) {
       const record = this.getInstanceRecord(instanceId);
       if (record) {
-        if (state && state.client) {
-          try { await state.client.destroy().catch(() => {}); } catch (_) {}
-        }
-        this.instances.delete(instanceId);
         state = await this.startClient(record.id, record.name, record.accessToken, record.createdAt);
-        const qrUrl = state.qrCodeDataUrl || state.qrCodeRaw;
-        return {
-          status: state.status,
-          isConnected: state.status === 'CONNECTED',
-          qrReady: state.status === 'QR_READY' || Boolean(qrUrl),
-          qr: qrUrl,
-          qrDataUrl: state.qrCodeDataUrl,
-          qrRaw: state.qrCodeRaw
-        };
+      } else {
+        return null;
       }
-      return null;
+    } else if (!state.client && !state.initPromise) {
+      const record = this.getInstanceRecord(instanceId);
+      if (record && !state._isAutoStarting) {
+        state._isAutoStarting = true;
+        this.startClient(record.id, record.name, record.accessToken, record.createdAt)
+          .finally(() => { if (state) state._isAutoStarting = false; });
+      }
     }
 
     // Actively verify connection if authenticating or client is active
@@ -615,10 +614,11 @@ class InstanceService {
       } catch (_) {}
     }
 
+    const hasQr = Boolean(dataUrl || state.qrCodeRaw);
     return {
       status: state.status,
       isConnected: state.status === 'CONNECTED',
-      qrReady: state.status === 'QR_READY' || Boolean(dataUrl),
+      qrReady: hasQr,
       qr: dataUrl || state.qrCodeRaw,
       qrDataUrl: dataUrl,
       qrRaw: state.qrCodeRaw,
@@ -662,7 +662,7 @@ class InstanceService {
 
     if (state.status !== 'CONNECTED' || !state.client) {
       const record = this.readStore().find((r) => r.id === instanceId);
-      if (record && record.phone && (state.status === 'DISCONNECTED' || !state.client)) {
+      if (record && record.phone && (state.status === 'DISCONNECTED' || !state.client) && !state.initPromise) {
         console.log(`[InstanceService] [${instanceId}] Instance is disconnected. Attempting auto-reconnection...`);
         try {
           const restored = await this.startClient(record.id, record.name, record.accessToken, record.createdAt);
